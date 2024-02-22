@@ -1,6 +1,10 @@
 using TensorQEC
 using Test
 
-@testset "TensorQEC.jl" begin
-    # Write your tests here.
+@testset "pauli basis" begin
+    include("paulibasis.jl")
+end
+
+@testset "tensor network" begin
+    include("tensornetwork.jl")
 end

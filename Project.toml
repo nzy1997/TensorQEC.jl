@@ -5,16 +5,11 @@ version = "1.0.0-DEV"
 
 [deps]
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
-OMEinsum = "ebe7aa44-baf0-506c-a96f-8464559b3922"
 TensorInference = "c2297e78-99bd-40ad-871d-f50e56b81012"
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Yao = "5872b779-8223-5990-8dd0-5abbb0748c8c"
 
 [compat]
-julia = "1.10"
-
-[extras]
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
-
-[targets]
-test = ["Test"]
+julia = "1"
+LinearAlgebra = "1"
+TensorInference = "0.4"
+Yao = "0.8"
