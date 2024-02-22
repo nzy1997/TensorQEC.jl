@@ -3,7 +3,7 @@ using Test, TensorQEC, TensorInference.OMEinsum, Yao, TensorInference
 @testset "matrix2factor" begin
 	g = cnot(2, 1, 2)
 	f = TensorQEC.matrix2factor(g, [1, 2], [3, 4])
-	@test f.vars == (1, 2, 3, 4)
+	@test f.vars == (3, 4, 1, 2)
 end
 
 @testset "projector" begin
@@ -26,14 +26,15 @@ end
 
 @testset "tensor network mapping - 1 gate" begin
 	# create a circuit and convert it to the pauli basis
-	yaoqc = chain(cnot(2, 1, 2))
-	yaoqc2 = chain(cnot(2, 1, 2))
+	yaoqc = chain(cnot(2, 1, 2), cnot(2, 1, 2))
+	yaoqc2 = chain(cnot(2, 1, 2), cnot(2, 1, 2))
 	yaopauli = pauli_mapping(mat(ComplexF64, yaoqc))
 
 	# tensor network mapping of a quantum circuit
 	for ci in CartesianIndices((fill(4, 2)...,))
 		ps = [Yao.BitBasis._onehot(Float64, 4, ci.I[i]) for i in 1:2]
 		tn = circuit2tensornetworks(yaoqc2, ps)
+        @test length(tn.vars) == 6
 		p1 = probability(tn)
 		p2 = yaopauli[ci.I..., :, :]
 		@test p1 ≈ p2

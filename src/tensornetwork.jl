@@ -11,13 +11,12 @@ end
 Yao.nqubits(cl::CliffordNetwork) = length(cl.physical_qubits)
 
 # TODO: limit the gates to be only Clifford gates
-function newgate!(pins::Vector{Int}, rawgate::AbstractBlock, nvars::Int)
-    gate = convert_to_put(rawgate)
+function newgate!(pins::Vector{Int}, gate::PutBlock, nvars::Int)
     # @assert is_clifford(gate)
     locs = gate.locs
 	input_gate_vars = [pins[i] for i in locs]
 	output_gate_vars = collect(nvars+1:nvars+length(locs))
-	setindex!.(Ref(pins), output_gate_vars, locs)
+	pins[collect(locs)] .= output_gate_vars
 	gate_tensor = matrix2factor(content(gate), input_gate_vars, output_gate_vars)
 	return gate_tensor
 end
@@ -31,7 +30,8 @@ end
 # convert a gate to a Factor
 function matrix2factor(g::AbstractBlock, input_vars::Vector{Int}, pins::Vector{Int})
 	vals = pauli_mapping(mat(ComplexF64, g))
-	vars = (input_vars..., pins...)
+	@show pins
+	vars = (pins..., input_vars...)
 	return Factor(vars, vals)
 end
 
@@ -41,8 +41,9 @@ function clifford_network(qc::ChainBlock)
 	factors = Vector{Factor{Float64}}()
 	# add gates
 	for gate in qc
-		push!(factors, newgate!(pins, gate, nvars))
-		nvars += length(gate.locs)
+    	_gate = convert_to_put(gate)
+		push!(factors, newgate!(pins, _gate, nvars))
+		nvars += length(_gate.locs)
 	end
 	return CliffordNetwork(factors, pins, collect(1:length(pins)), nvars)
 end
