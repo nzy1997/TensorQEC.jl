@@ -1,0 +1,13 @@
+name = "TensorQEC"
+uuid = "0500ac79-7fb5-4262-aaea-37bb1845d1ef"
+authors = ["Zhongyi Ni"]
+version = "1.0.0-DEV"
+
+[compat]
+julia = "1.10"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
