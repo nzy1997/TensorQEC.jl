@@ -30,11 +30,11 @@ end
 # convert a gate to a Factor
 function matrix2factor(g::AbstractBlock, input_vars::Vector{Int}, pins::Vector{Int})
 	vals = pauli_mapping(mat(ComplexF64, g))
-	@show pins
 	vars = (pins..., input_vars...)
 	return Factor(vars, vals)
 end
 
+# Yao circuit to a CliffordNetwork instance.
 function clifford_network(qc::ChainBlock)
 	nvars = nqubits(qc)
 	pins = collect(1:nvars)
@@ -69,6 +69,9 @@ function _generate_tensor_network(cl::CliffordNetwork, ps::Vector{Vector{Float64
 	)
 end
 
+# generate a tensor network from a CliffordNetwork instance
+# `p` is the prior distribution of Pauli errors on physical qubits
+# `syndromes` is a dictionary of syndromes, where the key is the index of the syndrome and the value is the prior distribution of the syndrome
 function generate_tensor_network(cl::CliffordNetwork, p::AbstractVector{<:Real}, syndromes::Dict{Int, Bool})
 	_generate_tensor_network(cl, fill(p, nqubits(cl)), Dict(i => projector(vector_syndrome(s)) for (i, s) in syndromes))
 end
@@ -78,6 +81,11 @@ function projector(v::AbstractVector{Bool})
 	locs = findall(!iszero, v)
 	n = length(v)
 	return Matrix{Bool}(I, n, n)[locs, :]
+end
+
+function circuit2tensornetworks(qc::ChainBlock, ps)
+	cl = clifford_network(qc)
+	_generate_tensor_network(cl, ps, Dict{Int,Vector{Float64}}())
 end
 
 #syn is a vector of 0,1,2,3. 0 means |0>, 1 means |1>, 2 means dataqubit, 3 means open.
@@ -101,10 +109,4 @@ function syndrome_inference(qc::ChainBlock, syn::Vector{Int64}, p::Vector{Vector
 
 	return syn_inf
 end
-
-function circuit2tensornetworks(qc::ChainBlock, ps)
-	cl = clifford_network(qc)
-	_generate_tensor_network(cl, ps, Dict{Int,Vector{Float64}}())
-end
-
 

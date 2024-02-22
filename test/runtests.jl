@@ -8,3 +8,7 @@ end
 @testset "tensor network" begin
     include("tensornetwork.jl")
 end
+
+@testset "inferences" begin
+    include("inferences.jl")
+end

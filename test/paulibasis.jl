@@ -1,4 +1,4 @@
-using Test, TensorQEC, Yao
+using Test, TensorQEC, TensorQEC.Yao
 
 @testset "pauli_basis" begin
 	@test pauli_basis(1) == [Matrix(I2), Matrix(X), Matrix(Y), Matrix(Z)]
