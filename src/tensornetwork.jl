@@ -18,7 +18,15 @@ function newgate!(pins::Vector{Int}, gate::PutBlock, nvars::Int)
 	output_gate_vars = collect(nvars+1:nvars+length(locs))
 	pins[collect(locs)] .= output_gate_vars
 	gate_tensor = matrix2factor(content(gate), input_gate_vars, output_gate_vars)
-	return gate_tensor
+	return gate_tensor, nvars+length(locs)
+end
+function prepend!(prepins::Vector{Int}, tensor::AbstractMatrix, loc::Integer, nvars::Integer)
+	nvars += 1
+	prepins[loc] = nvars
+	return Factor((nvars, prepins[loc]), tensor), nvars
+end
+function prepend!(prepins::Vector{Int}, tensor::AbstractVector, locs::Integer, nvars::Integer)
+	return Factor((prepins[loc],), tensor), nvars
 end
 convert_to_put(g::PutBlock) = g
 function convert_to_put(g::ControlBlock)
@@ -42,39 +50,58 @@ function clifford_network(qc::ChainBlock)
 	# add gates
 	for gate in qc
     	_gate = convert_to_put(gate)
-		push!(factors, newgate!(pins, _gate, nvars))
-		nvars += length(_gate.locs)
+		factor, nvars = newgate!(pins, _gate, nvars)
+		push!(factors, factor)
 	end
 	return CliffordNetwork(factors, pins, collect(1:length(pins)), nvars)
 end
 
-function _generate_tensor_network(cl::CliffordNetwork, ps::Vector{Vector{Float64}}, qs::Dict{Int, Vector{Float64}})
-	factors = copy(cl.factors)
-	nvars=cl.nvars
-	# add prior distributions of Pauli errors on physical qubits
-	for (k, i) in enumerate(cl.physical_qubits)
-		push!(factors, Factor{Float64,1}((i,), ps[k]))
-	end
-	openvars = setdiff(cl.mapped_qubits, keys(qs))
-	for (k, v) in qs
-		nvars=nvars+1
-		push!(factors, Factor{Float64,1}((cl.mapped_qubits[k],nvars), v))
-		push!(openvars, nvars)
-	end
-	return TensorNetworkModel(
-		1:nvars,
-		fill(4, cl.nvars),
-		factors,
-		openvars = openvars
-	)
-end
+@enum ExtraTensor UNITY4 PXY PIZ PXY_UNITY2 PIZ_UNITY2
 
 # generate a tensor network from a CliffordNetwork instance
 # `p` is the prior distribution of Pauli errors on physical qubits
 # `syndromes` is a dictionary of syndromes, where the key is the index of the syndrome and the value is the prior distribution of the syndrome
-function generate_tensor_network(cl::CliffordNetwork, p::AbstractVector{<:Real}, syndromes::Dict{Int, Bool})
-	_generate_tensor_network(cl, fill(p, nqubits(cl)), Dict(i => projector(vector_syndrome(s)) for (i, s) in syndromes))
+function generate_tensor_network(cl::CliffordNetwork{T}, ps::Vector{Vector{T}}, qs::Dict{Int, ExtraTensor}) where T
+	# TODO: assert qs locations are valid
+	factors = copy(cl.factors)
+	nvars=cl.nvars
+	# add prior distributions of Pauli errors on physical qubits
+	for (k, i) in enumerate(cl.physical_qubits)
+		push!(factors, Factor{T,1}((i,), ps[k]))
+	end
+	# openvars are those ancilla qubits to be inferred
+	openvars = setdiff(cl.mapped_qubits, keys(qs))
+	cards = fill(4, nvars)
+	for (k, v) in qs
+		if v == PXY || v == PIZ || v == PXY_UNITY2 || v == PIZ_UNITY2
+			# projector
+			pmat = projector(vector_syndrome(v == PIZ))
+			factor, nvars = prepend!(cl.mapped_qubits, pmat, k, nvars)
+			push!(cards, 2)
+			push!(factors, factor)
+			if v == PXY || v == PIZ
+				push!(openvars, nvars)
+			else
+				factor, nvars = prepend!(cl.mapped_qubits, ones(T, size(pmat, 1)), k, nvars)
+				push!(factors, factor)
+			end
+		else
+			# unity
+			factor, nvars = prepend!(cl.mapped_qubits, ones(T, 4), k, nvars)
+			push!(factors, factor)
+		end
+	end
+	return TensorNetworkModel(
+		1:nvars,
+		cards,
+		factors;
+		openvars
+	)
 end
+
+# function generate_tensor_network(cl::CliffordNetwork, p::AbstractVector{<:Real}, syndromes::Dict{Int, Bool})
+# 	generate_tensor_network(cl, fill(p, nqubits(cl)), Dict(i => projector(vector_syndrome(s)) for (i, s) in syndromes))
+# end
 
 vector_syndrome(measure_outcome) = iszero(measure_outcome) ? Bool[1,0,0,1] : Bool[0,1,1,0]
 function projector(v::AbstractVector{Bool})
@@ -85,7 +112,7 @@ end
 
 function circuit2tensornetworks(qc::ChainBlock, ps)
 	cl = clifford_network(qc)
-	_generate_tensor_network(cl, ps, Dict{Int,Vector{Float64}}())
+	generate_tensor_network(cl, ps, Dict{Int,ExtraTensor}())
 end
 
 #syn is a vector of 0,1,2,3. 0 means |0>, 1 means |1>, 2 means dataqubit, 3 means open.
