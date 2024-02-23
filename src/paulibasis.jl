@@ -26,6 +26,12 @@ end
 struct PauliString{N} <: CompositeBlock{2}
     ids::NTuple{N, Int}
 end
+function Yao.YaoBlocks.unsafe_apply!(reg::AbstractRegister, p::PauliString{N}) where N
+	Yao.YaoBlocks.unsafe_apply!(reg, kron([I2, X, Y, Z][q] for q in p.ids))
+end
+Yao.nqudits(::PauliString{N}) where N = N
+Yao.mat(::Type{T}, p::PauliString{N}) where {T, N} = mat(T, kron([I2, X, Y, Z][q] for q in p.ids))
+Yao.subblocks(p::PauliString) = (([I2, X, Y, Z][q] for q in p.ids)...,)
 Base.show(io::IO, ::MIME"text/plain", sp::PauliString) = show(io, sp)
 function Base.show(io::IO, ps::PauliString)
 	for (i, q) in enumerate(ps.ids[end:-1:1])
@@ -49,6 +55,6 @@ function tensor2sumofpaulis(t::AbstractArray)
 	SumOfPaulis([t[ci]=>PauliString(ci.I) for ci in CartesianIndices(t)] |> vec)
 end
 Yao.mat(::Type{T}, sp::SumOfPaulis) where T = mat(T, sum([c * kron([I2, X, Y, Z][q] for q in p.ids) for (c, p) in sp.items]))
-Yao.parameters_eltype(x::SumOfPaulis) = Union{}
+Yao.subblocks(x::SumOfPaulis) = ((x.second for x in x.items)...,)
 
 densitymatrix2sumofpaulis(dm::DensityMatrix) = tensor2sumofpaulis(real.(pauli_decomposition(dm.state)))

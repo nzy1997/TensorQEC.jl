@@ -94,6 +94,15 @@ end
 end
 
 @testset "expect" begin
+    # target circuit
+    qc = chain(cnot(3, 1, 2), put(3, 1=>X), cnot(3, 3, 2))
+    cl = clifford_network(qc)
 	# step 1: pauli decomposition of rho0
-	pauli_rho0=pauli_decomposition(rho0.state)
+	reg = rand_state(6)
+	dm = density_matrix(reg, 1:3)
+	sp = densitymatrix2sumofpaulis(dm)
+    ps1, ps2 = sp.items[1].second, sp.items[2].second
+    res1 = expect(ps1, cl, ps2)
+    dm2 = apply(DensityMatrix(mat(ps2)), qc)
+    res2 = Yao.expect(ps1, dm2)
 end

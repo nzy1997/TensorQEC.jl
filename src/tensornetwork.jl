@@ -123,38 +123,22 @@ function simple_circuit2tensornetworks(qc::ChainBlock, ps::AbstractVector{Vector
 	)
 end
 
-# rho0.state is the density matrix.
-function Yao.expect(operator::SumOfPaulis, cl::CliffordNetwork, rho0::SumOfPaulis)
+# rho.state is the density matrix.
+function Yao.expect(operator::SumOfPaulis, cl::CliffordNetwork, rho::SumOfPaulis)
 	# step 2: use the pauli decomposition as the input at the physical qubits
-	for (c, p) in rho0.items
+	for (c, p) in rho.items
 		for (d, q) in operator.items
 			result += c * d * expect(PauliString(q), cl, PauliString(p))
 		end
 	end
 end
 
-function expect(p::PauliString, cl::CliffordNetwork, rho0::PauliString)
+function Yao.expect(operator::PauliString, cl::CliffordNetwork{T}, rho::PauliString) where T
+	n = nqubits(cl)
 	# construct the tensor network
-	ps = Dict([i=>BoundarySpec((p.ids[i]...,), false) for i in 1:nqubits(cl)])
+	ps = Dict([i=>BoundarySpec((Yao.BitBasis._onehot(T, 4, rho.ids[i])...,), false) for i in 1:n])
+	qs = Dict([i=>BoundarySpec((Yao.BitBasis._onehot(T, 4, operator.ids[i])...,), false) for i in 1:n])
+	# TODO: avoid repeated optimization of contraction order
 	tn = generate_tensor_network(cl, ps, qs)
-end
-
-function hh()
-	push!(cl.factors, Factor((cl.mapped_qubits...,), rho0))
-	# step 3: fix the mapped qubits to a specific pauli string.
-	for (loc, gate) in operator
-		idx = findfirst(==(gate), [I2, X, Y, Z])
-		@assert idx !== nothing "gate error, got: $gate"
-		factor, nvars = tensor_prepend!(cl.physical_qubits, pauli_decomposition(mat(gate)), loc[1], cl.nvars)
-		push!(cl.factors,factor)
-	end
-	# step 4: calculate the expectation value by contracting the tensor network
-	tn=TensorNetworkModel(
-		1:nvars,
-		fill(4, nvars),
-		cl.factors;
-		# openvars are open indices in the tensor network
-		mars = []
-	)
 	return probability(tn)
 end
