@@ -92,3 +92,8 @@ end
     #p2 = yaopauli[ci.I..., :, :, :]
     #@test p1 ≈ p2
 end
+
+@testset "expect" begin
+	# step 1: pauli decomposition of rho0
+	pauli_rho0=pauli_decomposition(rho0.state)
+end

@@ -3,7 +3,7 @@ struct CliffordNetwork{T<:Real}
 	physical_qubits::Vector{Int}
 	mapped_qubits::Vector{Int}
 	nvars::Int
-	function CliffordNetwork(factors::Vector{Factor{T}}, physical_qubits::Vector{Int}, mapped_qubits::Vector{Int}, nvars::Int) where T
+function CliffordNetwork(factors::Vector{Factor{T}}, physical_qubits::Vector{Int}, mapped_qubits::Vector{Int}, nvars::Int) where T
 		@assert length(physical_qubits) == length(mapped_qubits) "got: $(length(physical_qubits)) != $(length(mapped_qubits))"
 		new{T}(factors, physical_qubits, mapped_qubits, nvars)
 	end
@@ -92,7 +92,6 @@ end
 function _add_boundary!(openvars::AbstractVector, v::BoundarySpec{T}, k::Int, factors::Vector{Factor{T}}, cards::Vector{Int}, mars::Vector{Int}, nvars::Int) where T
 	if v.attach_unity
 		# boundary tensor is a projector
-		remain_dims = findall(!iszero, v.pauli_coeffs)
 		pmat = projector(T, collect(v.pauli_coeffs))
 		factor, nvars = tensor_prepend!(openvars, pmat, k, nvars)
 		push!(cards, size(pmat, 1))
@@ -124,10 +123,38 @@ function simple_circuit2tensornetworks(qc::ChainBlock, ps::AbstractVector{Vector
 	)
 end
 
-function Yao.expect(operator::KronBlock, cl::CliffordNetwork, rho0::DensityMatrix)
+# rho0.state is the density matrix.
+function Yao.expect(operator::SumOfPaulis, cl::CliffordNetwork, rho0::SumOfPaulis)
+	# step 2: use the pauli decomposition as the input at the physical qubits
+	for (c, p) in rho0.items
+		for (d, q) in operator.items
+			result += c * d * expect(PauliString(q), cl, PauliString(p))
+		end
+	end
+end
+
+function expect(p::PauliString, cl::CliffordNetwork, rho0::PauliString)
+	# construct the tensor network
+	ps = Dict([i=>BoundarySpec((p.ids[i]...,), false) for i in 1:nqubits(cl)])
+	tn = generate_tensor_network(cl, ps, qs)
+end
+
+function hh()
+	push!(cl.factors, Factor((cl.mapped_qubits...,), rho0))
+	# step 3: fix the mapped qubits to a specific pauli string.
 	for (loc, gate) in operator
 		idx = findfirst(==(gate), [I2, X, Y, Z])
 		@assert idx !== nothing "gate error, got: $gate"
-		Yao.BitBasis._onehot(Float64, 4, loc)
+		factor, nvars = tensor_prepend!(cl.physical_qubits, pauli_decomposition(mat(gate)), loc[1], cl.nvars)
+		push!(cl.factors,factor)
 	end
+	# step 4: calculate the expectation value by contracting the tensor network
+	tn=TensorNetworkModel(
+		1:nvars,
+		fill(4, nvars),
+		cl.factors;
+		# openvars are open indices in the tensor network
+		mars = []
+	)
+	return probability(tn)
 end
