@@ -20,7 +20,7 @@ export PauliString
 export syndrome_inference
 
 # encoder
-export Bimatrix, toric_code, guassian_elimination!, stabilizers
+export Bimatrix, toric_code, stabilizers
 
 include("paulibasis.jl")
 include("tensornetwork.jl")

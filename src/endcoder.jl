@@ -1,8 +1,9 @@
 struct Bimatrix
 	matrix::Matrix{Bool}
+    ordering::Vector{Int}
 	xcodenum::Int
-	zcodenum::Int
 end
+Yao.nqubits(b::Bimatrix) = size(b.matrix, 2) ÷ 2
 
 # simple toric code
 struct ToricCode
@@ -58,39 +59,35 @@ function stabilizers2bimatrix(stabilizers::AbstractVector{PauliString{N}}) where
     @assert length(xs) + length(zs) == length(stabilizers) "Invalid PauliString"
     A = [stabilizers[xs[i]].ids[j] == 2 for i=1:length(xs), j=1:N]
     B = [stabilizers[zs[i]].ids[j] == 4 for i=1:length(zs), j=1:N]
-    return Bimatrix(cat(A, B; dims=(1, 2)), length(xs), length(zs))
+    return Bimatrix(cat(A, B; dims=(1, 2)), collect(1:N), length(xs))
 end
 
 function switch_qubits!(bimat::Bimatrix, i::Int, j::Int)
-    qubit_num = Int(size(bimat.matrix, 2) / 2)
+    qubit_num = size(bimat.matrix, 2) ÷ 2
     bimat.matrix[:, [i, j]] = bimat.matrix[:, [j, i]]
-    if i <= qubit_num
-        bimat.matrix[:, [qubit_num + i, qubit_num + j]] = bimat.matrix[:, [qubit_num + j, qubit_num + i]]
-    else
-        bimat.matrix[:, [i - qubit_num, j - qubit_num]] = bimat.matrix[:, [j - qubit_num, i - qubit_num]]
-    end
-    return nothing
+    bimat.matrix[:, [qubit_num + i, qubit_num + j]] = bimat.matrix[:, [qubit_num + j, qubit_num + i]]
+    bimat.ordering[i], bimat.ordering[j] = bimat.ordering[j], bimat.ordering[i]
+    return bimat
 end
-function guassian_elimination!(bimat::Bimatrix, start_row::Int, start_col::Int, end_row::Int)
-    for i in start_row:end_row
-        j = findfirst(!iszero, bimat.matrix[i, start_col:end])+start_col-1
-        switch_qubits!(bimat, i-start_row+start_col, j)
-		for k in start_row:end_row
-			if k == i
-				continue
-			end
-			if bimat.matrix[k, i-start_row+start_col]
-				bimat.matrix[k, :] .= xor.(bimat.matrix[k, :], bimat.matrix[i, :])
-			end
+function guassian_elimination!(bimat::Bimatrix, rows::UnitRange, col_offset::Int, qubit_offset::Int)
+    start_col = col_offset + qubit_offset + 1
+    for i in rows
+        offset = i - rows.start
+        j = findfirst(!iszero, bimat.matrix[i, start_col:end])
+        switch_qubits!(bimat, qubit_offset + offset+1, j + qubit_offset)
+		for k in rows
+			if k != i && bimat.matrix[k, offset+start_col]
+                bimat.matrix[k, :] .= xor.(bimat.matrix[k, :], bimat.matrix[i, :])
+            end
 		end
 	end
     return nothing
 end
 function guassian_elimination!(bimat::Bimatrix)
-	qubit_num = Int(size(bimat.matrix, 2) / 2)
-    guassian_elimination!(bimat,1,1, bimat.xcodenum)
-    guassian_elimination!(bimat,bimat.xcodenum+1,qubit_num+bimat.xcodenum+1,bimat.xcodenum+bimat.zcodenum)
-	return nothing
+	qubit_num = size(bimat.matrix, 2) ÷ 2
+    guassian_elimination!(bimat, 1:bimat.xcodenum, 0, 0)
+    guassian_elimination!(bimat, bimat.xcodenum+1:size(bimat.matrix, 1), qubit_num, bimat.xcodenum)
+	return bimat
 end
 
 function encode_circuit(bimat::Bimatrix)
