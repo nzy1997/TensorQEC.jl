@@ -1,8 +1,10 @@
 struct Bimatrix
 	matrix::Matrix{Bool}
+	Q::Matrix{Mod2}
 	ordering::Vector{Int}
 	xcodenum::Int
 end
+Base.copy(b::Bimatrix) = Bimatrix(copy(b.matrix), copy(b.Q), copy(b.ordering), b.xcodenum)
 Yao.nqubits(b::Bimatrix) = size(b.matrix, 2) ÷ 2
 
 # simple toric code
@@ -60,7 +62,7 @@ function stabilizers2bimatrix(stabilizers::AbstractVector{PauliString{N}}) where
 	@assert length(xs) + length(zs) == length(stabilizers) "Invalid PauliString"
 	A = [stabilizers[xs[i]].ids[j] == 2 for i ∈ 1:length(xs), j ∈ 1:N]
 	B = [stabilizers[zs[i]].ids[j] == 4 for i ∈ 1:length(zs), j ∈ 1:N]
-	return Bimatrix(cat(A, B; dims = (1, 2)), collect(1:N), length(xs))
+	return Bimatrix(cat(A, B; dims = (1, 2)), Matrix{Mod2}(I, length(stabilizers), length(stabilizers)), collect(1:N), length(xs))
 end
 
 function bimatrix2stabilizers(bimat::Bimatrix)
@@ -76,24 +78,27 @@ function switch_qubits!(bimat::Bimatrix, i::Int, j::Int)
 	bimat.ordering[i], bimat.ordering[j] = bimat.ordering[j], bimat.ordering[i]
 	return bimat
 end
-function guassian_elimination!(bimat::Bimatrix, rows::UnitRange, col_offset::Int, qubit_offset::Int)
+function gaussian_elimination!(bimat::Bimatrix, rows::UnitRange, col_offset::Int, qubit_offset::Int)
 	start_col = col_offset + qubit_offset + 1
 	for i in rows
+		Q = Matrix{Mod2}(I, length(rows), length(rows))
 		offset = i - rows.start
 		j = findfirst(!iszero, bimat.matrix[i, start_col:end])
 		switch_qubits!(bimat, qubit_offset + offset + 1, j + qubit_offset)
 		for k in rows
-			if k != i && bimat.matrix[k, offset+start_col]
+			if k != i && bimat.matrix[k, offset+start_col]  # got 1, eliminate by ⊻ current row (i) to the k-th row
 				bimat.matrix[k, :] .= xor.(bimat.matrix[k, :], bimat.matrix[i, :])
+				Q[k-rows.start+1, i-rows.start+1] = true
 			end
 		end
+		bimat.Q[rows,:] .= Q * bimat.Q[rows,:]
 	end
-	return nothing
+	bimat
 end
-function guassian_elimination!(bimat::Bimatrix)
+function gaussian_elimination!(bimat::Bimatrix)
 	qubit_num = size(bimat.matrix, 2) ÷ 2
-	guassian_elimination!(bimat, 1:bimat.xcodenum, 0, 0)
-	guassian_elimination!(bimat, bimat.xcodenum+1:size(bimat.matrix, 1), qubit_num, bimat.xcodenum)
+	gaussian_elimination!(bimat, 1:bimat.xcodenum, 0, 0)
+	gaussian_elimination!(bimat, bimat.xcodenum+1:size(bimat.matrix, 1), qubit_num, bimat.xcodenum)
 	return bimat
 end
 

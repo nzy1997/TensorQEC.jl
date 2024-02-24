@@ -1,4 +1,4 @@
-using Test, TensorQEC, TensorQEC.Yao, TensorQEC.LinearAlgebra
+using Test, TensorQEC, TensorQEC.Yao, TensorQEC.LinearAlgebra, TensorQEC.Yao
 
 @testset "toric code" begin
 	t = TensorQEC.ToricCode(2, 3)
@@ -43,12 +43,12 @@ end
 	@test stabilizers == result
 end
 
-@testset "guassian_elimination!" begin
+@testset "gaussian_elimination" begin
 	t = TensorQEC.ToricCode(3, 3)
 	result = TensorQEC.stabilizers(t)
 	code = TensorQEC.stabilizers2bimatrix(result)
-	TensorQEC.guassian_elimination!(code)
-	@test code.matrix[1:8, 1:8] == [
+	code2 = TensorQEC.gaussian_elimination!(copy(code))
+	@test code2.matrix[1:8, 1:8] == [
 		1  0  0  0  0  0  0  0;
 		0  1  0  0  0  0  0  0;
 		0  0  1  0  0  0  0  0;
@@ -58,7 +58,7 @@ end
 		0  0  0  0  0  0  1  0;
 		0  0  0  0  0  0  0  1
 	]
-	@test code.matrix[9:16, 27:34] == [
+	@test code2.matrix[9:16, 27:34] == [
 		1  0  0  0  0  0  0  0;
 		0  1  0  0  0  0  0  0;
 		0  0  1  0  0  0  0  0;
@@ -69,13 +69,16 @@ end
 		0  0  0  0  0  0  0  1
 	]
 	@test sort(code.ordering) == collect(1:18)
+	# using Q to check the gaussian elimination
+	m1, m2 = code2.Q * Mod2.(code.matrix), Mod2.(code2.matrix)
+	@test m1[:, vcat(code2.ordering, code2.ordering .+ nqubits(code2))] == m2
 end
 
 @testset "quantum chain block" begin
 	t = TensorQEC.ToricCode(2, 2)
 	result = TensorQEC.stabilizers(t)
 	code = TensorQEC.stabilizers2bimatrix(result)
-	TensorQEC.guassian_elimination!(code)
+	TensorQEC.gaussian_elimination!(code)
 	stabilizers = TensorQEC.bimatrix2stabilizers(code)
 	qc = TensorQEC.encode_circuit(code)
 	# display(vizcircuit(qc))

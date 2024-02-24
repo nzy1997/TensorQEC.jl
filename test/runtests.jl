@@ -1,6 +1,10 @@
 using TensorQEC
 using Test
 
+@testset "mod2" begin
+    include("mod2.jl")
+end
+
 @testset "paulistring" begin
     include("paulistring.jl")
 end
