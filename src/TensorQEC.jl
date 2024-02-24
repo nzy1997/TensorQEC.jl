@@ -27,6 +27,6 @@ include("paulistring.jl")
 include("paulibasis.jl")
 include("tensornetwork.jl")
 include("inferences.jl")
-include("endcoder.jl")
+include("encoder.jl")
 
 end
