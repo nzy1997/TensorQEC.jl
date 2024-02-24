@@ -1,5 +1,4 @@
 using Test, TensorQEC, TensorQEC.Yao, TensorQEC.LinearAlgebra
-using YaoPlots
 
 @testset "toric code" begin
 	t = TensorQEC.ToricCode(2, 3)
