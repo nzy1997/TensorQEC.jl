@@ -3,6 +3,15 @@
 # !!! note
 #     The order of qubits is following the little-endian convention, i.e. the first qubit is the least significant qubit. For example, `pauli_basis(2)` returns
 #     II, XI (in Yao, it is kron(I2, X)), YI, ZI, IX, XX, YX, ZX, IY, XY, YY, ZY, IZ, XZ, YZ, ZZ
+
+# The following pauli strings may in different format, but are the same thing:
+# 1. PauliString(1, 2)
+# 2. Yao.kron(I2, X)
+# 3. pauli_basis(2)[1,2]
+# 4. LinearAlgebra.kron(X,I2)
+# 5. X ⊗ I shown in the print
+
+
 function pauli_basis(nqubits::Int)
 	paulis = [I2, X, Y, Z]
 	return [Matrix{ComplexF64}(kron(pauli...)) for pauli in product(fill(paulis, nqubits)...)]

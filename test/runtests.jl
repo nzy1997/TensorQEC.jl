@@ -12,3 +12,7 @@ end
 @testset "inferences" begin
     include("inferences.jl")
 end
+
+@testset "endcoder" begin
+    include("endcoder.jl")
+end

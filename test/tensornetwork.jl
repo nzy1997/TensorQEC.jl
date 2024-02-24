@@ -9,8 +9,8 @@ using TensorQEC.TensorInference.OMEinsum
 end
 
 @testset "projector" begin
-	@test TensorQEC.projector(Bool[1,0,0,1]) == Bool[1 0 0 0; 0 0 0 1]
-	@test TensorQEC.projector(Bool[0,1,1,0]) == Bool[0 1 0 0; 0 0 1 0]
+	@test TensorQEC.projector(Bool, Bool[1,0,0,1]) == Bool[1 0 0 0; 0 0 0 1]
+	@test TensorQEC.projector(Bool, Bool[0,1,1,0]) == Bool[0 1 0 0; 0 0 1 0]
 end
 
 @testset "convert to put" begin
@@ -34,7 +34,7 @@ end
 	# tensor network mapping of a quantum circuit
 	for ci in CartesianIndices((fill(4, 2)...,))
 		ps = [Yao.BitBasis._onehot(Float64, 4, ci.I[i]) for i in 1:2]
-		tn = circuit2tensornetworks(yaoqc, ps)
+		tn = TensorQEC.simple_circuit2tensornetworks(yaoqc, ps)
         @test length(tn.vars) == 6
 		p1 = probability(tn)
 		p2 = yaopauli[ci.I..., :, :]
@@ -63,35 +63,6 @@ end
 	end
 end
 
-@testset "tensor network mapping" begin
-	# create a circuit and convert it to the pauli basis
-	yaoqc = chain(cnot(3, 1, 2), put(3, 1=>X), cnot(3, 3, 2))
-	yaopauli = pauli_mapping(mat(ComplexF64, yaoqc))
-
-	# tensor network mapping of a quantum circuit
-    ps = [Yao.BitBasis._onehot(Float64, 4, b) for b in [1,3,2,1]]
-    extra = Dict([2=>UNITY4, 1=>PXY, 3=>PIZ_UNITY2])
-    tn = circuit2tensornetworks(yaoqc, ps, extra)
-    p1 = probability(tn)
-
-    function tovector(::Type{T}, target) where T
-        if target == UNITY4
-            return T[1,1,1,1]
-        elseif target == PXY_UNITY2
-            return T[0,1,1,0]
-        elseif target == PIZ_UNITY2
-            return T[1,0,0,1]
-        elseif target == PIZ
-            return TensorQEC.projector(Bool[1,0,0,1])
-        else
-            return TensorQEC.projector(Bool[0,1,1,0])
-        end
-    end
-
-    @show p1
-    #p2 = yaopauli[ci.I..., :, :, :]
-    #@test p1 ≈ p2
-end
 
 @testset "expect" begin
     # target circuit
