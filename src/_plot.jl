@@ -1,5 +1,5 @@
 using LuxorGraphPlot
-using Luxor
+using LuxorGraphPlot.Luxor
 
 @enum Direction K R D L U
 

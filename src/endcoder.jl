@@ -4,23 +4,41 @@ struct Bimatrix
 	zcodenum::Int
 end
 
+# simple toric code
+struct ToricCode
+    m::Int
+    n::Int
+end
+nsite(t::ToricCode) = t.m*t.n
+Yao.nqubits(t::ToricCode) = 2*nsite(t)
+vertical_edges(t::ToricCode) = reshape(1:nsite(t), t.m, t.n)
+horizontal_edges(t::ToricCode) = reshape(nsite(t)+1:2*nsite(t), t.m, t.n)
+
 # input: n is the size of the toric code
 # output: a vector of PauliString objects
-function toric_code(m::Int, n::Int)
-    output = PauliString{2*m*n}[]
-	vertical_edges = reshape(1:m*n, m, n)
-	horizontal_edges = reshape(m*n+1:2*m*n, n, n)
+function stabilizers(toric::ToricCode)
+    nq, m, n = nqubits(toric), toric.m, toric.n
+    output = PauliString{nq}[]
+    # numbering the qubits
+    ve = vertical_edges(toric)
+    he = horizontal_edges(toric)
     # X stabilizers
-	for j in 1:n
-	    for i in 1:m
-			i == m && j == n && continue # not linearly independent
-			push!(output, paulistring(2*m*n, 2, (horizontal_edges[i, j], 
-                horizontal_edges[mod1(i + 1, n), j],
-                vertical_edges[i, j],
-                vertical_edges[i, mod1(j + 1, n)]
-                )))
-		end
+	for j in 1:n, i in 1:m
+        i == m && j == n && continue # not linearly independent
+        push!(output, paulistring(nq, 2, (
+            he[i, j], he[mod1(i + 1, m), j],
+            ve[i, j], ve[i, mod1(j + 1, n)]
+        )))
 	end
+    # Z stabilizers
+	for j in 1:n, i in 1:m
+        i == m && j == n && continue # not linearly independent
+        push!(output, paulistring(nq, 4, (
+            ve[i, j], ve[mod1(i - 1, m), j],
+            he[i, j], he[i, mod1(j - 1, n)]
+        )))
+	end
+    return output
 end
 
 # inputs:
