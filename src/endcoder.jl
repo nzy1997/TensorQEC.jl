@@ -50,40 +50,15 @@ paulistring(n, k, ids) = PauliString((i ∈ ids ? k : 1 for i in 1:n)...)
 
 
 
-# input: n is the size of the toric code
+# input: a vector of PauliString objects
 # output: a Bimatrix object
-function toric_code2bimatrix(n::Int)
-	xcodenum = 0
-	zcodenum = 0
-	matrix = falses(2 * n^2 - 2, 4 * n^2)
-	vertical_edges = reshape(1:n^2, n, n)
-	horizontal_edges = reshape(n^2+1:2*n^2, n, n)
-	for j in 1:n
-	    for i in 1:n
-			if i == n && j == n
-				break
-			end
-			xcodenum += 1
-			matrix[xcodenum, horizontal_edges[i, j]] = true
-			matrix[xcodenum, horizontal_edges[mod1(i + 1, n), j]] = true
-			matrix[xcodenum, vertical_edges[i, j]] = true
-			matrix[xcodenum, vertical_edges[i, mod1(j + 1, n)]] = true
-		end
-	end
-
-	for i in 1:n
-		for j in 1:n
-			if i == n && j == n
-				break
-			end
-			zcodenum += 1
-			matrix[zcodenum+xcodenum, vertical_edges[i, j]+2*n^2] = true
-			matrix[zcodenum+xcodenum, vertical_edges[mod1(i - 1, n), j]+2*n^2] = true
-			matrix[zcodenum+xcodenum, horizontal_edges[i, j]+2*n^2] = true
-			matrix[zcodenum+xcodenum, horizontal_edges[i, mod1(j - 1, n)]+2*n^2] = true
-		end
-	end
-	return Bimatrix(matrix, xcodenum, zcodenum)
+function stabilizers2bimatrix(stabilizers::AbstractVector{PauliString{N}}) where N
+    xs = findall(s -> all(x->x == 1 || x == 2, s.ids), stabilizers)
+    zs = findall(s -> all(x->x == 1 || x == 4, s.ids), stabilizers)
+    @assert length(xs) + length(zs) == length(stabilizers) "Invalid PauliString"
+    A = [stabilizers[xs[i]].ids[j] == 2 for i=1:length(xs), j=1:N]
+    B = [stabilizers[zs[i]].ids[j] == 4 for i=1:length(zs), j=1:N]
+    return Bimatrix(cat(A, B; dims=(1, 2)), length(xs), length(zs))
 end
 
 function switch_qubits!(bimat::Bimatrix, i::Int, j::Int)

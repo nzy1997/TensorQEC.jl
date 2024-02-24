@@ -8,16 +8,18 @@ using Test,TensorQEC, TensorQEC.Yao, TensorQEC.LinearAlgebra
 end
 
 @testset "toric_code" begin
-    code = toric_code(2)
+    t = TensorQEC.ToricCode(2, 2)
+    result = TensorQEC.stabilizers(t)
+    code = TensorQEC.stabilizers2bimatrix(result)
     @test code.xcodenum == 3
     @test code.zcodenum == 3
     @test code.matrix == [
         1  0  1  0  1  1  0  0  0  0  0  0  0  0  0  0;
-        1  0  1  0  0  0  1  1  0  0  0  0  0  0  0  0;
         0  1  0  1  1  1  0  0  0  0  0  0  0  0  0  0;
+        1  0  1  0  0  0  1  1  0  0  0  0  0  0  0  0;
         0  0  0  0  0  0  0  0  1  1  0  0  1  0  1  0;
-        0  0  0  0  0  0  0  0  0  0  1  1  1  0  1  0;
         0  0  0  0  0  0  0  0  1  1  0  0  0  1  0  1;
+        0  0  0  0  0  0  0  0  0  0  1  1  1  0  1  0;
     ]
 end
 
