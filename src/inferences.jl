@@ -1,23 +1,11 @@
 
-
-#syn is a vector of 0,1,2,3. 0 means |0>, 1 means |1>, 2 means dataqubit, 3 means open.
-function syndrome_inference(qc::ChainBlock, syn::Vector{Int64}, p::Vector{Vector{Float64}})
-    nvars = nqubits(qc)
-	syn_inf = fill(0,nvars)
-	for i in 1:nvars
-		if syn[i] == 0 || syn[i] == 1
-			temp=syn[i]
-			syn[i] = 2
-			tn = _circuit2tensornetworks(qc,p; syn=syn)
-			logp, cfg=most_probable_config(tn)
-
-			syn[i] = temp
-		elseif syn[i] == 2
-			continue;
-		else
-			error("Invalid syndrome")
-		end
+function syndrome_inference(cl::CliffordNetwork{T}, syn::Dict{Int,Bool}, p::Vector{Vector{Float64}})where T
+	n = length(p)
+	ps = Dict([i=>BoundarySpec((p[i]...,), false) for i in 1:n])
+	qs = Dict([i=>BoundarySpec((ones(T,4)...,), false) for i in 1:n])
+	for (k, v) in syn
+		qs[k] = BoundarySpec((v ? (0.0,1.0,1.0,0.0) : (1.0,0.0,0.0,1.0)),true)
 	end
-
-	return syn_inf
+	tn = generate_tensor_network(cl, ps, qs)
+	return marginals(tn)
 end

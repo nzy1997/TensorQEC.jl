@@ -1,13 +1,14 @@
-using Test, TensorQEC
+using Test, TensorQEC, Yao
 
-# @testset "most_probable_config" begin
-# 	qc = QuantumCircuit(3, [Gate(CNOT, [1, 2]), Gate(CNOT, [2, 3])])
-# 	p=Float64[1,0,0,0]
-# 	syn=[0,0,3]
-# 	tn = _circuit2tensornetworks(qc, fill(p, qc.n_qubits); syn=syn)
-# 	cfg = probability(tn)
-# 	@test cfg==[1,0,0,0]
-# end
+@testset "most_probable_config" begin
+	qc = chain(put(3,1=>X),put(3,2=>X))
+    cl = clifford_network(qc)
+    p=fill([0.5,0.5,0,0],3)
+    syn=Dict([1=>true, 2=>false])
+    pinf=syndrome_inference(cl, syn, p)
+    @show pinf
+    @test length(pinf) == 2
+end
 
 # @testset "syndrome_inference" begin
 # 	qc = QuantumCircuit(3, [Gate(mat(ComplexF64,I4), [1, 2])])

@@ -72,7 +72,7 @@ function generate_tensor_network(cl::CliffordNetwork{T}, ps::Dict{Int, BoundaryS
 	nvars=cl.nvars
 	factors = copy(cl.factors)
 	cards = fill(4, nvars)
-	mars = Int[]
+	mars = Vector{Vector{Int}}()
 	# add prior distributions of Pauli errors on physical qubits
 	for (k, v) in ps
 		nvars = _add_boundary!(cl.physical_qubits, v, k, factors, cards, mars, nvars)
@@ -80,16 +80,17 @@ function generate_tensor_network(cl::CliffordNetwork{T}, ps::Dict{Int, BoundaryS
 	for (k, v) in qs
 		nvars = _add_boundary!(cl.mapped_qubits, v, k, factors, cards, mars, nvars)
 	end
+	@show mars
 	return TensorNetworkModel(
 		1:nvars,
 		cards,
 		factors;
 		# openvars are open indices in the tensor network
 		openvars = cl.mapped_qubits[setdiff(1:nqubits(cl), keys(qs))] ∪ cl.physical_qubits[setdiff(1:nqubits(cl), keys(ps))],
-		mars = [[l] for l in [cl.physical_qubits; cl.mapped_qubits]]
+		mars = mars
 	)
 end
-function _add_boundary!(openvars::AbstractVector, v::BoundarySpec{T}, k::Int, factors::Vector{Factor{T}}, cards::Vector{Int}, mars::Vector{Int}, nvars::Int) where T
+function _add_boundary!(openvars::AbstractVector, v::BoundarySpec{T}, k::Int, factors::Vector{Factor{T}}, cards::Vector{Int}, mars::Vector{Vector{Int}}, nvars::Int) where T
 	if v.attach_unity
 		# boundary tensor is a projector
 		pmat = projector(T, collect(v.pauli_coeffs))
@@ -140,5 +141,5 @@ function Yao.expect(operator::PauliString, cl::CliffordNetwork{T}, rho::PauliStr
 	qs = Dict([i=>BoundarySpec((Yao.BitBasis._onehot(T, 4, operator.ids[i])...,), false) for i in 1:n])
 	# TODO: avoid repeated optimization of contraction order
 	tn = generate_tensor_network(cl, ps, qs)
-	return probability(tn)
+	return probability(tn)*2^n
 end

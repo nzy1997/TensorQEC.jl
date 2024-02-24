@@ -26,6 +26,7 @@ end
 struct PauliString{N} <: CompositeBlock{2}
     ids::NTuple{N, Int}
 end
+PauliString(ids::Int...) = PauliString(ids)
 function Yao.YaoBlocks.unsafe_apply!(reg::AbstractRegister, p::PauliString{N}) where N
 	Yao.YaoBlocks.unsafe_apply!(reg, kron([I2, X, Y, Z][q] for q in p.ids))
 end
