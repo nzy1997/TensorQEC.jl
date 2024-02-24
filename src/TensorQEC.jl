@@ -3,6 +3,7 @@ module TensorQEC
 using TensorInference
 using TensorInference: Factor
 using Yao
+using Yao.ConstGate: PauliGate
 using Base.Iterators: product
 using LinearAlgebra
 
@@ -22,6 +23,7 @@ export syndrome_inference
 # encoder
 export Bimatrix, toric_code, stabilizers
 
+include("paulistring.jl")
 include("paulibasis.jl")
 include("tensornetwork.jl")
 include("inferences.jl")

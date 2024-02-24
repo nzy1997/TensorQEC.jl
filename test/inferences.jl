@@ -1,4 +1,4 @@
-using Test, TensorQEC, Yao
+using Test, TensorQEC, TensorQEC.Yao
 
 @testset "most_probable_config" begin
 	qc = chain(put(3,1=>X),put(3,2=>X))
