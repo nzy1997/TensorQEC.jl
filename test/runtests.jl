@@ -1,6 +1,14 @@
 using TensorQEC
 using Test
 
+@testset "mod2" begin
+    include("mod2.jl")
+end
+
+@testset "paulistring" begin
+    include("paulistring.jl")
+end
+
 @testset "pauli basis" begin
     include("paulibasis.jl")
 end
@@ -11,4 +19,8 @@ end
 
 @testset "inferences" begin
     include("inferences.jl")
+end
+
+@testset "encoder" begin
+    include("encoder.jl")
 end

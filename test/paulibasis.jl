@@ -9,3 +9,9 @@ end
 	@test pauli_decomposition(Matrix(kron(X, X))) == [0 0 0 0; 0 1 0 0; 0 0 0 0; 0 0 0 0]
 end
 
+@testset "density matrix" begin
+	reg = rand_state(6)
+	dm = density_matrix(reg, 1:3)
+	sp = densitymatrix2sumofpaulis(dm)
+	@test mat(sp) ≈ dm.state
+end
