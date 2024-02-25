@@ -3,7 +3,7 @@ struct CliffordNetwork{T<:Real}
 	physical_qubits::Vector{Int}
 	mapped_qubits::Vector{Int}
 	nvars::Int
-	function CliffordNetwork(factors::Vector{Factor{T}}, physical_qubits::Vector{Int}, mapped_qubits::Vector{Int}, nvars::Int) where T
+function CliffordNetwork(factors::Vector{Factor{T}}, physical_qubits::Vector{Int}, mapped_qubits::Vector{Int}, nvars::Int) where T
 		@assert length(physical_qubits) == length(mapped_qubits) "got: $(length(physical_qubits)) != $(length(mapped_qubits))"
 		new{T}(factors, physical_qubits, mapped_qubits, nvars)
 	end
@@ -18,7 +18,16 @@ function newgate!(pins::Vector{Int}, gate::PutBlock, nvars::Int)
 	output_gate_vars = collect(nvars+1:nvars+length(locs))
 	pins[collect(locs)] .= output_gate_vars
 	gate_tensor = matrix2factor(content(gate), input_gate_vars, output_gate_vars)
-	return gate_tensor
+	return gate_tensor, nvars+length(locs)
+end
+function tensor_prepend!(prepins::Vector{Int}, tensor::AbstractMatrix, loc::Integer, nvars::Integer)
+	nvars += 1
+	prevar = prepins[loc]
+	prepins[loc] = nvars
+	return Factor((nvars, prevar), tensor), nvars
+end
+function tensor_prepend!(prepins::Vector{Int}, tensor::AbstractVector, loc::Integer, nvars::Integer)
+	return Factor((prepins[loc],), tensor), nvars
 end
 convert_to_put(g::PutBlock) = g
 function convert_to_put(g::ControlBlock)
@@ -42,71 +51,95 @@ function clifford_network(qc::ChainBlock)
 	# add gates
 	for gate in qc
     	_gate = convert_to_put(gate)
-		push!(factors, newgate!(pins, _gate, nvars))
-		nvars += length(_gate.locs)
+		factor, nvars = newgate!(pins, _gate, nvars)
+		push!(factors, factor)
 	end
 	return CliffordNetwork(factors, pins, collect(1:length(pins)), nvars)
 end
 
-function _generate_tensor_network(cl::CliffordNetwork, ps::Vector{Vector{Float64}}, qs::Dict{Int, Vector{Float64}})
-	factors = copy(cl.factors)
-	nvars=cl.nvars
-	# add prior distributions of Pauli errors on physical qubits
-	for (k, i) in enumerate(cl.physical_qubits)
-		push!(factors, Factor{Float64,1}((i,), ps[k]))
-	end
-	openvars = setdiff(cl.mapped_qubits, keys(qs))
-	for (k, v) in qs
-		nvars=nvars+1
-		push!(factors, Factor{Float64,1}((cl.mapped_qubits[k],nvars), v))
-		push!(openvars, nvars)
-	end
-	return TensorNetworkModel(
-		1:nvars,
-		fill(4, cl.nvars),
-		factors,
-		openvars = openvars
-	)
+@enum ExtraTensor UNITY4 PXY PIZ PXY_UNITY2 PIZ_UNITY2
+
+struct BoundarySpec{T}
+	pauli_coeffs::NTuple{4, T}
+	attach_unity::Bool
 end
 
 # generate a tensor network from a CliffordNetwork instance
 # `p` is the prior distribution of Pauli errors on physical qubits
 # `syndromes` is a dictionary of syndromes, where the key is the index of the syndrome and the value is the prior distribution of the syndrome
-function generate_tensor_network(cl::CliffordNetwork, p::AbstractVector{<:Real}, syndromes::Dict{Int, Bool})
-	_generate_tensor_network(cl, fill(p, nqubits(cl)), Dict(i => projector(vector_syndrome(s)) for (i, s) in syndromes))
+function generate_tensor_network(cl::CliffordNetwork{T}, ps::Dict{Int, BoundarySpec{T}}, qs::Dict{Int, BoundarySpec{T}}) where T
+	# TODO: assert qs locations are valid
+	nvars=cl.nvars
+	factors = copy(cl.factors)
+	cards = fill(4, nvars)
+	mars = Vector{Vector{Int}}()
+	# add prior distributions of Pauli errors on physical qubits
+	for (k, v) in ps
+		nvars = _add_boundary!(cl.physical_qubits, v, k, factors, cards, mars, nvars)
+	end
+	for (k, v) in qs
+		nvars = _add_boundary!(cl.mapped_qubits, v, k, factors, cards, mars, nvars)
+	end
+	@show mars
+	return TensorNetworkModel(
+		1:nvars,
+		cards,
+		factors;
+		# openvars are open indices in the tensor network
+		openvars = cl.mapped_qubits[setdiff(1:nqubits(cl), keys(qs))] ∪ cl.physical_qubits[setdiff(1:nqubits(cl), keys(ps))],
+		mars = mars
+	)
+end
+function _add_boundary!(openvars::AbstractVector, v::BoundarySpec{T}, k::Int, factors::Vector{Factor{T}}, cards::Vector{Int}, mars::Vector{Vector{Int}}, nvars::Int) where T
+	if v.attach_unity
+		# boundary tensor is a projector
+		pmat = projector(T, collect(v.pauli_coeffs))
+		factor, nvars = tensor_prepend!(openvars, pmat, k, nvars)
+		push!(cards, size(pmat, 1))
+		push!(factors, factor)
+		push!(mars, [nvars])
+	else
+		# boundary tensor is a vector
+		factor, nvars = tensor_prepend!(openvars, collect(v.pauli_coeffs), k, nvars)
+		push!(factors, factor)
+	end
+	return nvars
 end
 
 vector_syndrome(measure_outcome) = iszero(measure_outcome) ? Bool[1,0,0,1] : Bool[0,1,1,0]
-function projector(v::AbstractVector{Bool})
+function projector(::Type{T}, v::AbstractVector) where T
 	locs = findall(!iszero, v)
 	n = length(v)
-	return Matrix{Bool}(I, n, n)[locs, :]
+	return Diagonal(T.(v))[locs, :]
 end
 
-function circuit2tensornetworks(qc::ChainBlock, ps)
+function circuit2tensornetworks(qc::ChainBlock, ps::Dict, qs::Dict)
 	cl = clifford_network(qc)
-	_generate_tensor_network(cl, ps, Dict{Int,Vector{Float64}}())
+	generate_tensor_network(cl, ps, qs)
+end
+function simple_circuit2tensornetworks(qc::ChainBlock, ps::AbstractVector{Vector{T}}) where T<:Real
+	circuit2tensornetworks(qc,
+		Dict([i=>BoundarySpec((ps[i]...,), false) for i in 1:nqubits(qc)]),
+		Dict{Int, BoundarySpec{T}}()
+	)
 end
 
-#syn is a vector of 0,1,2,3. 0 means |0>, 1 means |1>, 2 means dataqubit, 3 means open.
-function syndrome_inference(qc::ChainBlock, syn::Vector{Int64}, p::Vector{Vector{Float64}})
-    nvars = nqubits(qc)
-	syn_inf = fill(0,nvars)
-	for i in 1:nvars
-		if syn[i] == 0 || syn[i] == 1
-			temp=syn[i]
-			syn[i] = 2
-			tn = _circuit2tensornetworks(qc,p; syn=syn)
-			logp, cfg=most_probable_config(tn)
-
-			syn[i] = temp
-		elseif syn[i] == 2
-			continue;
-		else
-			error("Invalid syndrome")
+# rho.state is the density matrix.
+function Yao.expect(operator::SumOfPaulis, cl::CliffordNetwork, rho::SumOfPaulis)
+	# step 2: use the pauli decomposition as the input at the physical qubits
+	for (c, p) in rho.items
+		for (d, q) in operator.items
+			result += c * d * expect(PauliString(q), cl, PauliString(p))
 		end
 	end
-
-	return syn_inf
 end
 
+function Yao.expect(operator::PauliString, cl::CliffordNetwork{T}, rho::PauliString) where T
+	n = nqubits(cl)
+	# construct the tensor network
+	ps = Dict([i=>BoundarySpec((Yao.BitBasis._onehot(T, 4, rho.ids[i])...,), false) for i in 1:n])
+	qs = Dict([i=>BoundarySpec((Yao.BitBasis._onehot(T, 4, operator.ids[i])...,), false) for i in 1:n])
+	# TODO: avoid repeated optimization of contraction order
+	tn = generate_tensor_network(cl, ps, qs)
+	return probability(tn)*2^n
+end

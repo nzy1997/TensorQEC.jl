@@ -2,10 +2,19 @@
 # let P = {I, X, Y, Z}, a n-qubit pauli basis is the set of all possible tensor products of elements in P.
 # !!! note
 #     The order of qubits is following the little-endian convention, i.e. the first qubit is the least significant qubit. For example, `pauli_basis(2)` returns
-#     II, XI, YI, ZI, IX, XX, YX, ZX, IY, XY, YY, ZY, IZ, XZ, YZ, ZZ
+#     II, XI (in Yao, it is kron(I2, X)), YI, ZI, IX, XX, YX, ZX, IY, XY, YY, ZY, IZ, XZ, YZ, ZZ
+
+# The following pauli strings may in different format, but are the same thing:
+# 1. PauliString(1, 2)
+# 2. Yao.kron(I2, X)
+# 3. pauli_basis(2)[1,2]
+# 4. LinearAlgebra.kron(X,I2)
+# 5. X ⊗ I shown in the print
+
+
 function pauli_basis(nqubits::Int)
-	paulis = Matrix.([I2, X, Y, Z])
-	return [(length(pauli) == 1 ? pauli[1] : kron(pauli[end:-1:1]...)) for pauli in product(fill(paulis, nqubits)...)]
+	paulis = [I2, X, Y, Z]
+	return [Matrix{ComplexF64}(kron(pauli...)) for pauli in product(fill(paulis, nqubits)...)]
 end
 
 # pauli decomposition of a matrix
