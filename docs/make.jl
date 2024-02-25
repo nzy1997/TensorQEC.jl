@@ -8,7 +8,7 @@ makedocs(;
     authors="Zhongyi Ni",
     sitename="TensorQEC.jl",
     format=Documenter.HTML(;
-        canonical="https://zni573.github.io/TensorQEC.jl",
+        canonical="https://nzy1997.github.io/TensorQEC.jl",
         edit_link="main",
         assets=String[],
     ),
@@ -18,6 +18,6 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/zni573/TensorQEC.jl",
+    repo="github.com/nzy1997/TensorQEC.jl",
     devbranch="main",
 )

@@ -4,7 +4,7 @@ CurrentModule = TensorQEC
 
 # TensorQEC
 
-Documentation for [TensorQEC](https://github.com/zni573/TensorQEC.jl).
+Documentation for [TensorQEC](https://github.com/nzy1997/TensorQEC.jl).
 
 ```@index
 ```
