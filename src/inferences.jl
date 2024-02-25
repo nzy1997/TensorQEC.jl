@@ -7,8 +7,8 @@ function syndrome_transform(bimat::Bimatrix,syn::Vector{Int})
 	return bimat.Q * (syn .≈ -1)
 end
 
-function generate_syndrome_dict(bimat::Bimatrix, syn::Vector{Int})
-	return Dict([i=>vector_syndrome(bimat.Q[:,i]) for i in 1:size(bimat.Q,2)])
+function generate_syndrome_dict(bimat::Bimatrix, syn::Vector{Mod2})
+	return Dict([bimat.ordering[i]=>syn[i].x for i in 1:size(bimat.Q,2)])
 end
 
 function syndrome_inference(cl::CliffordNetwork{T}, syn::Dict{Int,Bool}, p::Vector{Vector{Float64}})where T
@@ -19,5 +19,6 @@ function syndrome_inference(cl::CliffordNetwork{T}, syn::Dict{Int,Bool}, p::Vect
 		qs[k] = BoundarySpec((v ? (0.0,1.0,1.0,0.0) : (1.0,0.0,0.0,1.0)),true)
 	end
 	tn = generate_tensor_network(cl, ps, qs)
-	return marginals(tn)
+	mp=marginals(tn)
+	return result = Dict([k => mp[[cl.mapped_qubits[k]]] for k in keys(syn)])
 end
