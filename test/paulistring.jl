@@ -44,6 +44,11 @@ using Test
 
     # others
     @test Yao.YaoBlocks.Optimise.to_basictypes(g) == chain([put(3, 2=>Y), put(3, 3=>Z)])
+
+    # iscommute and isanticommute
+    g = PauliString(X, Y, Z, I2)
+    @test iscommute(g, PauliString(I2, Z, X, I2))
+    @test isanticommute(g, PauliString(I2, I2, X, I2))
 end
 
 @testset "Sum of Paulis" begin
@@ -64,4 +69,28 @@ end
     dm = density_matrix(reg, 1:3)
     sp = densitymatrix2sumofpaulis(dm)
     @test dm.state ≈ mat(sp)
+end
+
+@testset "pauli group" begin
+    g = PauliGroup(3, PauliString(X, Y, Z))
+    h = PauliGroup(1, PauliString(Y, I2, Z))
+    i = PauliGroup(2, PauliString(Z, Y, X))
+    @test g * h == PauliGroup(1, PauliString(Z, Y, I2))
+    @test g * g == PauliGroup(2, PauliString(I2, I2, I2))
+    @test h * g == PauliGroup(3, PauliString(Z, Y, I2))
+    @test isunitary(g)
+    @test isunitary(h)
+    @test isunitary(i)
+    @test !ishermitian(g)
+    @test !ishermitian(h)
+    @test ishermitian(i)
+    @test !isreflexive(g)
+    @test !isreflexive(h)
+    @test isreflexive(i)
+    @test !iscommute(g, h)
+    @test iscommute(g, g)
+    @test iscommute(g, i)
+    @test !iscommute(h, g)
+    @test iscommute(h, i)
+    @test isanticommute(h, g)
 end
