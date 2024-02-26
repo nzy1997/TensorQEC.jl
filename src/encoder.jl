@@ -154,3 +154,4 @@ function stabilizers(::SurfaceCode{3})
     push!(pauli_string, TensorQEC.paulistring(nq, 4, (7, 9)))
     return pauli_string
 end
+

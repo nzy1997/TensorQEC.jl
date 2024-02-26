@@ -1,7 +1,13 @@
-function correction_chain_block(bimat::Bimatrix, syn::Dict{Int,Bool}, p::Vector{Vector{Float64}})
-
+function correction_pauli_string(qubit_num::Int, syn::Dict{Int,Bool}, prob::Dict{Int,Vector{Float64}})
+    ps = ones(Int, qubit_num)
+    for (k, v) in prob
+        if syn[k] #syn[k] is true, measure outcome is -1, use X or Y
+            ps[k]=(findmax(v)[2]) == 1 ? 2 : 3
+        elseif findmax(v)[2] == 2
+            ps[k]=2
+        end
+    end
+    return PauliString(ps...)
 end
 
-function apply_correction!(reg::AbstractRegister, correction_chain::Chain)
 
-end

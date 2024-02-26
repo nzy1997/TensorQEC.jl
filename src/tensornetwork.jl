@@ -109,7 +109,7 @@ end
 vector_syndrome(measure_outcome) = iszero(measure_outcome) ? Bool[1,0,0,1] : Bool[0,1,1,0]
 function projector(::Type{T}, v::AbstractVector) where T
 	locs = findall(!iszero, v)
-	n = length(v)
+	#n = length(v)
 	return Diagonal(T.(v))[locs, :]
 end
 

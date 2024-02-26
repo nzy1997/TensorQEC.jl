@@ -29,3 +29,16 @@ function pauli_mapping(m::AbstractMatrix)
 	paulis = pauli_basis(nqubits)
 	return [real(tr(pi * m * pj * m')/size(m, 1)) for pi in paulis, pj in paulis]
 end
+
+function pauli_string_map(ps::PauliString{N}, paulimapping::Array, qubits::Vector{Int}) where N
+    c=findall(!iszero, paulimapping[ps.ids[qubits]...,:,:])[1]
+    return PauliString(([k ∈ qubits ? c[findfirst(==(k),qubits)] : ps.ids[k] for k in 1:N]...,))
+end
+
+function pauli_string_map_iter(ps::PauliString{N}, qc::ChainBlock) where N
+	if length(qc)==0
+		return ps
+	end
+	block=convert_to_put(qc[1])
+	return pauli_string_map_iter(pauli_string_map(ps,pauli_mapping(mat(ComplexF64,block.content)),[block.locs...]),qc[2:end])
+end

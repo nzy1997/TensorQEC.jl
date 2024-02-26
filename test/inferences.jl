@@ -50,14 +50,19 @@ end
     qc = TensorQEC.encode_circuit(code)
 
     reg = join(rand_state(1), zero_state(8))
+    regcopy=copy(reg)
     apply!(reg, qc)
     apply!(reg, put(9, 9=>X))
     measure_outcome=measure_syndrome!(reg, result)
-    syn=TensorQEC.generate_syndrome_dict(code,syndrome_transform(code, measure_outcome))
+    syn=syndrome_transform(code, measure_outcome)
+    syn_dict=TensorQEC.generate_syndrome_dict(code,syn)
 
     cl = clifford_network(qc)
-    p=fill([1,0,0,0],9)
-    pinf=syndrome_inference(cl, syn, p)
-    @show pinf
-    @show cl.mapped_qubits
+    p=fill([0.85,0.05,0.05,0.05],9)
+    pinf=syndrome_inference(cl, syn_dict, p)
+    ps_ec=correction_pauli_string(9, syn_dict, pinf)
+    ps_ec_phy=TensorQEC.pauli_string_map_iter(ps_ec, qc)
+    apply!(reg, Yao.YaoBlocks.Optimise.to_basictypes(ps_ec_phy))
+    @test measure_syndrome!(reg, result)==[1,1,1,1,1,1,1,1]
+
 end

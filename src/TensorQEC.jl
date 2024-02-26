@@ -27,6 +27,9 @@ export syndrome_inference, measure_syndrome!
 export Bimatrix, toric_code, stabilizers, syndrome_transform
 export ToricCode, SurfaceCode
 
+#error correction
+
+
 
 include("mod2.jl")
 include("paulistring.jl")
@@ -34,5 +37,5 @@ include("paulibasis.jl")
 include("tensornetwork.jl")
 include("encoder.jl")
 include("inferences.jl")
-
+include("errorcorrect.jl")
 end
