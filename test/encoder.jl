@@ -101,3 +101,14 @@ end
 		@test u * mat(ComplexF64, put(9, code.ordering[i] => Z)) * u' ≈ mat(ComplexF64, stabilizers[i])
 	end
 end
+
+
+@testset "encode_stabilizers" begin
+	result = TensorQEC.stabilizers(SurfaceCode{3}())
+	qc, data_qubits, bimat = TensorQEC.encode_stabilizers(result)
+	u = mat(ComplexF64, qc)
+	stabilizers = TensorQEC.bimatrix2stabilizers(bimat)
+	for i in 1:size(bimat.matrix, 1)
+		@test u * mat(ComplexF64, put(9, bimat.ordering[i] => Z)) * u' ≈ mat(ComplexF64, stabilizers[i])
+	end
+end

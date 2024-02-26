@@ -14,13 +14,11 @@ end
 function syndrome_inference(cl::CliffordNetwork{T}, syn::Dict{Int,Bool}, p::Vector{Vector{Float64}})where T
 	n = length(p)
 	ps = Dict([i=>BoundarySpec((p[i]...,), false) for i in 1:n])
-	qs = Dict([i=>BoundarySpec((ones(T,4)...,), false) for i in 1:n])
+	qs = Dict([i=>BoundarySpec((ones(T,4)...,), true) for i in 1:n])
 	for (k, v) in syn
-		@show k,v
 		qs[k] = BoundarySpec((v ?  (0.0,1.0,1.0,0.0) : (1.0,0.0,0.0,1.0) ),true)
 	end
-	#@show qs
 	tn = generate_tensor_network(cl, ps, qs)
-	mp=marginals(tn)
+	mp = marginals(tn)
 	return result = Dict([k => mp[[cl.mapped_qubits[k]]] for k in keys(syn)])
 end

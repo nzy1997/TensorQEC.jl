@@ -24,10 +24,11 @@ export PauliString, PauliGroup, isanticommute
 export syndrome_inference, measure_syndrome!
 
 # encoder
-export Bimatrix, toric_code, stabilizers, syndrome_transform
+export Bimatrix, toric_code, stabilizers, syndrome_transform, encode_stabilizers
 export ToricCode, SurfaceCode
 
 #error correction
+export correction_pauli_string
 
 
 

@@ -17,12 +17,16 @@ end
 end
 
 @testset "pauli_string_map" begin
-	ps = PauliString(1,3,4,2,1)
-	@test TensorQEC.pauli_string_map(ps, pauli_mapping(mat(ComplexF64,cnot(2,1,2))), [4,5]).ids ==(1,3,4,2,2)
+	ps = PauliString(2,3,4,3,2,1)
+	@test TensorQEC.pauli_string_map(ps, pauli_mapping(mat(ComplexF64,cnot(2,1,2))), [5,6]).ids ==(2,3,4,3,2,2)
 end
 
 @testset "pauli_string_map_iter" begin
 	ps = PauliString(1,3,4,2,1)
 	qc = chain(cnot(5,4,5), put(5, 3=>H))
 	@test TensorQEC.pauli_string_map_iter(ps, qc).ids ==(1,3,2,2,2)
+
+	ps = PauliString(1,2,2)
+	qc = chain(cnot(3,3,2), cnot(3,3,1))
+	@test TensorQEC.pauli_string_map_iter(ps, qc).ids == (2,1,2)
 end

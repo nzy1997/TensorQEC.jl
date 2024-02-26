@@ -155,3 +155,11 @@ function stabilizers(::SurfaceCode{3})
     return pauli_string
 end
 
+
+function encode_stabilizers(stabilizers::AbstractVector{PauliString{N}})where N
+	bimat = stabilizers2bimatrix(stabilizers)
+    gaussian_elimination!(bimat)
+    qc = encode_circuit(bimat)
+	data_qubits = bimat.ordering[size(bimat.matrix,1)+1:end]
+	return qc, data_qubits, bimat
+end
