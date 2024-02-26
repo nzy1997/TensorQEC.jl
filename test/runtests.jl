@@ -24,3 +24,7 @@ end
 @testset "encoder" begin
     include("encoder.jl")
 end
+
+@testset "error correction" begin
+    include("errorcorrect.jl")
+end

@@ -1,9 +1,7 @@
 using TensorQEC, TensorQEC.Yao
-using TensorInference
-qc=chain(cnot(2, 1, 2))
-cl=clifford_network(qc)
-ps = Dict([1=>TensorQEC.BoundarySpec((0.0,1.0,0.0,0.0), false),2=>TensorQEC.BoundarySpec((1.0,0.0,0.0,0.0), false)])
-qs = Dict([i=>TensorQEC.BoundarySpec((ones(Float64,4)...,), true) for i in 1:2])
-tn=generate_tensor_network(cl,ps, qs)
+# using Distributions
 
-marginals(tn)
+# function random_pauli_string(N::Int,p::Vector)
+#     values = [1, 2, 3, 4] # 1: I, 2: X, 3: Y, 4: Z
+#     return PauliString(([values[rand(Categorical(p[i]))] for i in 1:N]...,)) 
+# end

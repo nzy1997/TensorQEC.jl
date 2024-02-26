@@ -20,5 +20,6 @@ function syndrome_inference(cl::CliffordNetwork{T}, syn::Dict{Int,Bool}, p::Vect
 	end
 	tn = generate_tensor_network(cl, ps, qs)
 	mp = marginals(tn)
-	return result = Dict([k => mp[[cl.mapped_qubits[k]]] for k in keys(syn)])
+	@show mp
+	return result = Dict([k => mp[[cl.mapped_qubits[k]]] for k in 1:n])
 end
