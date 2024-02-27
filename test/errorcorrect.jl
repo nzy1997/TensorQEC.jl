@@ -19,6 +19,7 @@ using Test, TensorQEC, TensorQEC.Yao
     p = fill([0.85,0.05,0.05,0.05],qubit_num)
     pinf = syndrome_inference(cl, syn_dict, p)
     ps_ec_phy = TensorQEC.pauli_string_map_iter(correction_pauli_string(qubit_num, syn_dict, pinf), qc)
+    @show ps_ec_phy
     apply!(reg, Yao.YaoBlocks.Optimise.to_basictypes(ps_ec_phy))
 
     @test measure_syndrome!(reg, st) == [1,1]
@@ -34,7 +35,7 @@ end
     reg = join(zero_state(8),rand_state(1))
     regcopy = copy(reg)
     apply!(reg, qc)
-    apply!(reg, put(9, 3=>Z))
+    apply!(reg, put(9, 3=>X))
     apply!(reg, put(9, 2=>X))
 
     measure_outcome=measure_syndrome!(reg, st)
@@ -43,7 +44,9 @@ end
     cl = clifford_network(qc)
     p = fill([0.85,0.05,0.05,0.05],qubit_num)
     pinf = syndrome_inference(cl, syn_dict, p)
+
     ps_ec_phy = TensorQEC.pauli_string_map_iter(correction_pauli_string(qubit_num, syn_dict, pinf), qc)
+    @show ps_ec_phy
     apply!(reg, Yao.YaoBlocks.Optimise.to_basictypes(ps_ec_phy))
 
     @test measure_syndrome!(reg, st) == [1,1,1,1,1,1,1,1]

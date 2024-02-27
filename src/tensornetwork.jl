@@ -80,7 +80,7 @@ function generate_tensor_network(cl::CliffordNetwork{T}, ps::Dict{Int, BoundaryS
 	for (k, v) in qs
 		nvars = _add_boundary!(cl.mapped_qubits, v, k, factors, cards, mars, nvars)
 	end
-	@show mars
+	# @show mars
 	return TensorNetworkModel(
 		1:nvars,
 		cards,

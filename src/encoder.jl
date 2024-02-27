@@ -138,8 +138,8 @@ struct SurfaceCode{D} end
 #           |       |  /
 #           ∘---9---/
 # 8 "∘" represent 8 stableizers.
-# XXtype: 24, 1235, 5789, 68
-# ZZtype: 13, 2457, 3568, 79
+# X type: 24, 1235, 5789, 68
+# Z type: 13, 2457, 3568, 79
 
 function stabilizers(::SurfaceCode{3})
     nq=9
