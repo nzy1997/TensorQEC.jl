@@ -35,8 +35,7 @@ end
     reg = join(zero_state(8),rand_state(1))
     regcopy = copy(reg)
     apply!(reg, qc)
-    apply!(reg, put(9, 3=>X))
-    apply!(reg, put(9, 2=>X))
+    apply!(reg, put(9, 4=>X))
 
     measure_outcome=measure_syndrome!(reg, st)
     syn_dict=TensorQEC.generate_syndrome_dict(code,syndrome_transform(code, measure_outcome))
