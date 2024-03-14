@@ -66,10 +66,10 @@ function stabilizers2bimatrix(stabilizers::AbstractVector{PauliString{N}}) where
 end
 
 function bimatrix2stabilizers(bimat::Bimatrix)
-    n = Yao.nqubits(bimat)
-    xs = [paulistring(n, 2, bimat.ordering[findall(isone,bimat.matrix[i,1:n])]) for i in 1:bimat.xcodenum]
-    zs = [paulistring(n, 4, bimat.ordering[findall(isone,bimat.matrix[i,n+1:end])]) for i in bimat.xcodenum+1:size(bimat.matrix, 1)]
-    return vcat(xs, zs)
+	n = Yao.nqubits(bimat)
+	xs = [paulistring(n, 2, bimat.ordering[findall(isone, bimat.matrix[i, 1:n])]) for i in 1:bimat.xcodenum]
+	zs = [paulistring(n, 4, bimat.ordering[findall(isone, bimat.matrix[i, n+1:end])]) for i in bimat.xcodenum+1:size(bimat.matrix, 1)]
+	return vcat(xs, zs)
 end
 function switch_qubits!(bimat::Bimatrix, i::Int, j::Int)
 	qubit_num = size(bimat.matrix, 2) ÷ 2
@@ -91,7 +91,7 @@ function gaussian_elimination!(bimat::Bimatrix, rows::UnitRange, col_offset::Int
 				Q[k-rows.start+1, i-rows.start+1] = true
 			end
 		end
-		bimat.Q[rows,:] .= Q * bimat.Q[rows,:]
+		bimat.Q[rows, :] .= Q * bimat.Q[rows, :]
 	end
 	bimat
 end
@@ -115,12 +115,12 @@ function encode_circuit(bimat::Bimatrix)
 		end
 	end
 
-    #stage 2: X stabilizers
-    for i in 1:bimat.xcodenum, j in bimat.xcodenum+1:qubit_num
-        if bimat.matrix[i, j]
-            push!(qc, cnot(qubit_num, bimat.ordering[i], bimat.ordering[j]))
-        end
-    end
+	#stage 2: X stabilizers
+	for i in 1:bimat.xcodenum, j in bimat.xcodenum+1:qubit_num
+		if bimat.matrix[i, j]
+			push!(qc, cnot(qubit_num, bimat.ordering[i], bimat.ordering[j]))
+		end
+	end
 	return qc
 end
 
@@ -142,24 +142,37 @@ struct SurfaceCode{D} end
 # Z type: 13, 2457, 3568, 79
 
 function stabilizers(::SurfaceCode{3})
-    nq=9
-    pauli_string = PauliString{nq}[]
-    push!(pauli_string, TensorQEC.paulistring(nq, 2, (2,4)))
-    push!(pauli_string, TensorQEC.paulistring(nq, 2, (1, 2, 3, 5)))
-    push!(pauli_string, TensorQEC.paulistring(nq, 2, (5, 7, 8, 9)))
-    push!(pauli_string, TensorQEC.paulistring(nq, 2, (6,8)))
-    push!(pauli_string, TensorQEC.paulistring(nq, 4, (1, 3)))
-    push!(pauli_string, TensorQEC.paulistring(nq, 4, (2, 4, 5, 7)))
-    push!(pauli_string, TensorQEC.paulistring(nq, 4, (3, 5, 6, 8)))
-    push!(pauli_string, TensorQEC.paulistring(nq, 4, (7, 9)))
-    return pauli_string
+	nq = 9
+	pauli_string = PauliString{nq}[]
+	push!(pauli_string, TensorQEC.paulistring(nq, 2, (2, 4)))
+	push!(pauli_string, TensorQEC.paulistring(nq, 2, (1, 2, 3, 5)))
+	push!(pauli_string, TensorQEC.paulistring(nq, 2, (5, 7, 8, 9)))
+	push!(pauli_string, TensorQEC.paulistring(nq, 2, (6, 8)))
+	push!(pauli_string, TensorQEC.paulistring(nq, 4, (1, 3)))
+	push!(pauli_string, TensorQEC.paulistring(nq, 4, (2, 4, 5, 7)))
+	push!(pauli_string, TensorQEC.paulistring(nq, 4, (3, 5, 6, 8)))
+	push!(pauli_string, TensorQEC.paulistring(nq, 4, (7, 9)))
+	return pauli_string
 end
 
 
-function encode_stabilizers(stabilizers::AbstractVector{PauliString{N}})where N
+function encode_stabilizers(stabilizers::AbstractVector{PauliString{N}}) where N
 	bimat = stabilizers2bimatrix(stabilizers)
-    gaussian_elimination!(bimat)
-    qc = encode_circuit(bimat)
-	data_qubits = bimat.ordering[size(bimat.matrix,1)+1:end]
+	gaussian_elimination!(bimat)
+	qc = encode_circuit(bimat)
+	data_qubits = bimat.ordering[size(bimat.matrix, 1)+1:end]
 	return qc, data_qubits, bimat
 end
+
+# function code_distance(bimat::Bimatrix; max_distance::Int = 5)
+# 	for k in 1:max_distance
+# 		qubit_num = size(bimat.matrix, 2) ÷ 2
+# 		all_combinations = combinations(1:qubit_num, k)
+# 		for combo in all_combinations
+# 			println(combo)
+# 			if iszero(rank(bimat.matrix[combo, :]))
+# 				return k
+# 			end
+# 		end
+# 	end
+# end

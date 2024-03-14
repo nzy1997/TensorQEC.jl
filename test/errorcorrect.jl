@@ -32,12 +32,13 @@ end
     st = stabilizers(SurfaceCode{3}())
     qc, data_qubits, code = TensorQEC.encode_stabilizers(st)
 
-    reg = join(zero_state(8),rand_state(1))
+    reg = join(rand_state(1), zero_state(8))
     regcopy = copy(reg)
     apply!(reg, qc)
     apply!(reg, put(9, 4=>X))
 
     measure_outcome=measure_syndrome!(reg, st)
+    @show measure_outcome
     syn_dict=TensorQEC.generate_syndrome_dict(code,syndrome_transform(code, measure_outcome))
 
     cl = clifford_network(qc)
@@ -64,7 +65,7 @@ end
     push!(pauli_string, TensorQEC.paulistring(qubit_num, 4, (2,3,6,7)))
     push!(pauli_string, TensorQEC.paulistring(qubit_num, 4, (3,4,5,6,)))
     qc, data_qubits, code = TensorQEC.encode_stabilizers(pauli_string)
-    reg = join(zero_state(6),rand_state(1))
+    reg = join(rand_state(1), zero_state(6))
     regcopy = copy(reg)
     apply!(reg, qc)
     apply!(reg, put(qubit_num, 4=>X))

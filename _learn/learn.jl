@@ -1,7 +1,11 @@
-using TensorQEC, TensorQEC.Yao
-# using Distributions
+using Combinatorics
 
-# function random_pauli_string(N::Int,p::Vector)
-#     values = [1, 2, 3, 4] # 1: I, 2: X, 3: Y, 4: Z
-#     return PauliString(([values[rand(Categorical(p[i]))] for i in 1:N]...,)) 
-# end
+n = 10
+k = 2
+
+values = 1:n
+all_combinations = combinations(values, k)
+
+for combo in all_combinations
+    println(combo[1])
+end
