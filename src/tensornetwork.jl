@@ -80,7 +80,6 @@ function generate_tensor_network(cl::CliffordNetwork{T}, ps::Dict{Int, BoundaryS
 	for (k, v) in qs
 		nvars = _add_boundary!(cl.mapped_qubits, v, k, factors, cards, mars, nvars)
 	end
-	# @show mars
 	return TensorNetworkModel(
 		1:nvars,
 		cards,
@@ -109,7 +108,6 @@ end
 vector_syndrome(measure_outcome) = iszero(measure_outcome) ? Bool[1,0,0,1] : Bool[0,1,1,0]
 function projector(::Type{T}, v::AbstractVector) where T
 	locs = findall(!iszero, v)
-	#n = length(v)
 	return Diagonal(T.(v))[locs, :]
 end
 
