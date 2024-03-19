@@ -1,4 +1,4 @@
-using Yao, YaoPlots
+using Yao, YaoPlots, TensorQEC
 function GHZ()
 	qubits = 4
 	qc = chain(qubits)
@@ -19,4 +19,3 @@ function encodez()
 	push!(qc, cnot(qubits, 4, 1))
 	vizcircuit(qc; starting_texts=vcat([raw"0"],[" " for i = 1:nqubits(qc)-1]))
 end
-GHZ()

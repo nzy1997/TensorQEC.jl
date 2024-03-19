@@ -11,6 +11,7 @@ LuxorGraphPlot = "1f49bdf2-22a7-4bc4-978b-948dc219fbbc"
 TensorInference = "c2297e78-99bd-40ad-871d-f50e56b81012"
 Yao = "5872b779-8223-5990-8dd0-5abbb0748c8c"
 YaoAPI = "0843a435-28de-4971-9e8b-a9641b2983a8"
+YaoToEinsum = "9b173c7b-dc24-4dc5-a0e1-adab2f7b6ba9"
 
 [compat]
 LinearAlgebra = "1"

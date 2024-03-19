@@ -6,6 +6,7 @@ using Yao
 using Yao.ConstGate: PauliGate
 using Base.Iterators: product
 using LinearAlgebra
+using Combinatorics
 
 # pauli basis
 export pauli_basis, pauli_decomposition, pauli_mapping
@@ -28,9 +29,10 @@ export Bimatrix, toric_code, stabilizers, syndrome_transform, encode_stabilizers
 export ToricCode, SurfaceCode
 
 #error correction
-export correction_pauli_string
+export correction_pauli_string, measure_circuit_fault_tol
 
-
+# tablemake
+export make_table
 
 include("mod2.jl")
 include("paulistring.jl")
@@ -39,4 +41,5 @@ include("tensornetwork.jl")
 include("encoder.jl")
 include("inferences.jl")
 include("errorcorrect.jl")
+include("tablemake.jl")
 end
