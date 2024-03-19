@@ -7,6 +7,7 @@ using Yao.ConstGate: PauliGate
 using Base.Iterators: product
 using LinearAlgebra
 using Combinatorics
+using DelimitedFiles
 
 # pauli basis
 export pauli_basis, pauli_decomposition, pauli_mapping
@@ -32,7 +33,7 @@ export ToricCode, SurfaceCode
 export correction_pauli_string, measure_circuit_fault_tol
 
 # tablemake
-export make_table
+export make_table, save_table, read_table
 
 include("mod2.jl")
 include("paulistring.jl")
