@@ -41,5 +41,21 @@ function measure_circuit_fault_tol(sts::Vector{PauliString{N}}) where N
 		qc1 = measure_circuit_fault_tol(sts[i])
 		push!(qc, subroutine(qc1, (vcat(1:N,N+st_pos[i]:N+st_pos[i]+st_length[i]-1)...,)))
 	end
-	return qc, st_pos
+	return qc, st_pos.+N,num_qubits
+end
+
+function correct_circuit(table::Dict{Int,Int}, st_pos::Vector{Int},num_qubits::Int,num_st::Int,num_logical_qubits::Int)
+	qc = chain(num_qubits)
+	for (k, v) in table
+		for  i in findall([Yao.BitBasis.BitStr{num_qubits}(v)...].==1)
+			if i <= num_logical_qubits
+				@show st_pos[findall([Yao.BitBasis.BitStr{num_st}(k)...].==1)]
+				@show i
+				push!(qc, control(num_qubits, st_pos[findall([Yao.BitBasis.BitStr{num_st}(k)...].==1)], i=> X))
+			else
+				push!(qc, control(num_qubits, st_pos[findall([Yao.BitBasis.BitStr{num_st}(k)...].==1)],i-num_logical_qubits=> Z ))
+			end
+		end
+	end
+	return qc
 end

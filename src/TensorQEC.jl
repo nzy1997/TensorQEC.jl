@@ -30,7 +30,7 @@ export Bimatrix, toric_code, stabilizers, syndrome_transform, encode_stabilizers
 export ToricCode, SurfaceCode
 
 #error correction
-export correction_pauli_string, measure_circuit_fault_tol
+export correction_pauli_string, measure_circuit_fault_tol, correct_circuit
 
 # tablemake
 export make_table, save_table, read_table

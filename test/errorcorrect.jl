@@ -92,7 +92,7 @@ end
 	result = TensorQEC.stabilizers(t)
     # st = stabilizers(SurfaceCode{3}())
     # qc = measure_circuit_fault_tol(st[5])
-    qc,st_pos = measure_circuit_fault_tol(st)
+    qc,st_pos,num_qubits = measure_circuit_fault_tol(st)
     display(vizcircuit(qc))
 end
 

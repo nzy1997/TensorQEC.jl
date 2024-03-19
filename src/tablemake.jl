@@ -14,7 +14,7 @@ function make_table(mat::Matrix{Bool}, d::Int64)
     num_st=size(mat,1)
     table = Dict{Int,Int}()
 	for i in 1:d
-		all_combinations = combinations(1:3*qubit_num, i)
+		all_combinations = combinations(1:2*qubit_num, i)
 		for combo in all_combinations
             bivec = combo2bivec(combo, qubit_num)
 
@@ -23,7 +23,7 @@ function make_table(mat::Matrix{Bool}, d::Int64)
             sydrome = 0
 
             for j in 1:num_st
-                reduce(xor, bivec[findall(mat[j,:])]) && (sydrome |= 1<< j)
+                reduce(xor, bivec[findall(mat[j,:])]) && (sydrome |= 1<< (j-1))
             end
             table[sydrome] = Yao.BitBasis.bit_literal(Int.(bivec)...).buf
 		end
