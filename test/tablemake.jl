@@ -12,14 +12,15 @@ using Test, TensorQEC, TensorQEC.Yao, YaoPlots
 end
 
 @testset "errorcorrect_circuit" begin
-    st =stabilizers(SurfaceCode{3}())
+    t = TensorQEC.ToricCode(3, 3)
+	st = TensorQEC.stabilizers(t)
     bimat=TensorQEC.stabilizers2bimatrix(st)
     table = make_table(bimat.matrix, 1)
     qc1,st_pos,num_qubits = measure_circuit_fault_tol(st)
-    num_st=8
+    num_st=16
     @show num_qubits
     @show st_pos
-    qc2 = correct_circuit(table, st_pos, num_qubits,num_st,9)
+    qc2 = correct_circuit(table, st_pos, num_qubits,num_st,18)
     display(vizcircuit(qc1))
     display(vizcircuit(qc2))
 end
