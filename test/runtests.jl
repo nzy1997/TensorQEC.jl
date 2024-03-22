@@ -9,6 +9,9 @@ end
     include("paulistring.jl")
 end
 
+@testset "clifford" begin
+    include("cliffordgroup.jl")
+end
 @testset "pauli basis" begin
     include("paulibasis.jl")
 end
