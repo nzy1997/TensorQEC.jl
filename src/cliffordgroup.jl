@@ -55,3 +55,31 @@ struct CliffordTable{N, Ti}
     basis::Vector{PauliString{N}}
     table::Vector{PermMatrix{Int8, Ti, Vector{Int8}, Vector{Ti}}}
 end
+
+function perm_of_paulistring(pm::PermMatrix, ps::PauliString, pos::Vector{Int})
+    v = collect(ps.ids)
+    ps_perm_num = 1+sum((ps.ids[pos] .-1) .* [4^i for i in 0:length(pos)-1])
+    v[pos]=[mod(div(pm.perm[ps_perm_num]-1, 4^(j-1)), 4)+1 for j in 1:length(pos)]
+    return PauliString(v...), pm.vals[ps_perm_num]
+end
+
+function clifford_simulate(ps::PauliString, qc::ChainBlock)
+    gatedict=Dict{UInt64, PermMatrix}()
+    valf = 1
+    for _gate in qc
+        gate = toput(_gate)
+        key = hash(gate.content)
+        if haskey(gatedict, key) 
+            ps, val = perm_of_paulistring(gatedict[key], ps, collect(gate.locs))
+        else 
+            pm = to_perm_matrix(Int8, UInt8, pauli_repr(mat(gate.content)))
+            push!(gatedict, key => pm)
+            ps,val = perm_of_paulistring(pm, ps, collect(gate.locs))
+        end
+        valf *= val
+    end
+    return ps,valf
+end
+toput(gate::PutBlock) = gate
+toput(gate::ControlBlock{XGate,1,1}) = put(nqudits(gate), (gate.ctrl_locs..., gate.locs...)=>ConstGate.CNOT)
+toput(gate::ControlBlock{ZGate,1,1}) = put(nqudits(gate), (gate.ctrl_locs..., gate.locs...)=>ConstGate.CZ)

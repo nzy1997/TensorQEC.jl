@@ -1,5 +1,4 @@
 using Test, TensorQEC, TensorQEC.Yao
-using YaoPlots
 
 # simple example: Z1Z3 Z2Z3 stabilizers on 3 qubits
 @testset "simple example inference and error correct" begin
@@ -87,12 +86,9 @@ end
 end
 
 @testset "measure_circuit_fault_tol" begin
-    # qubit_num = 9
     t = TensorQEC.ToricCode(3, 3)
-	result = TensorQEC.stabilizers(t)
-    # st = stabilizers(SurfaceCode{3}())
-    # qc = measure_circuit_fault_tol(st[5])
-    qc,st_pos,num_qubits = measure_circuit_fault_tol(st)
-    display(vizcircuit(qc))
+	st = TensorQEC.stabilizers(t)
+    qcm,st_pos, num_qubits = measure_circuit_fault_tol(st)
+    # display(vizcircuit(qc))
 end
 

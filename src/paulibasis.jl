@@ -22,7 +22,7 @@ function pauli_decomposition(m::AbstractMatrix)
 end
 
 # defined the linear mapping in the pauli basis
-# from the coding space to the physical qubits, i.e. (physical..., coding...)
+# from the coding space to the physical qubits, i.e. (physical..., coding...) or (output..., input...)
 function pauli_mapping(m::AbstractMatrix)
 	nqubits = Int(log2(size(m, 1)))
 	paulis = pauli_basis(nqubits)

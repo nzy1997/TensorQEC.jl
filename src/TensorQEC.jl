@@ -37,7 +37,7 @@ export correction_pauli_string, measure_circuit_fault_tol, correct_circuit
 export make_table, save_table, read_table
 
 # clifford group
-export pauli_group, clifford_group
+export pauli_group, clifford_group, clifford_simulate
 
 include("mod2.jl")
 include("paulistring.jl")

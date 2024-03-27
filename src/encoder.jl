@@ -20,7 +20,7 @@ horizontal_edges(t::ToricCode) = reshape(nsite(t)+1:2*nsite(t), t.m, t.n)
 
 # input: n is the size of the toric code
 # output: a vector of PauliString objects
-function stabilizers(toric::ToricCode)
+function stabilizers(toric::ToricCode; linearly_independent::Bool = true)
 	nq, m, n = nqubits(toric), toric.m, toric.n
 	output = PauliString{nq}[]
 	# numbering the qubits
@@ -28,7 +28,7 @@ function stabilizers(toric::ToricCode)
 	he = horizontal_edges(toric)
 	# X stabilizers
 	for j in 1:n, i in 1:m
-		i == m && j == n && continue # not linearly independent
+		i == m && j == n && linearly_independent && continue # not linearly independent
 		push!(output, paulistring(nq, 2, (
 			he[i, j], he[mod1(i + 1, m), j],
 			ve[i, j], ve[i, mod1(j + 1, n)],
@@ -36,7 +36,7 @@ function stabilizers(toric::ToricCode)
 	end
 	# Z stabilizers
 	for j in 1:n, i in 1:m
-		i == m && j == n && continue # not linearly independent
+		i == m && j == n && linearly_independent && continue # not linearly independent
 		push!(output, paulistring(nq, 4, (
 			ve[i, j], ve[mod1(i - 1, m), j],
 			he[i, j], he[i, mod1(j - 1, n)],
