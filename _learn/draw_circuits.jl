@@ -34,8 +34,8 @@ function draw()
 	gates = chain(subroutine(90, qcen, 1:18), qcm)
 	Optimise.simplify(gates, rules=[Optimise.to_basictypes, Optimise.eliminate_nested])
 
-	qcf=chain(gates,qccr)
+	# qcf=chain(gates,qccr)
 	YaoPlots.CircuitStyles.r[] = 0.3
-	vizcircuit(qcf; starting_texts = 1:90, filename = "measure_free.svg")
+	vizcircuit(gates; starting_texts = 1:90, filename = "measure_free.svg")
 end
 draw()
