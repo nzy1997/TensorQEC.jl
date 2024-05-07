@@ -58,3 +58,13 @@ function correct_circuit(table::Dict{Int,Int}, st_pos::Vector{Int},num_qubits::I
 	end
 	return qc
 end
+
+function measure_circuit_steane(qcen::ChainBlock, sts::Vector{PauliString{N}}) where N
+	num_sts = length(sts)
+	num_qubits = 3 * N + num_sts
+	@show num_qubits
+	qc = chain(num_qubits)
+	push!(qc,subroutine(num_qubits, qcen, (N+1):(N+18)))
+	push!(qc,subroutine(num_qubits, qcen, (N+1):(N+18)))
+	return qc
+end
