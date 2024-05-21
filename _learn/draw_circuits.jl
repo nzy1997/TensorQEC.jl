@@ -21,21 +21,32 @@ function encodez()
 end
 
 function draw()
-	t = TensorQEC.ToricCode(3, 3)
+	t = TensorQEC.ToricCode(2, 2)
 	st = TensorQEC.stabilizers(t)
+	qn = nqubits(st[1])
 	qcen, data_qubits, code = TensorQEC.encode_stabilizers(st)
 	stli = TensorQEC.stabilizers(t, linearly_independent = false)
 	qcm, st_pos, num_qubits = measure_circuit_fault_tol(stli)
 
 	bimat = TensorQEC.stabilizers2bimatrix(stli)
 	table = make_table(bimat.matrix, 1)
-	qccr = correct_circuit(table, st_pos, 90, 18, 18)
+	qccr = correct_circuit(table, st_pos, num_qubits, qn, qn)
 
-	gates = chain(subroutine(90, qcen, 1:18), qcm)
+	gates = chain(subroutine(num_qubits, qcen, 1:qn), qcm)
 	Optimise.simplify(gates, rules=[Optimise.to_basictypes, Optimise.eliminate_nested])
 
 	# qcf=chain(gates,qccr)
 	YaoPlots.CircuitStyles.r[] = 0.3
-	vizcircuit(gates; starting_texts = 1:90, filename = "measure_free.svg")
+	vizcircuit(gates; starting_texts = 1:num_qubits, filename = "measure_free.svg")
 end
 draw()
+
+function toric_x_mf()
+	st=[PauliString((4,4,4,4,1,1,1)),PauliString((1,1,1,4,4,4,4))]
+	qcm, st_pos, num_qubits = measure_circuit_fault_tol(st)
+	
+	push!(qcm, control(num_qubits, st_pos, 4 => X))
+	YaoPlots.CircuitStyles.r[] = 0.3
+	vizcircuit(qcm; starting_texts = 1:num_qubits, filename = "measure_free.svg")
+end
+toric_x_mf()

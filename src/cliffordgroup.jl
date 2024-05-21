@@ -80,6 +80,7 @@ function clifford_simulate(ps::PauliString, qc::ChainBlock)
     end
     return ps,valf
 end
+
 toput(gate::PutBlock) = gate
 toput(gate::ControlBlock{XGate,1,1}) = put(nqudits(gate), (gate.ctrl_locs..., gate.locs...)=>ConstGate.CNOT)
 toput(gate::ControlBlock{ZGate,1,1}) = put(nqudits(gate), (gate.ctrl_locs..., gate.locs...)=>ConstGate.CZ)
