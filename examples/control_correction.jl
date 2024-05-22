@@ -14,8 +14,8 @@ bimat = TensorQEC.stabilizers2bimatrix(st_me)
 table = make_table(bimat.matrix, 1)
 qccr = correct_circuit(table, st_pos, num_qubits, 18, 18)
 
-qcf=chain(gates,qccr)
-
+qcf=chain(qcm,qccr)
+YaoPlots.CircuitStyles.r[] = 0.3
 vizcircuit(qcf; starting_texts = 1:num_qubits, filename = "examples/mf.svg")
 
 measure_circuit_steane(qcen,st_me)

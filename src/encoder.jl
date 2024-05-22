@@ -18,8 +18,17 @@ Yao.nqubits(t::ToricCode) = 2 * nsite(t)
 vertical_edges(t::ToricCode) = reshape(1:nsite(t), t.m, t.n)
 horizontal_edges(t::ToricCode) = reshape(nsite(t)+1:2*nsite(t), t.m, t.n)
 
-# input: n is the size of the toric code
-# output: a vector of PauliString objects
+# Toric code (2*2)
+# ∘---1---∘---2---∘
+# |       |       |
+# 5   ∘   6   ∘   5 
+# |       |       |
+# ∘---3---∘---4---∘
+# |       |       | 
+# 7   ∘   8   ∘   7
+# |       |       |
+# ∘---1---∘---2---∘
+
 function stabilizers(toric::ToricCode; linearly_independent::Bool = true)
 	nq, m, n = nqubits(toric), toric.m, toric.n
 	output = PauliString{nq}[]
