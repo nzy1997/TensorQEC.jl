@@ -28,10 +28,10 @@ export syndrome_inference, measure_syndrome!
 
 # encoder
 export Bimatrix, toric_code, stabilizers, syndrome_transform, encode_stabilizers
-export ToricCode, SurfaceCode
+export ToricCode, SurfaceCode, ShorCode,SteaneCode
 
 #error correction
-export correction_pauli_string, measure_circuit_fault_tol, correct_circuit, measure_circuit_steane
+export correction_pauli_string, measure_circuit_fault_tol, correct_circuit, measure_circuit_steane,measure_circuit
 
 # tablemake
 export make_table, save_table, read_table
