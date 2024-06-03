@@ -1,4 +1,4 @@
-using Test, TensorQEC, TensorQEC.Yao, YaoPlots
+using Test, TensorQEC, TensorQEC.Yao#, YaoPlots
 
 
 @testset "make table and save" begin
@@ -21,6 +21,6 @@ end
     @show num_qubits
     @show st_pos
     qc2 = correct_circuit(table, st_pos, num_qubits,num_st,18)
-    display(vizcircuit(qc1))
-    display(vizcircuit(qc2))
+    # display(vizcircuit(qc1))
+    # display(vizcircuit(qc2))
 end

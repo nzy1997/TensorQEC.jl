@@ -28,6 +28,10 @@ end
     include("encoder.jl")
 end
 
-@testset "error correction" begin
-    include("errorcorrect.jl")
+@testset "measurement" begin
+    include("measurement.jl")
+end
+
+@testset "tablemake" begin
+    include("tablemake.jl")
 end

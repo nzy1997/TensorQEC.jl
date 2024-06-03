@@ -24,14 +24,14 @@ export densitymatrix2sumofpaulis, SumOfPaulis
 export PauliString, PauliGroup, isanticommute
 
 # inference
-export syndrome_inference, measure_syndrome!
+export syndrome_inference, measure_syndrome!,correction_pauli_string 
 
 # encoder
 export Bimatrix, toric_code, stabilizers, syndrome_transform, encode_stabilizers
 export ToricCode, SurfaceCode, ShorCode,SteaneCode
 
-#error correction
-export correction_pauli_string, measure_circuit_fault_tol, correct_circuit, measure_circuit_steane,measure_circuit
+# measurement
+export  measure_circuit_fault_tol, correct_circuit, measure_circuit_steane,measure_circuit
 
 # tablemake
 export make_table, save_table, read_table
@@ -46,6 +46,6 @@ include("paulibasis.jl")
 include("tensornetwork.jl")
 include("encoder.jl")
 include("inferences.jl")
-include("errorcorrect.jl")
+include("measurement.jl")
 include("tablemake.jl")
 end

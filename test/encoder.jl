@@ -155,12 +155,9 @@ end
 	qc = chain(18,subroutine(18,qcen,1:9),put(18,18=>H),subroutine(18,qcen,10:18))
 	regen = apply(reg,qc)
 	[push!(qc,control(18,9+i,i=>X)) for i in 1:9]
-	# push!(qc,subroutine(18,qcen',1:9))
-	# display(vizcircuit(qc))
 
 	apply!(reg,qc)
-	# focus!(reg,9)
-	@show fidelity(reg,regen)
+	@test fidelity(reg,regen) ≈ 1
 
 	# X error, Z stabilizer, logical |0>
 	reg = join(zero_state(9),regrs, zero_state(8))	
@@ -168,52 +165,7 @@ end
 	qc = chain(18,subroutine(18,qcen,1:9),subroutine(18,qcen,10:18))
 	[push!(qc,control(18,i,9+i=>X)) for i in 1:9]
 	push!(qc,subroutine(18,qcen',1:9))
-	# display(vizcircuit(qc))
-
 	apply!(reg,qc)
 	focus!(reg,9)
 	@test fidelity(reg,regrs) ≈ 1
-end
-
-@testset "ShorCode transversal cnot" begin
-	st = stabilizers(ShorCode())
-	qcen, data_qubits, code = encode_stabilizers(st)
-	
-	regrs = rand_state(1)
-	# regrs = zero_state(1)
-	reg1 = join(zero_state(9),regrs, zero_state(8))
-
-	focus!(reg1,1:9)
-	apply!(reg1,qcen)
-	relax!(reg1)
-
-	apply!(reg1,put(18,18=>H))
-
-	focus!(reg1,10:18)
-	apply!(reg1,qcen)
-	relax!(reg1)
-
-
-	reg2 = join(zero_state(9),regrs, zero_state(8))
-	apply!(reg2,subroutine(18,qcen,1:9))
-	apply!(reg2,put(18,18=>H))
-	apply!(reg2,subroutine(18,qcen,10:18))	
-	@show fidelity(reg2,reg1)
-end
-
-@testset "subroutine and focus" begin
-	reg = rand_state(2)
-	reg1 = copy(reg)
-	focus!(reg1,2)
-	u = rand_unitary(2)
-	apply!(reg1,matblock(u))
-	relax!(reg1)
-
-	reg2 = copy(reg)
-	apply!(reg2,subroutine(2,matblock(u),2))
-	@show fidelity(reg2,reg1)
-
-	reg3 = copy(reg)
-	apply!(reg3,put(2,2=>matblock(u)))
-	@show fidelity(reg1,reg3)
 end
