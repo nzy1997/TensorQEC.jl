@@ -13,7 +13,7 @@ YaoAPI = "0843a435-28de-4971-9e8b-a9641b2983a8"
 
 [compat]
 LinearAlgebra = "1"
-LuxorGraphPlot = "0.4"
+LuxorGraphPlot = "0.4, 0.5"
 TensorInference = "0.4"
 Yao = "0.9"
 julia = "1"
