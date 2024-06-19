@@ -5,7 +5,6 @@
 /docs/build/
 Manifest.toml
 .vscode/
-_learn
 *.txt
 *.svg
 .DS_Store
