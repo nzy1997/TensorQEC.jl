@@ -9,6 +9,7 @@ using Test, TensorQEC, TensorQEC.Yao
     save_table(table, "test_table.txt")
     table2 = read_table("test_table.txt")
     @test table == table2
+    rm("test_table.txt")
 end
 
 @testset "errorcorrect_circuit" begin
