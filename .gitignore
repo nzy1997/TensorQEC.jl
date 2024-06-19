@@ -8,3 +8,4 @@ Manifest.toml
 _learn
 *.txt
 *.svg
+.DS_Store
