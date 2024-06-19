@@ -8,6 +8,8 @@ using Base.Iterators: product
 using LinearAlgebra
 using Combinatorics
 using DelimitedFiles
+using OMEinsum
+using Yao.YaoBlocks.Optimise
 
 # pauli basis
 export pauli_basis, pauli_decomposition, pauli_mapping
@@ -39,6 +41,12 @@ export make_table, save_table, read_table
 # clifford group
 export pauli_group, clifford_group, clifford_simulate
 
+# qc2ein
+export ComplexConj, SymbolRecorder,IdentityRecorder, ein_circ, ConnectMap, qc2enisum
+
+# coerror
+export coherent_error_unitary, error_quantum_circuit,toput, error_pairs
+
 include("mod2.jl")
 include("paulistring.jl")
 include("cliffordgroup.jl")
@@ -48,4 +56,7 @@ include("encoder.jl")
 include("inferences.jl")
 include("measurement.jl")
 include("tablemake.jl")
+                             
+include("qc2ein.jl")
+include("coerror.jl")
 end
