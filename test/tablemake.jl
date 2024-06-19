@@ -1,4 +1,4 @@
-using Test, TensorQEC, TensorQEC.Yao#, YaoPlots
+using Test, TensorQEC, TensorQEC.Yao
 
 
 @testset "make table and save" begin
