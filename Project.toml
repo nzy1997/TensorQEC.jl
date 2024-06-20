@@ -13,6 +13,7 @@ Yao = "5872b779-8223-5990-8dd0-5abbb0748c8c"
 YaoAPI = "0843a435-28de-4971-9e8b-a9641b2983a8"
 
 [compat]
+Combinatorics = "1"
 LinearAlgebra = "1"
 TensorInference = "0.4"
 Yao = "0.9"
