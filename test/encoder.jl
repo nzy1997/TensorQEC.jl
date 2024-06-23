@@ -2,8 +2,8 @@ using Test, TensorQEC, TensorQEC.Yao, TensorQEC.LinearAlgebra, TensorQEC.Yao
 using Random
 
 @testset "toric code" begin
-	t = TensorQEC.ToricCode(2, 3)
-	result = TensorQEC.stabilizers(t)
+	t = ToricCode(2, 3)
+	result = stabilizers(t)
 	expected_result =
 		PauliString.([
 			(2, 1, 2, 1, 1, 1, 2, 2, 1, 1, 1, 1),
@@ -21,8 +21,8 @@ using Random
 end
 
 @testset "toric_code" begin
-	t = TensorQEC.ToricCode(2, 2)
-	result = TensorQEC.stabilizers(t)
+	t = ToricCode(2, 2)
+	result = stabilizers(t)
 	code = TensorQEC.stabilizers2bimatrix(result)
 	@test code.xcodenum == 3
 	@test code.ordering == collect(1:8)
@@ -37,16 +37,16 @@ end
 end
 
 @testset "bimatrix2stabilizers" begin
-	t = TensorQEC.ToricCode(3, 3)
-	result = TensorQEC.stabilizers(t)
+	t = ToricCode(3, 3)
+	result = stabilizers(t)
 	code = TensorQEC.stabilizers2bimatrix(result)
-	stabilizers = TensorQEC.bimatrix2stabilizers(code)
-	@test stabilizers == result
+	st = TensorQEC.bimatrix2stabilizers(code)
+	@test st == result
 end
 
 @testset "gaussian_elimination" begin
-	t = TensorQEC.ToricCode(3, 3)
-	result = TensorQEC.stabilizers(t)
+	t = ToricCode(3, 3)
+	result = stabilizers(t)
 	code = TensorQEC.stabilizers2bimatrix(result)
 	code2 = TensorQEC.gaussian_elimination!(copy(code))
 	@test code2.matrix[1:8, 1:8] == [
@@ -76,41 +76,39 @@ end
 end
 
 @testset "quantum chain block" begin
-	t = TensorQEC.ToricCode(2, 2)
-	result = TensorQEC.stabilizers(t)
+	t = ToricCode(2, 2)
+	result = stabilizers(t)
 	code = TensorQEC.stabilizers2bimatrix(result)
 	TensorQEC.gaussian_elimination!(code)
-	stabilizers = TensorQEC.bimatrix2stabilizers(code)
+	st = TensorQEC.bimatrix2stabilizers(code)
 	qc = TensorQEC.encode_circuit(code)
-	# display(vizcircuit(qc))
 	u = mat(ComplexF64, qc)
 	for i in 1:size(code.matrix, 1)
-		@test u * mat(ComplexF64, put(8, code.ordering[i] => Z)) * u' ≈ mat(ComplexF64, stabilizers[i])
+		@test u * mat(ComplexF64, put(8, code.ordering[i] => Z)) * u' ≈ mat(ComplexF64, st[i])
 	end
 end
 
 
-@testset "nine_qubit_surfacecode" begin
-	result = TensorQEC.stabilizers(SurfaceCode{3}())
+@testset "surfacecode" begin
+	result = stabilizers(SurfaceCode{3,3}())
 	code = TensorQEC.stabilizers2bimatrix(result)
 	TensorQEC.gaussian_elimination!(code)
-	stabilizers = TensorQEC.bimatrix2stabilizers(code)
+	st = TensorQEC.bimatrix2stabilizers(code)
 	qc = TensorQEC.encode_circuit(code)
-	# display(vizcircuit(qc))
 	u = mat(ComplexF64, qc)
 	for i in 1:size(code.matrix, 1)
-		@test u * mat(ComplexF64, put(9, code.ordering[i] => Z)) * u' ≈ mat(ComplexF64, stabilizers[i])
+		@test u * mat(ComplexF64, put(9, code.ordering[i] => Z)) * u' ≈ mat(ComplexF64, st[i])
 	end
 end
 
 
 @testset "encode_stabilizers" begin
-	result = TensorQEC.stabilizers(SurfaceCode{3}())
+	result = stabilizers(SurfaceCode{3,3}())
 	qc, data_qubits, bimat = TensorQEC.encode_stabilizers(result)
 	u = mat(ComplexF64, qc)
-	stabilizers = TensorQEC.bimatrix2stabilizers(bimat)
+	st = TensorQEC.bimatrix2stabilizers(bimat)
 	for i in 1:size(bimat.matrix, 1)
-		@test u * mat(ComplexF64, put(9, bimat.ordering[i] => Z)) * u' ≈ mat(ComplexF64, stabilizers[i])
+		@test u * mat(ComplexF64, put(9, bimat.ordering[i] => Z)) * u' ≈ mat(ComplexF64, st[i])
 	end
 end
 

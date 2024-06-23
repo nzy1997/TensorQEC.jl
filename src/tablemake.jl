@@ -38,3 +38,16 @@ function read_table(filename::String)
     data = readdlm(filename)
     return Dict{Int,Int}(zip(data[:,1], data[:,2]))
 end
+
+# function code_distance(bimat::Bimatrix; max_distance::Int = 5)
+# 	for k in 1:max_distance
+# 		qubit_num = size(bimat.matrix, 2) ÷ 2
+# 		all_combinations = combinations(1:qubit_num, k)
+# 		for combo in all_combinations
+# 			println(combo)
+# 			if iszero(rank(bimat.matrix[combo, :]))
+# 				return k
+# 			end
+# 		end
+# 	end
+# end
