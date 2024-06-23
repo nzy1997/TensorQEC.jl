@@ -68,8 +68,6 @@ end
     @test real(tr(u * uapp)) == real(contract(optnet)[1])
 end
 
-
-
 @testset "get_kraus" begin
     Random.seed!(214)
     u = rand_unitary(4)

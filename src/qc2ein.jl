@@ -121,18 +121,15 @@ function ein_circ(qc::ChainBlock, cm::ConnectMap)
     return ein_circ(qc, cm.tr_qubits, cm.tr_qubits ∪ cm.ptr_qubits)
 end
 
-mapr(a::SymbolRecorder, b::SymbolRecorder) = a.symbol => b.symbol
-function qc2enisum(qc::ChainBlock,zero_qubits::Vector{Int}, replace_dict::Dict{Int, Int})
-    ein_code = yao2einsum(qc;initial_state=Dict(x=>0 for x in zero_qubits), optimizer=nothing)
-    jointcode = replace(ein_code.code, replace_dict)
-    empty!(jointcode.iy) 
-    return TensorNetwork(jointcode, ein_code.tensors)
-end
-
 function qc2enisum(qc::ChainBlock, srs::Vector{SymbolRecorder{D}}, cm::ConnectMap) where D
     ein_code = yao2einsum(qc;initial_state=Dict(x=>0 for x in cm.ptr_qubits ∪ (cm.ptr_qubits.+cm.nq)), optimizer=nothing)
     replace_dict = ([[srs[2*i-1].symbol => srs[2*length(cm.tr_qubits)+2*i-1].symbol  for i in 1:length(cm.tr_qubits)]...,[srs[2*i].symbol => srs[2*length(cm.tr_qubits)+2*i].symbol  for i in 1:length(cm.tr_qubits)]...,[srs[4*length(cm.tr_qubits)+2*i-1].symbol => srs[4*length(cm.tr_qubits)+2*i].symbol for i in 1:length(cm.ptr_qubits)]...])
     jointcode = replace(ein_code.code, replace_dict...)
     empty!(jointcode.iy) 
     return TensorNetwork(jointcode, ein_code.tensors)
+end
+
+function fidelity_tensornetwork(qc::ChainBlock,cm::ConnectMap)
+    qce,srs = ein_circ(qc,cm)
+    return qc2enisum(qce,srs,cm) 
 end
