@@ -26,7 +26,7 @@ export densitymatrix2sumofpaulis, SumOfPaulis
 export PauliString, PauliGroup, isanticommute
 
 # inference
-export syndrome_inference, measure_syndrome!,correction_pauli_string 
+export syndrome_inference, measure_syndrome!,correction_pauli_string, generate_syndrome_dict,pauli_string_map_iter, inference!
 
 # encoder
 export Bimatrix, toric_code, stabilizers, syndrome_transform, encode_stabilizers
@@ -41,10 +41,8 @@ export make_table, save_table, read_table
 # clifford group
 export pauli_group, clifford_group, clifford_simulate
 
-# qc2ein
+# simulation
 export ComplexConj, SymbolRecorder,IdentityRecorder, ein_circ, ConnectMap, qc2enisum
-
-# coerror
 export coherent_error_unitary, error_quantum_circuit,toput, error_pairs
 
 include("mod2.jl")
@@ -55,8 +53,6 @@ include("tensornetwork.jl")
 include("encoder.jl")
 include("inferences.jl")
 include("measurement.jl")
-include("tablemake.jl")
-                             
-include("qc2ein.jl")
-include("coerror.jl")
+include("tablemake.jl")       
+include("simulation.jl")
 end

@@ -150,21 +150,7 @@ struct SurfaceCode{m,n} end
 # Z type: 12, 2356, 4578, 89
 # X type: 36, 1245, 5689, 47
 
-function stabilizers(::SurfaceCode{3,3})
-	nq = 9
-	pauli_string = PauliString{nq}[]
-	push!(pauli_string, paulistring(nq, 2, (3, 6)))
-	push!(pauli_string, paulistring(nq, 2, (1, 2, 4, 5)))
-	push!(pauli_string, paulistring(nq, 2, (5, 6, 8, 9)))
-	push!(pauli_string, paulistring(nq, 2, (4, 7)))
-	push!(pauli_string, paulistring(nq, 4, (1, 2)))
-	push!(pauli_string, paulistring(nq, 4, (2, 3, 5, 6)))
-	push!(pauli_string, paulistring(nq, 4, (4, 5, 7, 8)))
-	push!(pauli_string, paulistring(nq, 4, (8, 9)))
-	return pauli_string
-end
-
-function _stabilizers(::SurfaceCode{m,n}) where {m,n}
+function stabilizers(::SurfaceCode{m,n}) where {m,n}
 	qubit_config = reshape(1:m*n, n, m)' 
 	pauli_string = PauliString{m*n}[]
 	for i in 1:m-1, j in 1:n-1

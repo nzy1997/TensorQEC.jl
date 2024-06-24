@@ -32,14 +32,10 @@ end
     include("measurement.jl")
 end
 
-@testset "tablemake" begin
+@testset "table make" begin
     include("tablemake.jl")
 end
 
-@testset "qc2ein.jl" begin
-    include("qc2ein.jl") 
- end
- 
- @testset "coerror.jl" begin
-    include("coerror.jl")
- end
+@testset "simulation" begin
+    include("simulation.jl") 
+end
