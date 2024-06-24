@@ -130,6 +130,7 @@ function qc2enisum(qc::ChainBlock, srs::Vector{SymbolRecorder{D}}, cm::ConnectMa
 end
 
 function fidelity_tensornetwork(qc::ChainBlock,cm::ConnectMap)
+    qc= simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
     qce,srs = ein_circ(qc,cm)
     return qc2enisum(qce,srs,cm) 
 end

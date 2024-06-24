@@ -43,7 +43,7 @@ export pauli_group, clifford_group, clifford_simulate
 
 # simulation
 export ComplexConj, SymbolRecorder,IdentityRecorder, ein_circ, ConnectMap, qc2enisum
-export coherent_error_unitary, error_quantum_circuit,toput, error_pairs
+export coherent_error_unitary, error_quantum_circuit,toput, error_pairs,fidelity_tensornetwork
 
 include("mod2.jl")
 include("paulistring.jl")

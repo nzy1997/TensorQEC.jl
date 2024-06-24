@@ -11,7 +11,7 @@ end
     t = TensorQEC.SteaneCode()
     st = stabilizers(t)
     qc, data_qubits, code = encode_stabilizers(st) 
-    qcm ,st_pos, num_qubits = measure_circuit_steane(qc,st,3)
+    qcm ,st_pos, num_qubits = measure_circuit_steane(qc,data_qubits[1],st,3)
     # display(vizcircuit(qcm))
     @show st_pos
     @test num_qubits == 27

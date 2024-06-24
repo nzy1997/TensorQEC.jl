@@ -73,7 +73,7 @@ end
 function copy_circuit_steane!(qc::ChainBlock, qcen::ChainBlock, data_qubit::Int, sts::Vector{PauliString{N}}) where N
 	num_sts = length(sts)
 	num_qubits = 3 * N + num_sts
-	push!(qc, put(num_qubits, N+data_qubit => H))
+	push!(qc, put(num_qubits, 2*N+data_qubit => H))
 	push!(qc,subroutine(num_qubits, qcen, (N+1):2*N))
 	push!(qc,subroutine(num_qubits, qcen, (2*N+1):(3*N)))
 	[push!(qc, control(num_qubits, N+i, i => X) ) for i in 1:N]
