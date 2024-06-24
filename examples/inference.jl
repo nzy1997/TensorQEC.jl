@@ -1,4 +1,4 @@
-# # Tensor Network inference
+# # Tensor Network Inference
 # This example demonstrates how to define stabilizers, encode data qubits measure syndromes, use tensor network to infer error probability, and correct the error.
 # We use the $3*3$ surface code as an example. The stabilizers are defined as follows: 
 # TODO: Add reference
