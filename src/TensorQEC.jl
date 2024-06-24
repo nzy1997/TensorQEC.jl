@@ -8,6 +8,8 @@ using Base.Iterators: product
 using LinearAlgebra
 using Combinatorics
 using DelimitedFiles
+using OMEinsum
+using Yao.YaoBlocks.Optimise
 
 # pauli basis
 export pauli_basis, pauli_decomposition, pauli_mapping
@@ -24,7 +26,7 @@ export densitymatrix2sumofpaulis, SumOfPaulis
 export PauliString, PauliGroup, isanticommute
 
 # inference
-export syndrome_inference, measure_syndrome!,correction_pauli_string 
+export syndrome_inference, measure_syndrome!,correction_pauli_string, generate_syndrome_dict,pauli_string_map_iter, inference!
 
 # encoder
 export Bimatrix, toric_code, stabilizers, syndrome_transform, encode_stabilizers
@@ -39,6 +41,10 @@ export make_table, save_table, read_table
 # clifford group
 export pauli_group, clifford_group, clifford_simulate
 
+# simulation
+export ComplexConj, SymbolRecorder,IdentityRecorder, ein_circ, ConnectMap, qc2enisum
+export coherent_error_unitary, error_quantum_circuit,toput, error_pairs
+
 include("mod2.jl")
 include("paulistring.jl")
 include("cliffordgroup.jl")
@@ -47,5 +53,6 @@ include("tensornetwork.jl")
 include("encoder.jl")
 include("inferences.jl")
 include("measurement.jl")
-include("tablemake.jl")
+include("tablemake.jl")       
+include("simulation.jl")
 end

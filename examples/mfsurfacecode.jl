@@ -109,7 +109,3 @@ apply!(reg2, qc_correct)
 
 focus!(reg2, (1:9))
 [(real.(measure(Yao.YaoBlocks.Optimise.to_basictypes(st[i]),reg2))) for i in 1:8]
-
-# display(vizcircuit(qc))
-# display(vizcircuit(qc_measure))
-# display(vizcircuit(chain(qc_measure,qc_correct)))

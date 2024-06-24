@@ -38,3 +38,12 @@ function correction_pauli_string(qubit_num::Int, syn::Dict{Int, Bool}, prob::Dic
 	end
 	return PauliString(ps[1:end]...)
 end
+
+function inference!(reg::AbstractRegister, code::Bimatrix, st::AbstractVector{PauliString{N}}, qc::ChainBlock, p::Vector{Vector{Float64}}) where N
+	measure_outcome = measure_syndrome!(reg, st)
+	syn_dict = generate_syndrome_dict(code, syndrome_transform(code, measure_outcome))
+	cl = clifford_network(qc)
+	pinf = syndrome_inference(cl, syn_dict, p)
+	ps_ec_phy = pauli_string_map_iter(correction_pauli_string(N, syn_dict, pinf), qc)
+	return ps_ec_phy
+end

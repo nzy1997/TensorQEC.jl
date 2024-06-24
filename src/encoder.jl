@@ -133,37 +133,52 @@ function encode_circuit(bimat::Bimatrix)
 	return qc
 end
 
-# Surface code of distance D
-struct SurfaceCode{D} end
+# Surface code, m is the number of rows, n is the number of columns
+struct SurfaceCode{m,n} end
 
-# This function returns the Pauli string for a nine qubit surface code
-#           /---1---∘
-#         / |       |
-#       /∘  2   ∘   3
-#     /     |       |
-#   /---4---∘---5---∘ ---6---/
-#           |       |      /   
-#           7   ∘   8   ∘/
-#           |       |  /
-#           ∘---9---/
-# 8 "∘" represent 8 stableizers.
-# X type: 24, 1235, 5789, 68
-# Z type: 13, 2457, 3568, 79
+# Surface code (3*3)
+#       -
+#     / z \
+#     1---2---3 -\
+#     | x | z | x |
+#  /- 4---5- -6 -/
+# | x | z | x |
+#  \- 7---8---9
+#		  \ z /
+#			-
+# 8 stableizers:
+# Z type: 12, 2356, 4578, 89
+# X type: 36, 1245, 5689, 47
 
-function stabilizers(::SurfaceCode{3})
-	nq = 9
-	pauli_string = PauliString{nq}[]
-	push!(pauli_string, TensorQEC.paulistring(nq, 2, (2, 4)))
-	push!(pauli_string, TensorQEC.paulistring(nq, 2, (1, 2, 3, 5)))
-	push!(pauli_string, TensorQEC.paulistring(nq, 2, (5, 7, 8, 9)))
-	push!(pauli_string, TensorQEC.paulistring(nq, 2, (6, 8)))
-	push!(pauli_string, TensorQEC.paulistring(nq, 4, (1, 3)))
-	push!(pauli_string, TensorQEC.paulistring(nq, 4, (2, 4, 5, 7)))
-	push!(pauli_string, TensorQEC.paulistring(nq, 4, (3, 5, 6, 8)))
-	push!(pauli_string, TensorQEC.paulistring(nq, 4, (7, 9)))
+function stabilizers(::SurfaceCode{m,n}) where {m,n}
+	qubit_config = reshape(1:m*n, n, m)' 
+	pauli_string = PauliString{m*n}[]
+	for i in 1:m-1, j in 1:n-1
+		if mod(i+j, 2) == 0
+			push!(pauli_string, paulistring(m*n, 2, (qubit_config[i, j], qubit_config[i+1, j], qubit_config[i, j+1], qubit_config[i+1, j+1])))
+		end
+	end
+	for i in 1:m÷2
+		push!(pauli_string, paulistring(m*n, 2, (qubit_config[2*i-1+mod(n+1,2), n], qubit_config[2*i+mod(n+1,2), n])))
+		if 2*i+1 <= m
+			push!(pauli_string, paulistring(m*n, 2, (qubit_config[2*i, 1], qubit_config[2*i+1, 1])))
+		end
+		@show pauli_string[end].ids
+	end
+	for i in 1:m-1, j in 1:n-1
+		if mod(i+j, 2) == 1
+			push!(pauli_string, paulistring(m*n, 4, (qubit_config[i, j], qubit_config[i+1, j], qubit_config[i, j+1], qubit_config[i+1, j+1])))
+		end
+	end
+	for j in 1:n÷2
+		push!(pauli_string, paulistring(m*n, 4, (qubit_config[1, 2*j-1], qubit_config[1, 2*j])))
+		if 2*j+1 <= n
+			push!(pauli_string, paulistring(m*n, 4, (qubit_config[m, 2*j-1+mod(m,2)], qubit_config[m, 2*j+mod(m,2)])))
+		end
+	end
+	@show qubit_config
 	return pauli_string
 end
-
 
 function encode_stabilizers(stabilizers::AbstractVector{PauliString{N}}) where N
 	bimat = stabilizers2bimatrix(stabilizers)
@@ -173,48 +188,38 @@ function encode_stabilizers(stabilizers::AbstractVector{PauliString{N}}) where N
 	return qc, data_qubits, bimat
 end
 
-# function code_distance(bimat::Bimatrix; max_distance::Int = 5)
-# 	for k in 1:max_distance
-# 		qubit_num = size(bimat.matrix, 2) ÷ 2
-# 		all_combinations = combinations(1:qubit_num, k)
-# 		for combo in all_combinations
-# 			println(combo)
-# 			if iszero(rank(bimat.matrix[combo, :]))
-# 				return k
-# 			end
-# 		end
-# 	end
-# end
+
 struct ShorCode end
 
 function stabilizers(::ShorCode; linearly_independent::Bool = true)
 	nq = 9
 	pauli_string = PauliString{nq}[]
-	push!(pauli_string, TensorQEC.paulistring(nq, 2, (1,2,3,4,5,6)))
-	push!(pauli_string, TensorQEC.paulistring(nq, 2, (1, 2, 3, 7,8,9)))
-	linearly_independent || push!(pauli_string, TensorQEC.paulistring(nq, 2, (4, 5, 6, 7, 8, 9)))
-	push!(pauli_string, TensorQEC.paulistring(nq, 4, (1, 2)))
-	push!(pauli_string, TensorQEC.paulistring(nq, 4, (1, 3)))
-	linearly_independent || push!(pauli_string, TensorQEC.paulistring(nq, 4, (2, 3)))
-	push!(pauli_string, TensorQEC.paulistring(nq, 4, (4, 5)))
-	push!(pauli_string, TensorQEC.paulistring(nq, 4, (4,6)))
-	linearly_independent || push!(pauli_string, TensorQEC.paulistring(nq, 4, (5, 6)))
-	push!(pauli_string, TensorQEC.paulistring(nq, 4, (7,8)))
-	push!(pauli_string, TensorQEC.paulistring(nq, 4, (7, 9)))
-	linearly_independent || push!(pauli_string, TensorQEC.paulistring(nq, 4, (8, 9)))
+	push!(pauli_string, paulistring(nq, 2, (1,2,3,4,5,6)))
+	push!(pauli_string, paulistring(nq, 2, (1, 2, 3, 7,8,9)))
+	linearly_independent || push!(pauli_string,paulistring(nq, 2, (4, 5, 6, 7, 8, 9)))
+	push!(pauli_string, paulistring(nq, 4, (1, 2)))
+	push!(pauli_string, paulistring(nq, 4, (1, 3)))
+	linearly_independent || push!(pauli_string, paulistring(nq, 4, (2, 3)))
+	push!(pauli_string, paulistring(nq, 4, (4, 5)))
+	push!(pauli_string, paulistring(nq, 4, (4,6)))
+	linearly_independent || push!(pauli_string, paulistring(nq, 4, (5, 6)))
+	push!(pauli_string, paulistring(nq, 4, (7,8)))
+	push!(pauli_string, paulistring(nq, 4, (7, 9)))
+	linearly_independent || push!(pauli_string, paulistring(nq, 4, (8, 9)))
 	return pauli_string
 end
+
 
 struct SteaneCode end
 
 function stabilizers(::SteaneCode)
 	nq = 7
 	pauli_string = PauliString{nq}[]
-	push!(pauli_string, TensorQEC.paulistring(nq, 2, (1,3,5,7)))
-	push!(pauli_string, TensorQEC.paulistring(nq, 2, (2,3,6,7)))
-	push!(pauli_string, TensorQEC.paulistring(nq, 2, (4,5,6,7)))
-	push!(pauli_string, TensorQEC.paulistring(nq, 4, (1,3,5,7)))
-	push!(pauli_string, TensorQEC.paulistring(nq, 4, (2,3,6,7)))
-	push!(pauli_string, TensorQEC.paulistring(nq, 4, (4,5,6,7)))
+	push!(pauli_string, paulistring(nq, 2, (1,3,5,7)))
+	push!(pauli_string, paulistring(nq, 2, (2,3,6,7)))
+	push!(pauli_string, paulistring(nq, 2, (4,5,6,7)))
+	push!(pauli_string, paulistring(nq, 4, (1,3,5,7)))
+	push!(pauli_string, paulistring(nq, 4, (2,3,6,7)))
+	push!(pauli_string, paulistring(nq, 4, (4,5,6,7)))
 	return pauli_string
 end
