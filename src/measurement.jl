@@ -47,32 +47,33 @@ function measure_circuit(sts::Vector{PauliString{N}}) where N
 	return qc, collect(N+1:num_qubits), num_qubits
 end
 
-function correct_circuit(table::Dict{Int,Int}, st_pos::Vector{Int},num_qubits::Int,num_st::Int,num_logical_qubits::Int)
+function correct_circuit(table::Dict{Int,Int}, st_pos::Vector{Int},num_qubits::Int,num_st::Int,num_data_qubits::Int)
 	qc = chain(num_qubits)
 	for (k, v) in table
 		for  i in findall([Yao.BitBasis.BitStr{num_qubits}(v)...].==1)
-			if i <= num_logical_qubits
+			@show i
+			if i <= num_data_qubits
 				push!(qc, control(num_qubits, st_pos[findall([Yao.BitBasis.BitStr{num_st}(k)...].==1)], i=> Z))
 			else
-				push!(qc, control(num_qubits, st_pos[findall([Yao.BitBasis.BitStr{num_st}(k)...].==1)],i-num_logical_qubits=> X ))
+				push!(qc, control(num_qubits, st_pos[findall([Yao.BitBasis.BitStr{num_st}(k)...].==1)],i-num_data_qubits=> X ))
 			end
 		end
 	end
 	return qc
 end
 
-function measure_circuit_steane(qcen::ChainBlock, sts::Vector{PauliString{N}},xst_num::Int) where N
+function measure_circuit_steane(qcen::ChainBlock, data_qubit::Int, sts::Vector{PauliString{N}},xst_num::Int) where N
 	num_sts = length(sts)
 	num_qubits = 3 * N + num_sts
 	qc = chain(num_qubits)
-	copy_circuit_steane!(qc,qcen,sts)
+	copy_circuit_steane!(qc,qcen,data_qubit,sts)
 	return _measure_circuit_steane!(qc,sts,xst_num)
 end
 
-function copy_circuit_steane!(qc::ChainBlock, qcen::ChainBlock, sts::Vector{PauliString{N}}) where N
+function copy_circuit_steane!(qc::ChainBlock, qcen::ChainBlock, data_qubit::Int, sts::Vector{PauliString{N}}) where N
 	num_sts = length(sts)
 	num_qubits = 3 * N + num_sts
-	push!(qc, put(num_qubits, 2*N => H))
+	push!(qc, put(num_qubits, N+data_qubit => H))
 	push!(qc,subroutine(num_qubits, qcen, (N+1):2*N))
 	push!(qc,subroutine(num_qubits, qcen, (2*N+1):(3*N)))
 	[push!(qc, control(num_qubits, N+i, i => X) ) for i in 1:N]
