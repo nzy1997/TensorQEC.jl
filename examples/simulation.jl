@@ -1,6 +1,6 @@
 # # Tensor Network Simulation
 # This example demonstrates how to use tensor network to simulate the error correction process.
-# We use the $[[7,1,3]]$ steane code and the measurement-free QEC as an example. There are none-clifford gates in the circuit, so we use tensor network to simulate the process.
+# We use the $[[7,1,3]]$ steane code and the measurement-free QEC as an example. There are non-clifford gates in the circuit, so we use tensor network to simulate the process.
 # TODO: Add reference
 
 # ## Definition of Stabilizers and Encoding Circuits
@@ -16,7 +16,7 @@ qcen, data_qubits, code = encode_stabilizers(st)
 qcm,st_pos, num_qubits = measure_circuit_steane(qcen,data_qubits[1],st,3)
 
 # Then we generate truth table for the error correction.
-table = make_table(stabilizers2bimatrix(st).matrix, 1)
+table = make_table(TensorQEC.stabilizers2bimatrix(st).matrix, 1)
 
 # Now we can generate the measurement-free correction circuit by encoding the truth table on the quantum circuit directly.
 qccr = correct_circuit(table, collect(st_pos), num_qubits, 6, 7)
@@ -34,4 +34,16 @@ optnet = optimize_code(tn, TreeSA(), OMEinsum.MergeVectors())
 inf = 1-abs(contract(optnet)[1]/4)
 
 # ## Coherent Error
-# Since coheret error is also none-clifford, we can use the same method to simulate the error correction process.
+# Since coherent error is also non-clifford, we can use the same method to simulate the error correction process. First, we can generate the coherent error unitaries. 'Pair' records the error pairs of the gates. 'vector' records the error rates of the gates.
+pairs, vector = error_pairs(1e-5)
+
+# Here we add coherent error to X,Y,Z,H,CZ,CNOT,CCZ,Toffoli gates by default. You can customize your error gates by adding or removing the gates in the 'pairs' array. Function 'coherent_error_unitary' returns a random error unitary.
+
+# Then we can generate the error quantum circuit.
+qc = chain(subroutine(num_qubits, qcen, 1:7), qcm,qccr,subroutine(num_qubits, qcen', 1:7)) 
+eqc = error_quantum_circuit(qc, pairs)
+
+# Finally, we can simulate the error correction process with the coherent error.
+tn = fidelity_tensornetwork(qcf, ConnectMap(data_qubits,setdiff(1:27, data_qubits), 27))
+optnet = optimize_code(tn, TreeSA(), OMEinsum.MergeVectors()) 
+inf = 1-abs(contract(optnet)[1]/4)
