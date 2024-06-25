@@ -76,7 +76,7 @@ Yao.color(::Type{T}) where {T <: PauliString} = :cyan
 # overwrite the print_tree to avoid printing subblocks
 function Yao.YaoBlocks.print_tree(
     io::IO,
-    root::Yao.AbstractBlock,
+    root::AbstractBlock,
     node::PauliString,
     depth::Int = 1,
     islast::Bool = false,

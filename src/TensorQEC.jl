@@ -4,7 +4,7 @@ using TensorInference
 using TensorInference: Factor
 using Yao
 using Yao.ConstGate: PauliGate
-using Yao: PermMatrix, AbstractBlock
+using Yao: PermMatrix, AbstractBlock, AbstractRegister
 using Base.Iterators: product
 using LinearAlgebra
 using Combinatorics
