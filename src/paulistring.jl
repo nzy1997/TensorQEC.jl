@@ -24,7 +24,7 @@ For example, the Pauli string `XYZ` has matrix representation `Z ⊗ Y ⊗ X`.
     - 3: Y (\$σ_2\$)
     - 4: Z (\$σ_3\$)
 """
-struct PauliString{N} <: Yao.CompositeBlock{2}
+struct PauliString{N} <: CompositeBlock{2}
     ids::NTuple{N, Int}
 end
 PauliString(id1::PauliGate, ids::PauliGate...) = PauliString(pauli2idx.((id1, ids...)))
@@ -74,7 +74,7 @@ end
 Yao.color(::Type{T}) where {T <: PauliString} = :cyan
 
 # overwrite the print_tree to avoid printing subblocks
-function Yao.YaoBlocks.print_tree(
+function YaoBlocks.print_tree(
     io::IO,
     root::AbstractBlock,
     node::PauliString,
@@ -99,7 +99,7 @@ end
 xgates(ps::PauliString{N}) where N = repeat(N, X, (findall(x->x == 2, (ps.ids...,))...,))
 ygates(ps::PauliString{N}) where N = repeat(N, Y, (findall(x->x == 3, (ps.ids...,))...,))
 zgates(ps::PauliString{N}) where N = repeat(N, Z, (findall(x->x == 4, (ps.ids...,))...,))
-function Yao.YaoBlocks.unsafe_apply!(reg::Yao.AbstractRegister, ps::PauliString{N}) where N
+function Yao.YaoBlocks.unsafe_apply!(reg::AbstractRegister, ps::PauliString{N}) where N
     for pauligates in (xgates, ygates, zgates)
         blk = pauligates(ps)
         Yao.YaoBlocks.unsafe_apply!(reg, blk)
@@ -113,7 +113,7 @@ end
 # create a macro for pauli group items
 # - coeff ∈ {0, 1, 2, 3} is the coefficient (im^coeff) of the Pauli string,
 # - ps is the Pauli string
-struct PauliGroup{N} <: Yao.CompositeBlock{2}
+struct PauliGroup{N} <: CompositeBlock{2}
     coeff::Int
     ps::PauliString{N}
 end
@@ -165,7 +165,7 @@ Yao.isreflexive(p::PauliGroup) = p.coeff ∈ (0, 2)
 Yao.isunitary(p::PauliGroup) = true
 
 # sum of paulis
-struct SumOfPaulis{T<:Number, N} <: Yao.CompositeBlock{2}
+struct SumOfPaulis{T<:Number, N} <: CompositeBlock{2}
 	items::Vector{Pair{T, PauliString{N}}}
 end
 Yao.nqudits(::SumOfPaulis{T,N}) where {T,N} = N
@@ -176,4 +176,4 @@ Yao.chsubblocks(sp::SumOfPaulis{T,N}, blocks) where {T,N} = SumOfPaulis(Pair{T,P
 function tensor2sumofpaulis(t::AbstractArray)
 	return SumOfPaulis([t[ci]=>PauliString(ci.I) for ci in CartesianIndices(t)] |> vec)
 end
-densitymatrix2sumofpaulis(dm::Yao.DensityMatrix) = tensor2sumofpaulis(real.(pauli_decomposition(dm.state)))
+densitymatrix2sumofpaulis(dm::DensityMatrix) = tensor2sumofpaulis(real.(pauli_decomposition(dm.state)))

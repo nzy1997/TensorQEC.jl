@@ -34,10 +34,10 @@ optnet = optimize_code(tn, TreeSA(), OMEinsum.MergeVectors())
 inf = 1-abs(contract(optnet)[1]/4)
 
 # ## Coherent Error
-# Since coherent error is also non-clifford, we can use the same method to simulate the error correction process. First, we can generate the coherent error unitaries. 'Pair' records the error pairs of the gates. 'vector' records the error rates of the gates.
-pairs, vector = error_pairs(1e-5;gates = [X,Y,Z,H])
+# Since coherent error is also non-clifford, we can use the same method to simulate the error correction process. First, we can generate the coherent error unitaries. 'Pair' records the error pairs of the gates. 'vector' records the error rates of the gates. We add coherent error to X, Y, Z, H, CZ, CNOT, CCZ, Toffoli gates by default. We customize our error gates to only single qubit gates.
+pairs, vector = error_pairs(1e-5; gates = [X,Y,Z,H])
 
-# Here we add coherent error to X,Y,Z,H,CZ,CNOT,CCZ,Toffoli gates by default. You can customize your error gates by adding or removing the gates in the 'pairs' array.
+
 
 # Then we can generate the error quantum circuit.
 qc = chain(subroutine(num_qubits, qcen, 1:7), qcm,qccr,subroutine(num_qubits, qcen', 1:7)) 
