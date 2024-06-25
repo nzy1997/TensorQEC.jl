@@ -176,4 +176,4 @@ Yao.chsubblocks(sp::SumOfPaulis{T,N}, blocks) where {T,N} = SumOfPaulis(Pair{T,P
 function tensor2sumofpaulis(t::AbstractArray)
 	return SumOfPaulis([t[ci]=>PauliString(ci.I) for ci in CartesianIndices(t)] |> vec)
 end
-densitymatrix2sumofpaulis(dm::DensityMatrix) = tensor2sumofpaulis(real.(pauli_decomposition(dm.state)))
+densitymatrix2sumofpaulis(dm::Yao.DensityMatrix) = tensor2sumofpaulis(real.(pauli_decomposition(dm.state)))
