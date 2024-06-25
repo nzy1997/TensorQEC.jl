@@ -99,7 +99,7 @@ end
 xgates(ps::PauliString{N}) where N = repeat(N, X, (findall(x->x == 2, (ps.ids...,))...,))
 ygates(ps::PauliString{N}) where N = repeat(N, Y, (findall(x->x == 3, (ps.ids...,))...,))
 zgates(ps::PauliString{N}) where N = repeat(N, Z, (findall(x->x == 4, (ps.ids...,))...,))
-function Yao.YaoBlocks.unsafe_apply!(reg::AbstractRegister, ps::PauliString{N}) where N
+function Yao.YaoBlocks.unsafe_apply!(reg::Yao.AbstractRegister, ps::PauliString{N}) where N
     for pauligates in (xgates, ygates, zgates)
         blk = pauligates(ps)
         Yao.YaoBlocks.unsafe_apply!(reg, blk)
