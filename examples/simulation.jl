@@ -1,6 +1,6 @@
 # # Tensor Network Simulation
 # This example demonstrates how to use tensor network to simulate the error correction process.
-# We use the $[[7,1,3]]$ steane code and the measurement-free QEC as an example. There are none-clifford gates in the circuit, so 
+# We use the $[[7,1,3]]$ steane code and the measurement-free QEC as an example. There are none-clifford gates in the circuit, so we use tensor network to simulate the process.
 # TODO: Add reference
 
 # ## Definition of Stabilizers and Encoding Circuits
@@ -34,3 +34,4 @@ optnet = optimize_code(tn, TreeSA(), OMEinsum.MergeVectors())
 inf = 1-abs(contract(optnet)[1]/4)
 
 # ## Coherent Error
+# Since coheret error is also none-clifford, we can use the same method to simulate the error correction process.
