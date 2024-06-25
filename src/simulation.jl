@@ -143,17 +143,6 @@ function coherent_error_unitary(u::AbstractMatrix{T}, error_rate::Real; cache::U
     return Matrix(q)
 end
 
-@const_gate CCZ::ComplexF64 = diagm([1, 1,1,1,1,1,1,-1])
-@const_gate CCX::ComplexF64 =  [1  0  0  0  0  0  0  0;
-                                0  1  0  0  0  0  0  0;
-                                0  0  1  0  0  0  0  0;
-                                0  0  0  1  0  0  0  0;
-                                0  0  0  0  1  0  0  0;
-                                0  0  0  0  0  1  0  0;
-                                0  0  0  0  0  0  0  1;
-                                0  0  0  0  0  0  1  0]
-
-toput(gate::PutBlock) = gate
 toput(gate::ControlBlock{XGate,1,1}) = put(nqudits(gate), (gate.ctrl_locs..., gate.locs...)=>ConstGate.CNOT)
 toput(gate::ControlBlock{ZGate,1,1}) = put(nqudits(gate), (gate.ctrl_locs..., gate.locs...)=>ConstGate.CZ)
 

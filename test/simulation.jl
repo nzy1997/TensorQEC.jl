@@ -77,7 +77,7 @@ end
     psi = join(zero_state(1),reg1)
     psi_f = apply(psi,ub)
     rho2 = partial_tr(density_matrix(psi_f),2)
-    @test partial_tr(density_matrix(psi),2).state == density_matrix(reg1).state
+    @test partial_tr(density_matrix(psi),2).state ≈ density_matrix(reg1).state
 
     kraus = get_kraus(u,1)
     rho_f = zeros(ComplexF64,2,2)

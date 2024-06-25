@@ -24,7 +24,7 @@ For example, the Pauli string `XYZ` has matrix representation `Z ⊗ Y ⊗ X`.
     - 3: Y (\$σ_2\$)
     - 4: Z (\$σ_3\$)
 """
-struct PauliString{N} <: CompositeBlock{2}
+struct PauliString{N} <: Yao.CompositeBlock{2}
     ids::NTuple{N, Int}
 end
 PauliString(id1::PauliGate, ids::PauliGate...) = PauliString(pauli2idx.((id1, ids...)))

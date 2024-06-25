@@ -45,6 +45,17 @@ export pauli_group, clifford_group, clifford_simulate
 export ComplexConj, SymbolRecorder,IdentityRecorder, ein_circ, ConnectMap, qc2enisum
 export coherent_error_unitary, error_quantum_circuit,toput, error_pairs,fidelity_tensornetwork
 
+
+@const_gate CCZ::ComplexF64 = diagm([1, 1,1,1,1,1,1,-1])
+@const_gate CCX::ComplexF64 =  [1  0  0  0  0  0  0  0;
+                                0  1  0  0  0  0  0  0;
+                                0  0  1  0  0  0  0  0;
+                                0  0  0  1  0  0  0  0;
+                                0  0  0  0  1  0  0  0;
+                                0  0  0  0  0  1  0  0;
+                                0  0  0  0  0  0  0  1;
+                                0  0  0  0  0  0  1  0]
+                                
 include("mod2.jl")
 include("paulistring.jl")
 include("cliffordgroup.jl")

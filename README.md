@@ -19,7 +19,7 @@ Also, we include more general QEC tools, including
 ## Installation
 
 Type `]` in a [Julia REPL](https://docs.julialang.org/en/v1/stdlib/REPL/index.html) to enter the `pkg` mode, then type
-```
+```Julia pkg
 pkg> dev https://github.com/nzy1997/TensorQEC.jl.git
 ```
 
