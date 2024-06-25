@@ -47,15 +47,7 @@ export coherent_error_unitary, error_quantum_circuit,toput, error_pairs,fidelity
 
 
 @const_gate CCZ::ComplexF64 = diagm([1, 1,1,1,1,1,1,-1])
-@const_gate CCX::ComplexF64 =  [1  0  0  0  0  0  0  0;
-                                0  1  0  0  0  0  0  0;
-                                0  0  1  0  0  0  0  0;
-                                0  0  0  1  0  0  0  0;
-                                0  0  0  0  1  0  0  0;
-                                0  0  0  0  0  1  0  0;
-                                0  0  0  0  0  0  0  1;
-                                0  0  0  0  0  0  1  0]
-                                
+
 include("mod2.jl")
 include("paulistring.jl")
 include("cliffordgroup.jl")
