@@ -16,9 +16,16 @@ Also, we include more general QEC tools, including
 * Decoding truth table construction,
 * Measurement circuit construction.
 
-## To Install
+## Installation
 
 Type `]` in a [Julia REPL](https://docs.julialang.org/en/v1/stdlib/REPL/index.html) to enter the `pkg` mode, then type
 ```julia pkg
 pkg> dev https://github.com/nzy1997/TensorQEC.jl.git
 ```
+
+## Contribute
+
+Suggestions and Comments in the _Issues_ are welcome.
+
+## License
+MIT License
