@@ -5,13 +5,20 @@
 [![CI](https://github.com/nzy1997/TensorQEC.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/nzy1997/TensorQEC.jl/actions/workflows/CI.yml)
 [![Coverage](https://codecov.io/gh/nzy1997/TensorQEC.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/nzy1997/TensorQEC.jl)
 
-## Examples
-To install dependencies, please open a terminal and type
-```bash
-make init-examples
-```
+This package utilizes the tensor network to study the properties of *quantum error correction* (QEC).The main features include
+* Quantum error correction code decoder with tensor network,
+* Quantum circuit simulation with tensor network to estimate the threshold of QEC.
 
-Example files are located in the `examples` folder. Consider the example `example-inference.jl`, to run it, please open a terminal and type
-```bash
-make example-inference
+Also, we include more general QEC tools, including
+* Commonly used QEC code stabilizer generators,
+* QEC code distance calculation,
+* QEC encoding circuit construction,
+* Decoding truth table construction,
+* Measurement circuit construction.
+
+## To Install
+
+Type `]` in a [Julia REPL](https://docs.julialang.org/en/v1/stdlib/REPL/index.html) to enter the `pkg` mode, then type
+```julia pkg
+pkg> dev https://github.com/nzy1997/TensorQEC.jl.git
 ```
