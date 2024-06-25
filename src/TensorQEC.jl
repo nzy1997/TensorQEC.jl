@@ -4,6 +4,7 @@ using TensorInference
 using TensorInference: Factor
 using Yao
 using Yao.ConstGate: PauliGate
+using Yao: PermMatrix
 using Base.Iterators: product
 using LinearAlgebra
 using Combinatorics
