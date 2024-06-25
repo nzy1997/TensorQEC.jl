@@ -164,8 +164,12 @@ function error_quantum_circuit(qc::ChainBlock, pairs)
     return qcf
 end
 
-function error_pairs(error_rate::T) where {T <: Real}
+function error_pairs(error_rate::T; gates = nothing) where {T <: Real}
     vec = Vector{T}()
-    pairs = [x => matblock(coherent_error_unitary(mat(x),error_rate;cache =vec)) for x in [X,Z,H,CCZ,ConstGate.Toffoli,ConstGate.CNOT,ConstGate.CZ]]
+    if gates === nothing
+        pairs = [x => matblock(coherent_error_unitary(mat(x),error_rate;cache = vec)) for x in [X,Y,Z,H,CCZ,ConstGate.Toffoli,ConstGate.CNOT,ConstGate.CZ]]
+    else
+        pairs = [x => matblock(coherent_error_unitary(mat(x),error_rate;cache = vec)) for x in gates]
+    end
     return pairs, vec
 end
