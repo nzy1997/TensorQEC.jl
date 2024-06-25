@@ -76,7 +76,7 @@ Yao.color(::Type{T}) where {T <: PauliString} = :cyan
 # overwrite the print_tree to avoid printing subblocks
 function Yao.YaoBlocks.print_tree(
     io::IO,
-    root::AbstractBlock,
+    root::Yao.AbstractBlock,
     node::PauliString,
     depth::Int = 1,
     islast::Bool = false,
@@ -113,7 +113,7 @@ end
 # create a macro for pauli group items
 # - coeff ∈ {0, 1, 2, 3} is the coefficient (im^coeff) of the Pauli string,
 # - ps is the Pauli string
-struct PauliGroup{N} <: CompositeBlock{2}
+struct PauliGroup{N} <: Yao.CompositeBlock{2}
     coeff::Int
     ps::PauliString{N}
 end
