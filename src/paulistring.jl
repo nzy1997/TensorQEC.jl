@@ -177,3 +177,11 @@ function tensor2sumofpaulis(t::AbstractArray)
 	return SumOfPaulis([t[ci]=>PauliString(ci.I) for ci in CartesianIndices(t)] |> vec)
 end
 densitymatrix2sumofpaulis(dm::DensityMatrix) = tensor2sumofpaulis(real.(pauli_decomposition(dm.state)))
+
+# inputs:
+# - n is the size of the toric code
+# - k is the Pauli operator, 1 for I, 2 for X, 3 for Y, 4 for Z
+# - ids is a vector of qubit ids
+# output: a PauliString object
+paulistring(n, k, ids) = PauliString((i ∈ ids ? k : 1 for i in 1:n)...)
+

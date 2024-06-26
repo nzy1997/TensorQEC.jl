@@ -1,6 +1,6 @@
 using Test, TensorQEC, TensorQEC.Yao
 @testset "measure_syndrome!" begin
-    result=stabilizers(SurfaceCode{3,3}())
+    result=stabilizers(SurfaceCode(3,3))
     code = TensorQEC.stabilizers2bimatrix(result)
     TensorQEC.gaussian_elimination!(code)
     qc = TensorQEC.encode_circuit(code)
@@ -24,7 +24,7 @@ using Test, TensorQEC, TensorQEC.Yao
 end
 
 @testset "generate_syndrome_dict" begin
-    result=stabilizers(SurfaceCode{3,3}())
+    result=stabilizers(SurfaceCode(3,3))
     code = TensorQEC.stabilizers2bimatrix(result)
     TensorQEC.gaussian_elimination!(code)
     transformed_error = Mod2[0,1,0,0,0,0,0,0]
@@ -69,7 +69,7 @@ end
 
 @testset "syndrome inference and error correct for SurfaceCode3" begin
     qubit_num = 9
-    st = stabilizers(SurfaceCode{3,3}())
+    st = stabilizers(SurfaceCode(3,3))
     qc, data_qubits, code = TensorQEC.encode_stabilizers(st)
 
     reg = join(rand_state(1), zero_state(8))

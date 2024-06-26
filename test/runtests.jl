@@ -24,6 +24,10 @@ end
     include("inferences.jl")
 end
 
+@testset "codes" begin
+    include("codes.jl")
+end
+
 @testset "encoder" begin
     include("encoder.jl")
 end

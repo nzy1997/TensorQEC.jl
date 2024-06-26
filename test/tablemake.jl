@@ -2,7 +2,7 @@ using Test, TensorQEC, TensorQEC.Yao
 
 
 @testset "make table and save" begin
-    st =stabilizers(SurfaceCode{3,3}())
+    st =stabilizers(SurfaceCode(3,3))
     bimat=TensorQEC.stabilizers2bimatrix(st)
     table = make_table(bimat.matrix, 1)
     @test length(table) == 14

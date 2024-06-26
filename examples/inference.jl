@@ -4,7 +4,7 @@
 
 # ## Definition of Stabilizers
 using TensorQEC, TensorQEC.Yao
-st = stabilizers(SurfaceCode{3,3}())
+st = stabilizers(SurfaceCode(3,3))
 
 # Then we can generate the encoding circuits of the stabilizers. 'qc' is the encoding circuit, 'data_qubits' are the data qubits, and 'code' is the structure records information of the encoding circuit.
 qc, data_qubits, code = encode_stabilizers(st)

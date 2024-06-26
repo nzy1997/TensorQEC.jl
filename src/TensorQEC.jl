@@ -28,9 +28,11 @@ export PauliString, PauliGroup, isanticommute
 # inference
 export syndrome_inference, measure_syndrome!,correction_pauli_string, generate_syndrome_dict,pauli_string_map_iter, inference!
 
+# codes 
+export toric_code, stabilizers,ToricCode, SurfaceCode, ShorCode,SteaneCode
+
 # encoder
-export Bimatrix, toric_code, stabilizers, syndrome_transform, encode_stabilizers
-export ToricCode, SurfaceCode, ShorCode,SteaneCode
+export Bimatrix,syndrome_transform, encode_stabilizers
 
 # measurement
 export  measure_circuit_fault_tol, correct_circuit, measure_circuit_steane,measure_circuit
@@ -53,6 +55,7 @@ include("paulistring.jl")
 include("cliffordgroup.jl")
 include("paulibasis.jl")
 include("tensornetwork.jl")
+include("codes.jl")
 include("encoder.jl")
 include("inferences.jl")
 include("measurement.jl")
