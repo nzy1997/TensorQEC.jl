@@ -9,6 +9,7 @@ st = stabilizers(SurfaceCode{3,3}())
 
 # Then we can generate the encoding circuits of the stabilizers. 'qc' is the encoding circuit, 'data_qubits' are the data qubits, and 'code' is the structure records information of the encoding circuit.
 qc, data_qubits, code = encode_stabilizers(st)
+vizcircuit(qc)
 
 # ## Circuit Simulation with Yao.jl
 # Create a quantum register. Qubits in 'data_qubits' are randomly initilized, and the rest ancilla qubits are in the |0> state.
@@ -45,8 +46,8 @@ ps_ec_phy = inference!(reg, code, st, qc, p)
 apply!(reg, Yao.YaoBlocks.Optimise.to_basictypes(ps_ec_phy))
 
 # Finally, we can measure the stabilizers after error correction to check whether the error is corrected.
-syndrome_result = measure_syndrome!(reg, st)
+generate_syndrome_dict(code, syndrome_transform(code, measure_syndrome!(reg, st)))
 
 # And we can calculate the fidelity after error correction to check whether the initial state is recovered.
 apply!(reg, qc')
-fidelity_after = fidelity(density_matrix(reg, [data_qubits...]), density_matrix(regcopy, [data_qubits...]))
+fidelity_after = fidelity(density_matrix(reg, data_qubits), density_matrix(regcopy, data_qubits))
