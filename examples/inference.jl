@@ -1,7 +1,6 @@
 # # Tensor Network Inference
-# This example demonstrates how to define stabilizers, encode data qubits measure syndromes, use tensor network to infer error probability, and correct the error.
+# This example demonstrates how to define stabilizers, encode data qubits measure syndromes, use tensor network to infer error probability, and correct the error. The main reference is [^Ferris]. 
 # We use the $3*3$ surface code as an example. The stabilizers are defined as follows: 
-# TODO: Add reference
 
 # ## Definition of Stabilizers
 using TensorQEC, TensorQEC.Yao
@@ -51,3 +50,5 @@ generate_syndrome_dict(code, syndrome_transform(code, measure_syndrome!(reg, st)
 # And we can calculate the fidelity after error correction to check whether the initial state is recovered.
 apply!(reg, qc')
 fidelity_after = fidelity(density_matrix(reg, data_qubits), density_matrix(regcopy, data_qubits))
+
+# [^Ferris]: Ferris, A. J.; Poulin, D. Tensor Networks and Quantum Error Correction. Phys. Rev. Lett. 2014, 113 (3), 030501. https://doi.org/10.1103/PhysRevLett.113.030501.
