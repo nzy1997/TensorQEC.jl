@@ -147,8 +147,9 @@ struct SurfaceCode{m,n} end
 #		  \ z /
 #			-
 # 8 stableizers:
-# Z type: 12, 2356, 4578, 89
 # X type: 36, 1245, 5689, 47
+# Z type: 12, 2356, 4578, 89
+
 
 function stabilizers(::SurfaceCode{m,n}) where {m,n}
 	qubit_config = reshape(1:m*n, n, m)' 

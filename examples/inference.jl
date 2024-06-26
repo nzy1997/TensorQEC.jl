@@ -37,7 +37,7 @@ pinf = syndrome_inference(cl, syn_dict, p)
 # Generate the Pauli string for error correction. Since there is a stabilizer $X_3X_6$, applying $X_3$ or $X_6$ on the coding space are equivalent.
 ps_ec_phy = pauli_string_map_iter(correction_pauli_string(9, syn_dict, pinf), qc)
 
-# Or we can simply use the inference! function to measure syndrome and infer error probability.
+# Or we can simply use the 'inference!' function to measure syndrome and infer error probability.
 ps_ec_phy = inference!(reg, code, st, qc, p)
 
 # ## Error Correction
