@@ -25,7 +25,7 @@ makedocs(;
     ),
     pages=[
         "Home" => "index.md",
-        "Problems" => [
+        "Topics" => [
             "Inference" => "generated/inference.md",
             "Simulation" => "generated/simulation.md"],
             ],
