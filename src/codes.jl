@@ -11,15 +11,15 @@ vertical_edges(t::ToricCode) = reshape(1:nsite(t), t.m, t.n)
 horizontal_edges(t::ToricCode) = reshape(nsite(t)+1:2*nsite(t), t.m, t.n)
 
 # Toric code (2*2)
-# ∘---1---∘---2---∘
+# ∘---5---∘---7---∘
 # |       |       |
-# 5   ∘   6   ∘   5 
+# 1   ∘   3   ∘   1 
 # |       |       |
-# ∘---3---∘---4---∘
+# ∘---6---∘---8---∘
 # |       |       | 
-# 7   ∘   8   ∘   7
+# 2   ∘   4   ∘   2
 # |       |       |
-# ∘---1---∘---2---∘
+# ∘---5---∘---7---∘
 
 function stabilizers(toric::ToricCode; linearly_independent::Bool = true)
 	nq, m, n = nqubits(toric), toric.m, toric.n
@@ -129,5 +129,18 @@ function stabilizers(::SteaneCode)
 	push!(pauli_string, paulistring(nq, 4, (1,3,5,7)))
 	push!(pauli_string, paulistring(nq, 4, (2,3,6,7)))
 	push!(pauli_string, paulistring(nq, 4, (4,5,6,7)))
+	return pauli_string
+end
+
+struct Code832 end
+
+function stabilizers(::Code832)
+	nq = 8
+	pauli_string = PauliString{nq}[]
+	push!(pauli_string, PauliString(fill(2, 8)...))
+	push!(pauli_string, PauliString(fill(4, 8)...))
+	push!(pauli_string, paulistring(nq, 4, (1,3,5,7)))
+	push!(pauli_string, paulistring(nq, 4, (1,2,3,4)))
+	push!(pauli_string, paulistring(nq, 4, (1,2,5,6)))
 	return pauli_string
 end

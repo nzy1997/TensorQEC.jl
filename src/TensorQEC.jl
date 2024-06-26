@@ -29,7 +29,7 @@ export PauliString, PauliGroup, isanticommute
 export syndrome_inference, measure_syndrome!,correction_pauli_string, generate_syndrome_dict,pauli_string_map_iter, inference!
 
 # codes 
-export toric_code, stabilizers,ToricCode, SurfaceCode, ShorCode,SteaneCode
+export toric_code, stabilizers,ToricCode, SurfaceCode, ShorCode,SteaneCode,Code832
 
 # encoder
 export Bimatrix,syndrome_transform, encode_stabilizers,place_qubits
