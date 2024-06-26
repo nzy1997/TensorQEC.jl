@@ -1,7 +1,7 @@
 # # Tensor Network Simulation
 # This example demonstrates how to use tensor network to simulate the error correction process.
-# We use the $[[7,1,3]]$ steane code and the measurement-free QEC as an example. There are non-clifford gates in the circuit, so we use tensor network to simulate the process.
-# TODO: Add reference
+# We use the $[[7,1,3]]$ steane code and the measurement-free QEC[^Heußen] as an example. There are non-clifford gates in the quantum circuit, so we use tensor network to simulate the process.
+
 
 # ## Definition of Stabilizers and Encoding Circuits
 using TensorQEC, TensorQEC.Yao
@@ -49,3 +49,5 @@ vizcircuit(eqc)
 tn = fidelity_tensornetwork(eqc, ConnectMap(data_qubits,setdiff(1:27, data_qubits), 27))
 optnet = optimize_code(tn, TreeSA(), OMEinsum.MergeVectors()) 
 inf = 1-abs(contract(optnet)[1]/4)
+
+# [^Heußen]: Heußen, S., Locher, D. F., & Müller, M. (2024). Measurement-Free Fault-Tolerant Quantum Error Correction in Near-Term Devices. PRX Quantum, 5(1), 010333. https://doi.org/10.1103/PRXQuantum.5.010333
