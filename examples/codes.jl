@@ -20,16 +20,19 @@ st = stabilizers(sc)
 
 # ## Others 
 # We also includes Shor code, Steane code and $[[8,3,2]]$ code. The usage is similar to the above examples.
+
 # Shor Code:
 shor = ShorCode()
 st = stabilizers(shor)
 
 # Steane Code:
+
 # ![](../images/steane.png)
 steane = SteaneCode()
 st = stabilizers(steane)
 
 # $[[8,3,2]]$ Code:
+
 # ![](../images/code832.png)
 code832 = Code832()
 st = stabilizers(code832)
