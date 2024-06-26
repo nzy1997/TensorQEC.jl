@@ -62,3 +62,15 @@ end
 		@test u * mat(ComplexF64, put(9, bimat.ordering[i] => Z)) * u' ≈ mat(ComplexF64, st[i])
 	end
 end
+
+@testset "place_qubits" begin 
+	reg0 = product_state(bit"1")
+	data_qubits = [6]
+	reg = place_qubits(reg0, data_qubits, 10)
+	@test reg.state == join(zero_state(4),reg0,zero_state(5)).state
+
+	reg0 = product_state(bit"11")
+	data_qubits = [3,9]
+	reg = place_qubits(reg0, data_qubits, 10)
+	@test measure(reg)[1] == bit"0100000100"
+end

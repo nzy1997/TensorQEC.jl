@@ -32,7 +32,7 @@ export syndrome_inference, measure_syndrome!,correction_pauli_string, generate_s
 export toric_code, stabilizers,ToricCode, SurfaceCode, ShorCode,SteaneCode
 
 # encoder
-export Bimatrix,syndrome_transform, encode_stabilizers
+export Bimatrix,syndrome_transform, encode_stabilizers,place_qubits
 
 # measurement
 export  measure_circuit_fault_tol, correct_circuit, measure_circuit_steane,measure_circuit

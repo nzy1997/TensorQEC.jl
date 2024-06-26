@@ -76,3 +76,24 @@ function encode_circuit(bimat::Bimatrix)
 	end
 	return qc
 end
+
+function encode_stabilizers(stabilizers::AbstractVector{PauliString{N}}) where N
+	bimat = stabilizers2bimatrix(stabilizers)
+	gaussian_elimination!(bimat)
+	qc = encode_circuit(bimat)
+	data_qubits = bimat.ordering[size(bimat.matrix, 1)+1:end]
+	return qc, data_qubits, bimat
+end
+
+function place_qubits(reg0::AbstractRegister, data_qubits::Vector{Int}, num_qubits::Int)
+	@assert nqubits(reg0) == length(data_qubits)
+	reg = join(reg0,zero_state(num_qubits-length(data_qubits)))
+	order = collect(1:num_qubits)
+	for i in 1:length(data_qubits)
+		order[data_qubits[i]] = num_qubits+1-i
+		order[num_qubits+1-i] = data_qubits[i]
+	end
+	reorder!(reg, (order...,))
+	return reg
+end
+

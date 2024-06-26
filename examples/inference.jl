@@ -6,14 +6,15 @@
 using TensorQEC, TensorQEC.Yao
 st = stabilizers(SurfaceCode(3,3))
 
-# Then we can generate the encoding circuits of the stabilizers. 'qc' is the encoding circuit, 'data_qubits' are the data qubits, and 'code' is the structure records information of the encoding circuit.
+# Then we can generate the encoding circuits of the stabilizers. 'qc' is the encoding circuit, 'data_qubits' are the qubits that we should put initial qubtis in, and 'code' is the structure records information of the encoding circuit.
 qc, data_qubits, code = encode_stabilizers(st)
 vizcircuit(qc)
 
 # ## Circuit Simulation with Yao.jl
-# Create a quantum register. Qubits in 'data_qubits' are randomly initilized, and the rest ancilla qubits are in the |0> state.
-reg = join(rand_state(1),zero_state(8))
-regcopy = copy(reg)
+# Create a random qubit state to be encoded.
+reg1 = rand_state(1)
+# We use 'place_qubits' to create a quantum register. We place the data qubits in 'data_qubits' , and the rest ancilla qubits are in the $|0\rangle$ state.
+reg = place_qubits(reg1, data_qubits, nqubits(qc))
 
 # Apply the encoding circuits.
 apply!(reg, qc)
@@ -49,6 +50,6 @@ generate_syndrome_dict(code, syndrome_transform(code, measure_syndrome!(reg, st)
 
 # And we can calculate the fidelity after error correction to check whether the initial state is recovered.
 apply!(reg, qc')
-fidelity_after = fidelity(density_matrix(reg, data_qubits), density_matrix(regcopy, data_qubits))
+fidelity_after = fidelity(density_matrix(reg, data_qubits), density_matrix(reg1))
 
 # [^Ferris]: Ferris, A. J.; Poulin, D. Tensor Networks and Quantum Error Correction. Phys. Rev. Lett. 2014, 113 (3), 030501. https://doi.org/10.1103/PhysRevLett.113.030501.
