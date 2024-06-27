@@ -10,6 +10,7 @@
 # 3. pauli_basis(2)[1,2]
 # 4. LinearAlgebra.kron(X,I2)
 # 5. X ⊗ I shown in the print
+# 6. X_1
 function pauli_basis(nqubits::Int)
 	return [PauliString{nqubits}(ci.I) for ci in CartesianIndices(ntuple(_ -> 4, nqubits))]
 end
@@ -47,6 +48,6 @@ function pauli_string_map_iter(ps::PauliString{N}, qc::ChainBlock) where N
        return pauli_string_map_iter(pauli_string_map(ps,pauli_mapping(mat(ComplexF64,block.content)),[block.locs...]),qc[2:end])
 end
 function pauli_string_map(ps::PauliString{N}, paulimapping::Array, qubits::Vector{Int}) where N
-    c=findall(!iszero, paulimapping[fill(:,length(size(paulimapping)) ÷ 2)...,ps.ids[qubits]...])[1]
-    return PauliString(([k ∈ qubits ? c[findfirst(==(k),qubits)] : ps.ids[k] for k in N:(-1):1]...,))
+    c=findall(!iszero, paulimapping[fill(:,length(size(paulimapping)) ÷ 2)...,ps.ids[(N+1) .- qubits]...])[1]
+    return PauliString(([k ∈ qubits ? c[findfirst(==(k),qubits)] : ps.ids[N+1-k] for k in N:(-1):1]...,))
 end
