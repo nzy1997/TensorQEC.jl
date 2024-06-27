@@ -8,6 +8,7 @@ This package utilizes the tensor network to study the properties of *quantum err
 * Quantum error correction code decoder with tensor network,
 * Quantum circuit simulation with tensor network to estimate the threshold of QEC.
 
+## TODO:Drawbacks
 Also, we include more general QEC tools, including
 * Commonly used QEC code stabilizer generators,
 * QEC code distance calculation,
