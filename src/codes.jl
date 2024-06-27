@@ -1,5 +1,8 @@
+"""
+	ToricCode(m::Int, n::Int)
 
-# simple toric code
+Construct a Toric code with `m` rows and `n` columns. 
+"""
 struct ToricCode
 	m::Int
 	n::Int
@@ -21,6 +24,16 @@ horizontal_edges(t::ToricCode) = reshape(nsite(t)+1:2*nsite(t), t.m, t.n)
 # |       |       |
 # ∘---5---∘---7---∘
 
+
+"""
+	stabilizers(tc::ToricCode)
+	stabilizers(sc::SurfaceCode)
+	stabilizers(shor::ShorCode)
+	stabilizers(steane::SteaneCode)
+	stabilizers(code832::Code832)
+
+Get the stabilizers of the code instances.
+"""
 function stabilizers(toric::ToricCode; linearly_independent::Bool = true)
 	nq, m, n = nqubits(toric), toric.m, toric.n
 	output = PauliString{nq}[]
@@ -47,7 +60,11 @@ function stabilizers(toric::ToricCode; linearly_independent::Bool = true)
 end
 
 
-# Surface code, m is the number of rows, n is the number of columns
+"""
+	SurfaceCode(m::Int, n::Int)
+
+Construct a surface code with `m` rows and `n` columns. 
+"""
 struct SurfaceCode	
     m::Int
 	n::Int
@@ -97,6 +114,11 @@ function stabilizers(sc::SurfaceCode)
 	return pauli_string
 end
 
+"""
+	ShorCode
+
+Construct a Shor code instance.
+"""
 struct ShorCode end
 
 function stabilizers(::ShorCode; linearly_independent::Bool = true)
@@ -117,7 +139,11 @@ function stabilizers(::ShorCode; linearly_independent::Bool = true)
 	return pauli_string
 end
 
+"""
+	SteaneCode
 
+Construct a Steane code instance.
+"""
 struct SteaneCode end
 
 function stabilizers(::SteaneCode)
@@ -132,6 +158,11 @@ function stabilizers(::SteaneCode)
 	return pauli_string
 end
 
+"""
+	Code832
+
+Construct a [[8,3,2]] CSS code instance.
+"""
 struct Code832 end
 
 function stabilizers(::Code832)

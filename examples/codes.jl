@@ -2,10 +2,8 @@
 # We provide a number of quantum error correction codes. 
 using TensorQEC
 
-# [`PauliString`](@ref)
-
 # ## Toric Code
-# The Toric code is a 2D topological code. We can define a Toric code instance  by `ToricCode(m, n)`, where `m` and `n` are the number of rows and columns of the Toric code.
+# The Toric code is a 2D topological code. We can define a Toric code instance by [`ToricCode`](@ref).
 tc = ToricCode(2, 3)
 # Here is a schematic diagram of 2*3 Toric code:
 # ![](../images/toric.svg)
@@ -13,29 +11,29 @@ tc = ToricCode(2, 3)
 # The Toric code has two types of stabilizers: X stabilizers and Z stabilizers. X stabilizers are plaquettes of the lattice, and Z stabilizers are vertices of the lattice. We can get the stabilizers of the toric code by
 st = stabilizers(tc)
 
-# Note the order of pauli strings is following the little-endian convention, i.e. the first qubit is the least significant qubit. For example, the Pauli string XYZ means $X_3Y_2Z_1$.
+# Note the order of pauli strings is following the big-endian convention. For example, the Pauli string XYZ means $X_1Y_2Z_3$.
 
 # ## Surface Code
-# The surface code is a 2D topological code. Similarly to Toric code, we can define a surface code instance by `SurfaceCode(m, n)` and get the stabilizers of the surface code by `stabilizers(sc)`.
+# The surface code is a 2D topological code. Similarly to Toric code, we can define a surface code instance by [`SurfaceCode`](@ref) and get the stabilizers of the surface code by [`stabilizers`](@ref).
 sc = SurfaceCode(3, 3)
 st = stabilizers(sc)
 # Here is a schematic diagram of 3*3 surface code:
 # ![](../images/surface.svg)
 
-# ## Others 
-# We also includes Shor code, Steane code and [[8,3,2]] code. The usage is similar to the above examples.
-
-# Shor Code:
+# ## Shor Code
+# The [[9,1,3]] Shor code functions by concatenating each qubit of a phase-flip with a bit-flip repetition code, allowing it to correct both types of errors at the same time. We can define a Shor code instance by [`ShorCode`](@ref).
 shor = ShorCode()
 st = stabilizers(shor)
 
-# Steane Code:
+# ## Steane Code
+# The [[7,1,3]] Steane is constructed using the classical binary [7,4,3] Hamming code. We can define a Steane code instance by [`SteaneCode`](@ref).
 
 # ![](../images/steane.svg)
 steane = SteaneCode()
 st = stabilizers(steane)
 
-# [[8,3,2]] Code:
+# [[8,3,2]] Code
+# The [[8,3,2]] code is the smallest non-trivial 3D color code. We can define a [[8,3,2]] code instance by [`Code832`](@ref).
 
 # ![](../images/code832.svg)
 code832 = Code832()

@@ -1,3 +1,14 @@
+"""
+	Bimatrix
+
+Since the encding process may alter the generators of stabilizer group, we introduce the Bimatrix structure to store the information of encoding process. The Bimatrix structure contains the following fields
+
+* 'matrix': The bimatrix representation of the stabilizers.
+* 'Q': The matrix records the Gaussian elimination process, whcih is used to recover the original stabilizers.
+* 'ordering': The ordering of qubits.
+* 'xcodenum': The number of X stabilizers.
+
+"""
 struct Bimatrix
 	matrix::Matrix{Bool}
 	Q::Matrix{Mod2}
@@ -24,6 +35,7 @@ function bimatrix2stabilizers(bimat::Bimatrix)
 	zs = [paulistring(n, 4, bimat.ordering[findall(isone, bimat.matrix[i, n+1:end])]) for i in bimat.xcodenum+1:size(bimat.matrix, 1)]
 	return vcat(xs, zs)
 end
+
 function switch_qubits!(bimat::Bimatrix, i::Int, j::Int)
 	qubit_num = size(bimat.matrix, 2) ÷ 2
 	bimat.matrix[:, [i, j]] = bimat.matrix[:, [j, i]]
@@ -31,6 +43,7 @@ function switch_qubits!(bimat::Bimatrix, i::Int, j::Int)
 	bimat.ordering[i], bimat.ordering[j] = bimat.ordering[j], bimat.ordering[i]
 	return bimat
 end
+
 function gaussian_elimination!(bimat::Bimatrix, rows::UnitRange, col_offset::Int, qubit_offset::Int)
 	start_col = col_offset + qubit_offset + 1
 	for i in rows
@@ -77,6 +90,19 @@ function encode_circuit(bimat::Bimatrix)
 	return qc
 end
 
+"""
+	encode_stabilizers(stabilizers::AbstractVector{PauliString{N}}) where N
+
+Generate the encoding circuit for the given stabilizers.
+
+### Arguments
+- `stabilizers`: The vector of pauli strings, composing the generator of stabilizer group.
+
+### Returns
+- `qc`: The encoding circuit.
+- `data_qubits`: The indices of data qubits.
+- `bimat`: The structure storing the encoding information.
+"""
 function encode_stabilizers(stabilizers::AbstractVector{PauliString{N}}) where N
 	bimat = stabilizers2bimatrix(stabilizers)
 	gaussian_elimination!(bimat)

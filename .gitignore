@@ -10,3 +10,4 @@ Manifest.toml
 .vscode/
 *.txt
 .DS_Store
+/extemp/

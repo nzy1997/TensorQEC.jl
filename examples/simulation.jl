@@ -36,18 +36,4 @@ optnet = optimize_code(tn, TreeSA(), OMEinsum.MergeVectors())
 # Finally, we contract the tensor network to get the fidelity after error correction.
 inf = 1-abs(contract(optnet)[1]/4)
 
-# ## Coherent Error
-# Since coherent error is also non-clifford, we can use the same method to simulate the error correction process. First, we can generate the coherent error unitaries. 'Pair' records the error pairs of the gates. 'vector' records the error rates of the gates. We add coherent error to X, Y, Z, H, CZ, CNOT, CCZ, Toffoli gates by default. We customize our error gates to only single qubit gates.
-pairs, vector = error_pairs(1e-5; gates = [X,Y,Z,H])
-
-# Then we can generate the error quantum circuit.
-qc = chain(subroutine(num_qubits, qcen, 1:7), qcm,qccr,subroutine(num_qubits, qcen', 1:7)) 
-eqc = error_quantum_circuit(qc, pairs)
-vizcircuit(eqc)
-
-# Finally, we can simulate the error correction process with the coherent error.
-tn = fidelity_tensornetwork(eqc, ConnectMap(data_qubits,setdiff(1:27, data_qubits), 27))
-optnet = optimize_code(tn, TreeSA(), OMEinsum.MergeVectors()) 
-inf = 1-abs(contract(optnet)[1]/4)
-
 # [^Heußen]: Heußen, S., Locher, D. F., & Müller, M. (2024). Measurement-Free Fault-Tolerant Quantum Error Correction in Near-Term Devices. PRX Quantum, 5(1), 010333. https://doi.org/10.1103/PRXQuantum.5.010333
