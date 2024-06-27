@@ -2,6 +2,8 @@
 # We provide a number of quantum error correction codes. 
 using TensorQEC
 
+# [`PauliString`](@ref)
+
 # ## Toric Code
 # The Toric code is a 2D topological code. We can define a Toric code instance  by `ToricCode(m, n)`, where `m` and `n` are the number of rows and columns of the Toric code.
 tc = ToricCode(2, 3)

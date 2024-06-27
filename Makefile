@@ -26,7 +26,7 @@ coverage:
 	$(JL) -e 'using Pkg; Pkg.test(; coverage=true)'
 
 servedocs:
-	$(JL) -e 'using Pkg; Pkg.activate("docs"); using LiveServer; servedocs()'
+	$(JL) -e 'using Pkg; Pkg.activate("docs"); using LiveServer; servedocs(; skip_dirs=["docs/src/assets", "docs/src/generated"], literate_dir="examples")'
 
 clean:
 	rm -rf docs/build

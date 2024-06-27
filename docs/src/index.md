@@ -14,12 +14,3 @@ Also, we include more general QEC tools, including
 * QEC encoding circuit construction,
 * Decoding truth table construction,
 * Measurement circuit construction.
-
-Documentation for [TensorQEC](https://github.com/nzy1997/TensorQEC.jl).
-
-```@index
-```
-
-```@autodocs
-Modules = [TensorQEC]
-```

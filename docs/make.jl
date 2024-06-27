@@ -28,8 +28,10 @@ makedocs(;
         "Topics" => [
             "QEC Codes" => "generated/codes.md",
             "Inference" => "generated/inference.md",
-            "Simulation" => "generated/simulation.md"],
-            ],
+            "Simulation" => "generated/simulation.md"
+        ],
+        "Manual" => "man.md",
+    ],
 )
 
 deploydocs(;
