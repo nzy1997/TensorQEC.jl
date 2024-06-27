@@ -1,7 +1,7 @@
 using Test, TensorQEC, TensorQEC.Yao
 @testset "measure_syndrome!" begin
-    result=stabilizers(SurfaceCode(3,3))
-    code = TensorQEC.stabilizers2bimatrix(result)
+    st=stabilizers(SurfaceCode(3,3))
+    code = TensorQEC.stabilizers2bimatrix(st)
     TensorQEC.gaussian_elimination!(code)
     qc = TensorQEC.encode_circuit(code)
     #display(vizcircuit(qc))
@@ -10,7 +10,7 @@ using Test, TensorQEC, TensorQEC.Yao
     reg = join(rand_state(1), zero_state(8))
     apply!(reg, qc)
     apply!(reg, put(9, 9=>X))
-    measure_outcome=measure_syndrome!(reg, result)
+    measure_outcome=measure_syndrome!(reg, st)
     @test measure_outcome==[1,1,1,1,1,1,1,-1]
     @test syndrome_transform(code, measure_outcome) == Mod2[0,0,0,0,0,1,0,1]
 
@@ -18,7 +18,7 @@ using Test, TensorQEC, TensorQEC.Yao
     reg = join(rand_state(1), zero_state(8))
     apply!(reg, qc)
     apply!(reg, put(9, 3=>Z))
-    measure_outcome=measure_syndrome!(reg, result)
+    measure_outcome=measure_syndrome!(reg, st)
     @test measure_outcome==[1,1,-1,1,1,1,1,1]
     @test syndrome_transform(code, measure_outcome) == Mod2[0,0,1,0,0,0,0,0]
 end
@@ -58,6 +58,7 @@ end
     cl = clifford_network(qc)
     p = fill([0.85,0.05,0.05,0.05],qubit_num)
     pinf = syndrome_inference(cl, syn_dict, p)
+    @show pinf
     ps_ec_phy = TensorQEC.pauli_string_map_iter(correction_pauli_string(qubit_num, syn_dict, pinf), qc)
     @show ps_ec_phy
     apply!(reg, Yao.YaoBlocks.Optimise.to_basictypes(ps_ec_phy))

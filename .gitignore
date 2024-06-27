@@ -9,5 +9,4 @@ docs/src/notebooks
 Manifest.toml
 .vscode/
 *.txt
-*.svg
 .DS_Store

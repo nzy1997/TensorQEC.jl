@@ -13,8 +13,8 @@ function stabilizers2bimatrix(stabilizers::AbstractVector{PauliString{N}}) where
 	xs = findall(s -> all(x -> x == 1 || x == 2, s.ids), stabilizers)
 	zs = findall(s -> all(x -> x == 1 || x == 4, s.ids), stabilizers)
 	@assert length(xs) + length(zs) == length(stabilizers) "Invalid PauliString"
-	A = [stabilizers[xs[i]].ids[j] == 2 for i ∈ 1:length(xs), j ∈ 1:N]
-	B = [stabilizers[zs[i]].ids[j] == 4 for i ∈ 1:length(zs), j ∈ 1:N]
+	A = [stabilizers[xs[i]].ids[N+1-j] == 2 for i ∈ 1:length(xs), j ∈ 1:N]
+	B = [stabilizers[zs[i]].ids[N+1-j] == 4 for i ∈ 1:length(zs), j ∈ 1:N]
 	return Bimatrix(cat(A, B; dims = (1, 2)), Matrix{Mod2}(I, length(stabilizers), length(stabilizers)), collect(1:N), length(xs))
 end
 

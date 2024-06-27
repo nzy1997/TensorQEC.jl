@@ -104,3 +104,10 @@ end
 	focus!(reg,9)
 	@test fidelity(reg,regrs) ≈ 1
 end
+
+@testset "code832" begin
+    st = stabilizers(Code832())
+    qcen, data_qubits, code = encode_stabilizers(st)
+    regrs = rand_state(3)
+    reg = place_qubits(regrs, data_qubits, nqubits(qcen))
+end

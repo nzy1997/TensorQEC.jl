@@ -48,5 +48,5 @@ function pauli_string_map_iter(ps::PauliString{N}, qc::ChainBlock) where N
 end
 function pauli_string_map(ps::PauliString{N}, paulimapping::Array, qubits::Vector{Int}) where N
     c=findall(!iszero, paulimapping[fill(:,length(size(paulimapping)) ÷ 2)...,ps.ids[qubits]...])[1]
-    return PauliString(([k ∈ qubits ? c[findfirst(==(k),qubits)] : ps.ids[k] for k in 1:N]...,))
+    return PauliString(([k ∈ qubits ? c[findfirst(==(k),qubits)] : ps.ids[k] for k in N:(-1):1]...,))
 end

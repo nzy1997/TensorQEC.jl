@@ -93,7 +93,7 @@ end
 
 # compiling and visualization
 function Yao.YaoBlocks.Optimise.to_basictypes(ps::PauliString{N}) where N
-    return chain(N, [put(N, i=>pauli(q)) for (i, q) in enumerate(ps.ids) if q != 1]...)
+    return chain(N, [put(N, N+1-i=>pauli(q)) for (i, q) in enumerate(ps.ids) if q != 1]...)
 end
 # apply and mat
 xgates(ps::PauliString{N}) where N = repeat(N, X, (findall(x->x == 2, (ps.ids...,))...,))
@@ -183,5 +183,5 @@ densitymatrix2sumofpaulis(dm::DensityMatrix) = tensor2sumofpaulis(real.(pauli_de
 # - k is the Pauli operator, 1 for I, 2 for X, 3 for Y, 4 for Z
 # - ids is a vector of qubit ids
 # output: a PauliString object
-paulistring(n, k, ids) = PauliString((i ∈ ids ? k : 1 for i in 1:n)...)
+paulistring(n, k, ids) = PauliString((i ∈ ids ? k : 1 for i in n:(-1):1)...)
 
