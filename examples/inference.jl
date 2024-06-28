@@ -1,5 +1,6 @@
 # # Inference with Tensor Network
 # This example demonstrates how to define stabilizers, encode data qubits measure syndromes, use tensor network to infer error probability, and correct the error. The main reference is [^Ferris]. 
+
 # We take the $3*3$ surface code as an example. We use Yao.jl to simulate a physical quantum devise and perform error correction.
 
 # ## Definition of Stabilizers
@@ -10,7 +11,7 @@ st = stabilizers(SurfaceCode(3,3))
 qc, data_qubits, code = encode_stabilizers(st)
 vizcircuit(qc)
 
-# To get the encoding circuit, we may adjust the generators of the stabilizer group. The generators now are
+# During the process of getting the encoding circuit, we may adjust the generators of the stabilizer group. The current generators are
 TensorQEC.bimatrix2stabilizers(code)
 
 # ## Circuit Simulation with Yao.jl

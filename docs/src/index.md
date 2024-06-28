@@ -4,8 +4,8 @@ CurrentModule = TensorQEC
 
 # TensorQEC
 
-This package utilizes the tensor network to study the properties of *quantum error correction* (QEC).The main features include
-* Quantum error correction code decoder with tensor network,
+This package utilizes the tensor network to study the properties of *quantum error correction*(QEC). The main features include
+* Quantum error correction code decoder with tensor network ([Inference with Tensor Network](@ref)),
 * Quantum circuit simulation with tensor network to estimate the threshold of QEC.
 
 ## TODO:Drawbacks

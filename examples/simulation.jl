@@ -25,10 +25,11 @@ vizcircuit(qcen)
 qcm,st_pos, num_qubits = measure_circuit_steane(qcen,data_qubits[1],st,3)
 vizcircuit(qcm)
 
-# Then we generate truth table for the error correction.
-table = make_table(TensorQEC.stabilizers2bimatrix(st).matrix, 1)
+# Then we generate truth table for the error correction by [`make_table`](@ref). For more detials on truth table, please check [Inference with Truth Table](@ref).
+table = make_table(st, 1)
+show_table(table,7,6)
 
-# Now we can generate the measurement-free correction circuit by encoding the truth table on the quantum circuit directly.
+# Now we use [`correct_circuit`](@ref) to generate the measurement-free correction circuit by encoding the truth table on the quantum circuit directly.
 qccr = correct_circuit(table, collect(st_pos), num_qubits, 6, 7)
 vizcircuit(qccr)
 
@@ -37,11 +38,11 @@ vizcircuit(qccr)
 qcf=chain(subroutine(num_qubits, qcen, 1:7),put(27,3=>Y),qcm,qccr,subroutine(num_qubits, qcen', 1:7))
 vizcircuit(qcf)
 
-# Then we transform the circuit to a tensor network and optimize its contraction order.
-tn = fidelity_tensornetwork(qcf, ConnectMap(data_qubits,setdiff(1:27, data_qubits), 27))
-optnet = optimize_code(tn, TreeSA(), OMEinsum.MergeVectors()) 
+# Then we transform the circuit to a tensor network and optimize its contraction order. [`QCInfo`](@ref) records the information of the quantum circuit, including the data qubits and the number of qubits. [`fidelity_tensornetwork`](@ref) constructs the tensor network to calculate the fidelity after error correction.
+tn = fidelity_tensornetwork(qcf, QCInfo(data_qubits, 27))
 
-# Finally, we contract the tensor network to get the fidelity after error correction.
+# Finally, we optimize the contraction order and contract the tensor network to get the infidelity after error correction.
+optnet = optimize_code(tn, TreeSA(; ntrials=1, niters=5), OMEinsum.MergeVectors()) 
 inf = 1-abs(contract(optnet)[1]/4)
 
 # [^Heußen]: Heußen, S., Locher, D. F., & Müller, M. (2024). Measurement-Free Fault-Tolerant Quantum Error Correction in Near-Term Devices. PRX Quantum, 5(1), 010333. https://doi.org/10.1103/PRXQuantum.5.010333

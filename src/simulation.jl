@@ -80,11 +80,23 @@ function YaoToEinsum.add_gate!(eb::YaoToEinsum.EinBuilder{T}, b::PutBlock{D,C,Id
     return eb
 end
 
-struct ConnectMap 
-    tr_qubits::Vector{Int}
-    ptr_qubits::Vector{Int}
+"""
+    QCInfo(data_qubits::Vector{Int},ancilla_qubits::Vector{Int},nq::Int)
+    QCInfo(data_qubits::Vector{Int},nq::Int)
+
+A struct to store the qubit information of a quantum circuit.
+
+### Fields
+- `data_qubits`: The data qubit indices.
+- `ancilla_qubits`: The ancilla qubit indices. If not specified, it is set to the complement of `data_qubits` in `1:nq`
+- `nq`: The total number of qubits.
+"""
+struct QCInfo 
+    data_qubits::Vector{Int}
+    ancilla_qubits::Vector{Int}
     nq::Int
 end
+QCInfo(data_qubits::Vector{Int}, nq::Int) = QCInfo(data_qubits, setdiff(1:nq, data_qubits), nq)
 
 function dm_circ(qc::ChainBlock)
     num_qubits = nqubits(qc)
@@ -117,22 +129,33 @@ function ein_circ(qc::ChainBlock, input_qubits::Vector{Int}, output_qubits::Vect
     return ein_circ(dm_circ(qc), input_qubits, output_qubits, num_qubits)
 end
 
-function ein_circ(qc::ChainBlock, cm::ConnectMap)
-    return ein_circ(qc, cm.tr_qubits, cm.tr_qubits ∪ cm.ptr_qubits)
+function ein_circ(qc::ChainBlock, qc_info::QCInfo)
+    return ein_circ(qc, qc_info.data_qubits, qc_info.data_qubits ∪ qc_info.ancilla_qubits)
 end
 
-function qc2enisum(qc::ChainBlock, srs::Vector{SymbolRecorder{D}}, cm::ConnectMap) where D
-    ein_code = yao2einsum(qc;initial_state=Dict(x=>0 for x in cm.ptr_qubits ∪ (cm.ptr_qubits.+cm.nq)), optimizer=nothing)
-    replace_dict = ([[srs[2*i-1].symbol => srs[2*length(cm.tr_qubits)+2*i-1].symbol  for i in 1:length(cm.tr_qubits)]...,[srs[2*i].symbol => srs[2*length(cm.tr_qubits)+2*i].symbol  for i in 1:length(cm.tr_qubits)]...,[srs[4*length(cm.tr_qubits)+2*i-1].symbol => srs[4*length(cm.tr_qubits)+2*i].symbol for i in 1:length(cm.ptr_qubits)]...])
+function qc2enisum(qc::ChainBlock, srs::Vector{SymbolRecorder{D}}, qc_info::QCInfo) where D
+    ein_code = yao2einsum(qc;initial_state=Dict(x=>0 for x in qc_info.ancilla_qubits ∪ (qc_info.ancilla_qubits.+qc_info.nq)), optimizer=nothing)
+    replace_dict = ([[srs[2*i-1].symbol => srs[2*length(qc_info.data_qubits)+2*i-1].symbol  for i in 1:length(qc_info.data_qubits)]...,[srs[2*i].symbol => srs[2*length(qc_info.data_qubits)+2*i].symbol  for i in 1:length(qc_info.data_qubits)]...,[srs[4*length(qc_info.data_qubits)+2*i-1].symbol => srs[4*length(qc_info.data_qubits)+2*i].symbol for i in 1:length(qc_info.ancilla_qubits)]...])
     jointcode = replace(ein_code.code, replace_dict...)
     empty!(jointcode.iy) 
     return TensorNetwork(jointcode, ein_code.tensors)
 end
+"""
+    fidelity_tensornetwork(qc::ChainBlock,qc_info::QCInfo)
 
-function fidelity_tensornetwork(qc::ChainBlock,cm::ConnectMap)
+Generate the tensor network representation of the quantum circuit fidelity with the given [`QCInfo`](@ref), where ancilla qubits are initilized at zero state and partial traced after the circuit.
+
+### Arguments
+- `qc`: The quantum circuit.
+- `qc_info`: The qubit information of the quantum circuit
+
+### Returns
+- `tn`: The tensor network representation of the quantum circuit.
+"""
+function fidelity_tensornetwork(qc::ChainBlock,qc_info::QCInfo)
     qc= simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
-    qce,srs = ein_circ(qc,cm)
-    return qc2enisum(qce,srs,cm) 
+    qce,srs = ein_circ(qc,qc_info)
+    return qc2enisum(qce,srs,qc_info) 
 end
 
 function coherent_error_unitary(u::AbstractMatrix{T}, error_rate::Real; cache::Union{Vector, Nothing} = nothing) where T

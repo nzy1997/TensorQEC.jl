@@ -35,16 +35,16 @@ export toric_code, stabilizers,ToricCode, SurfaceCode, ShorCode,SteaneCode,Code8
 export Bimatrix,syndrome_transform, encode_stabilizers,place_qubits
 
 # measurement
-export  measure_circuit_fault_tol, correct_circuit, measure_circuit_steane,measure_circuit
+export measure_circuit_fault_tol,  measure_circuit_steane,measure_circuit
 
 # tablemake
-export make_table, save_table, read_table
+export make_table, save_table, load_table,correct_circuit,show_table
 
 # clifford group
 export pauli_group, clifford_group, clifford_simulate
 
 # simulation
-export ComplexConj, SymbolRecorder,IdentityRecorder, ein_circ, ConnectMap, qc2enisum
+export ComplexConj, SymbolRecorder,IdentityRecorder, ein_circ, QCInfo, qc2enisum
 export coherent_error_unitary, error_quantum_circuit,toput, error_pairs,fidelity_tensornetwork
 
 
