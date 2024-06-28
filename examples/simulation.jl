@@ -13,7 +13,7 @@ qcen, data_qubits, code = encode_stabilizers(st)
 vizcircuit(qcen)
 
 # ## Syndrome Extraction and Measurement-Free Error Correction
-# First, we generate the steane measurement circuit and 'st_pos' records the ancilla qubits that store the measurement results of the stabilizers.
+# First, we generate the steane measurement circuit and `st_pos` records the ancilla qubits that store the measurement results of the stabilizers.
 qcm,st_pos, num_qubits = measure_circuit_steane(qcen,data_qubits[1],st,3)
 vizcircuit(qcm)
 

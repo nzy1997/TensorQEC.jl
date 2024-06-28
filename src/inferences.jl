@@ -9,7 +9,7 @@ Measure the given stabilizers.
 - `stabilizers`: The vector of pauli strings, composing the generator of stabilizer group.
 
 ### Returns
-- 'measure_outcome': The measurement outcome of the stabilizers, which is either 1 or -1.
+- `measure_outcome`: The measurement outcome of the stabilizers, which is either 1 or -1.
 """
 function measure_syndrome!(reg::AbstractRegister, stabilizers::AbstractVector{PauliString{N}}) where N
 	measure_oprators = [Yao.YaoBlocks.Optimise.to_basictypes(ps) for ps in stabilizers]
@@ -24,6 +24,35 @@ function generate_syndrome_dict(bimat::Bimatrix, syn::Vector{Mod2})
 	return Dict([bimat.ordering[i]=>syn[i].x for i in 1:size(bimat.Q,2)])
 end
 
+"""
+	transformed_sydrome_dict(measure_outcome::Vector{Int}, code::Bimatrix)
+
+Generate the syndrome dictionary on the transformed stabilizers from the measurement outcome. 
+
+### Arguments
+- `measure_outcome`: The measurement outcome of the stabilizers, which is either 1 or -1.
+- `code`: The structure storing the encoding information.
+
+### Returns
+- `syn_dict`: The syndrome dictionary on the transformed stabilizers. 1 is transformed to 0, -1 is transformed to 1. 
+"""
+function transformed_sydrome_dict(measure_outcome::Vector{Int}, code::Bimatrix)
+	return generate_syndrome_dict(code, syndrome_transform(code, measure_outcome))
+end
+
+"""
+	syndrome_inference(cl::CliffordNetwork{T}, syn::Dict{Int,Bool}, p::Vector{Vector{Float64}}) where T
+
+Infer the error probability of each qubit from the measurement outcome of the stabilizers.
+
+### Arguments
+- `cl`: The Clifford network.
+- `syn`: The syndrome dictionary.
+- `p`: The prior error probability of each physical qubit.
+
+### Returns
+- `pinf`: The inferred error probability of each physical qubit in coding space. For errored stabilizers, there are two possibilities: X or Y error. For unerrored stabilizers, there are also two possibilities: no error or Z error. For unmeasured qubits, there are four possibilities: no error, X error, Y error, Z error. Therefore the length of each vector in `pinf` may be 2 or 4.
+"""
 function syndrome_inference(cl::CliffordNetwork{T}, syn::Dict{Int,Bool}, p::Vector{Vector{Float64}})where T
 	n = length(p)
 	ps = Dict([i=>BoundarySpec((p[i]...,), false) for i in 1:n])
@@ -52,11 +81,10 @@ function correction_pauli_string(qubit_num::Int, syn::Dict{Int, Bool}, prob::Dic
 	return PauliString(ps[1:end]...)
 end
 
-function inference!(reg::AbstractRegister, code::Bimatrix, st::AbstractVector{PauliString{N}}, qc::ChainBlock, p::Vector{Vector{Float64}}) where N
-	measure_outcome = measure_syndrome!(reg, st)
+function inference(measure_outcome::Vector{Int}, code::Bimatrix, qc::ChainBlock, p::Vector{Vector{Float64}}) 
 	syn_dict = generate_syndrome_dict(code, syndrome_transform(code, measure_outcome))
 	cl = clifford_network(qc)
 	pinf = syndrome_inference(cl, syn_dict, p)
-	ps_ec_phy = pauli_string_map_iter(correction_pauli_string(N, syn_dict, pinf), qc)
+	ps_ec_phy = pauli_string_map_iter(correction_pauli_string(nqubits(qc), syn_dict, pinf), qc)
 	return ps_ec_phy
 end

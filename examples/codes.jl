@@ -32,8 +32,8 @@ st = stabilizers(shor)
 steane = SteaneCode()
 st = stabilizers(steane)
 
-# [[8,3,2]] Code
-# The [[8,3,2]] code is the smallest non-trivial 3D color code. We can define a [[8,3,2]] code instance by [`Code832`](@ref).
+# ## [[8,3,2]] Code
+# The [[8,3,2]] CSS code is the smallest non-trivial 3D color code. We can define a CSS [[8,3,2]] code instance by [`Code832`](@ref).
 
 # ![](../images/code832.svg)
 code832 = Code832()

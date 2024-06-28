@@ -43,7 +43,11 @@ function matrix2factor(g::AbstractBlock, input_vars::Vector{Int}, pins::Vector{I
 	return Factor(vars, vals)
 end
 
-# Yao circuit to a CliffordNetwork instance.
+"""
+	clifford_network(qc::ChainBlock)
+
+Generate a Clifford network from a quantum circuit.
+"""
 function clifford_network(qc::ChainBlock)
 	nvars = nqubits(qc)
 	pins = collect(1:nvars)

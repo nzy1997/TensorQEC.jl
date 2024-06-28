@@ -26,7 +26,7 @@ export densitymatrix2sumofpaulis, SumOfPaulis
 export PauliString, PauliGroup, isanticommute
 
 # inference
-export syndrome_inference, measure_syndrome!,correction_pauli_string, generate_syndrome_dict,pauli_string_map_iter, inference!
+export syndrome_inference, measure_syndrome!,correction_pauli_string, generate_syndrome_dict,pauli_string_map_iter, inference, transformed_sydrome_dict
 
 # codes 
 export toric_code, stabilizers,ToricCode, SurfaceCode, ShorCode,SteaneCode,Code832

@@ -120,7 +120,7 @@ end
     @test fidelity(density_matrix(reg, [qubit_num]),density_matrix(regcopy, [qubit_num])) ≈ 1.0
 end
 
-@testset "inference!" begin
+@testset "inference" begin
     qubit_num = 7
     st = stabilizers(SteaneCode())
     qc, data_qubits, code = encode_stabilizers(st)
@@ -130,7 +130,8 @@ end
     apply!(reg, put(qubit_num, 4=>X))
 
     p = fill([0.85,0.05,0.05,0.05],qubit_num)
-    ps_ec_phy = inference!(reg, code, st, qc, p)
+    measure_outcome = measure_syndrome!(reg, st)
+    ps_ec_phy = inference(measure_outcome, code, qc, p)
     @show ps_ec_phy
     apply!(reg, ps_ec_phy)
 
