@@ -10,10 +10,13 @@ st = stabilizers(SurfaceCode(3,3))
 qc, data_qubits, code = encode_stabilizers(st)
 vizcircuit(qc)
 
+# To get the encoding circuit, we may adjust the generators of the stabilizer group. The generators now are
+TensorQEC.bimatrix2stabilizers(code)
+
 # ## Circuit Simulation with Yao.jl
 # Create a random qubit state to be encoded.
 reg1 = rand_state(1)
-# We use 'place_qubits' to create a quantum register. We place the data qubits in 'data_qubits' , and the rest ancilla qubits are in the $|0\rangle$ state.
+# We use ['place_qubits'](@ref) to create a quantum register. We place the data qubits in 'data_qubits' , and the rest ancilla qubits are in the $|0\rangle$ state.
 reg = place_qubits(reg1, data_qubits, nqubits(qc))
 
 # Apply the encoding circuits.
@@ -23,8 +26,11 @@ apply!(reg, qc)
 apply!(reg, put(9, 3 => X))
 
 # ## Measure the Syndrome and Inference the Error Probability
-# We first measure the stabilizers to get the error syndrome.
-syn_dict = generate_syndrome_dict(code, syndrome_transform(code, measure_syndrome!(reg, st)))
+# We first measure the stabilizers to get the error syndrome by ['measure_syndrome!'](@ref). 1 means the stabilizer is not violated, and -1 means the stabilizer is violated.
+measure_outcome = measure_syndrome!(reg, st)
+
+# Since the stabilizers are not the same as 'st', we need to transform the syndome of the current stabilizers.  
+syn_dict = generate_syndrome_dict(code, syndrome_transform(code, measure_outcome))
 
 # Then generate the tensor network for syndrome inference.
 cl = clifford_network(qc)

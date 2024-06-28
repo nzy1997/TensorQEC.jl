@@ -111,6 +111,19 @@ function encode_stabilizers(stabilizers::AbstractVector{PauliString{N}}) where N
 	return qc, data_qubits, bimat
 end
 
+"""
+	place_qubits(reg0::AbstractRegister, data_qubits::Vector{Int}, num_qubits::Int)
+
+Place the data qubits to the specified position. The other qubits are filled with zero state.
+
+### Arguments
+- `reg0`: The data register.
+- `data_qubits`: The indices of data qubits.
+- `num_qubits`: The total number of qubits.
+
+### Returns
+- `reg`: The register with data qubits placed at the specified position.
+"""
 function place_qubits(reg0::AbstractRegister, data_qubits::Vector{Int}, num_qubits::Int)
 	@assert nqubits(reg0) == length(data_qubits)
 	reg = join(reg0,zero_state(num_qubits-length(data_qubits)))
