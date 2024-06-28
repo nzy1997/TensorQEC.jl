@@ -1,19 +1,27 @@
-# # Tensor Network Simulation
-# This example demonstrates how to use tensor network to simulate the error correction process.
+# # Measurement-Free QEC Simulation with Tensor Network
+# This example demonstrates how to use tensor network to simulate a error correction process.
 # We use the $[[7,1,3]]$ steane code and the measurement-free QEC[^Heußen] as an example. There are non-clifford gates in the quantum circuit, so we use tensor network to simulate the process.
 
+# ## Measurement-Free Quantum Error Correction
+# Traditional quantum error correction involves several key procedures. First, the encoding procedure involves mapping the logical quantum information into a larger, redundant quantum state using QEC codes such as the Shor code or the surface code. Usually, those quantum code are defined by stabilizers. Then, the syndrome extraction is the process that we extract the value of the stabilizers into ancilla qubits. And we measure the ancilla qubits to detect the value of stabilizers. After detection, the error syndromes are identified, which indicates the presence and location of errors in the quantum state. Next, the error correction procedure uses quantum gates to apply operations that reverse the effects of errors, effectively restoring the quantum state to its original form. 
+
+# In the measurement-free QEC protocol, we embed the classical truth table of the error correction into the quantum circuit directly. For example, if we measure the stabilizer 1 and 2 to ancilla qubit 1 and 2, and if they are both in state $|1\rangle$, we know that there is an X error on the first qubit. We can encode this information into the quantum circuit directly by a multi-controlled-X gate.
+
+# ![](../images/ccx.svg)
+
+# Since such multi-controlled gate is non-clifford, we can't simulate it with clifford circuit simulator.
 
 # ## Definition of Stabilizers and Encoding Circuits
 using TensorQEC, TensorQEC.Yao
 using TensorQEC.OMEinsum
 st = stabilizers(SteaneCode())
 
-# Generate the encoding circuits of the stabilizers.
+# Generate the encoding circuits of the stabilizers by [`encode_stabilizers`](@ref). `qcen` is the encoding circuit, `data_qubits` are the qubits that we should put initial qubtis in, and `code` is the structure records information of the encoding circuit.
 qcen, data_qubits, code = encode_stabilizers(st)
 vizcircuit(qcen)
 
 # ## Syndrome Extraction and Measurement-Free Error Correction
-# First, we generate the steane measurement circuit and `st_pos` records the ancilla qubits that store the measurement results of the stabilizers.
+# First, we generate the steane measurement circuit by [`measure_circuit_steane`](@ref) and `st_pos` records the ancilla qubits that store the measurement results of the stabilizers.
 qcm,st_pos, num_qubits = measure_circuit_steane(qcen,data_qubits[1],st,3)
 vizcircuit(qcm)
 

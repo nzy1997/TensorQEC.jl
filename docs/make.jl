@@ -28,7 +28,7 @@ makedocs(;
         "Topics" => [
             "QEC Codes" => "generated/codes.md",
             "Inference with Tensor Network" => "generated/inference.md",
-            "Simulation" => "generated/simulation.md"
+            "Measurement-Free QEC" => "generated/simulation.md"
         ],
         "Manual" => "man.md",
     ],

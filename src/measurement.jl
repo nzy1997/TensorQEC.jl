@@ -14,7 +14,19 @@ function measure_circuit_fault_tol!(qc::ChainBlock, st::PauliString{N}, pos::Vec
 	push!(qc, put(num_qubits,pos[1] => H))
 	return qc
 end
+"""
+	measure_circuit_fault_tol(sts::Vector{PauliString{N}}) where N
 
+Generate the Shor type measurement circuit for fault tolerant measurement.
+
+### Arguments
+- `sts`: The vector of Pauli strings, composing the generator of stabilizer group.
+
+### Returns
+- `qc`: The measurement circuit.
+- `st_pos`: The ancilla qubit indices that measrue corresponding stabilizers.
+- `num_qubits`: The total number of qubits in the circuit.
+"""
 function measure_circuit_fault_tol(sts::Vector{PauliString{N}}) where N
 	st_length = [count(x -> x != 1, st.ids) for st in sts]
 	st_pos = [1 + sum(st_length[1:i-1]) for i in 1:length(st_length)]
@@ -61,7 +73,22 @@ function correct_circuit(table::Dict{Int,Int}, st_pos::Vector{Int},num_qubits::I
 	end
 	return qc
 end
+"""
+	measure_circuit_steane(qcen::ChainBlock, data_qubit::Int, sts::Vector{PauliString{N}},xst_num::Int) where N
 
+Generate the Steane type measurement circuit.
+
+### Arguments
+- `qcen`: The encoding circuit.
+- `data_qubit`: The index of the data qubit.
+- `sts`: The vector of Pauli strings, composing the generator of stabilizer group.
+- `xst_num`: The number of X type stabilizers.
+
+### Returns
+- `qc`: The measurement circuit.
+- `st_pos`: The ancilla qubit indices that measrue corresponding stabilizers.
+- `num_qubits`: The total number of qubits in the circuit.
+"""
 function measure_circuit_steane(qcen::ChainBlock, data_qubit::Int, sts::Vector{PauliString{N}},xst_num::Int) where N
 	num_sts = length(sts)
 	num_qubits = 3 * N + num_sts

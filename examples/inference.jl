@@ -6,7 +6,7 @@
 using TensorQEC, TensorQEC.Yao
 st = stabilizers(SurfaceCode(3,3))
 
-# Then we can generate the encoding circuits of the stabilizers. `qc` is the encoding circuit, `data_qubits` are the qubits that we should put initial qubtis in, and `code` is the structure records information of the encoding circuit.
+# Then we can generate the encoding circuits of the stabilizers by [`encode_stabilizers`](@ref). `qc` is the encoding circuit, `data_qubits` are the qubits that we should put initial qubtis in, and `code` is the structure records information of the encoding circuit.
 qc, data_qubits, code = encode_stabilizers(st)
 vizcircuit(qc)
 
@@ -52,7 +52,7 @@ ps_ec_phy = inference(measure_outcome, code, qc, p)
 apply!(reg, Yao.YaoBlocks.Optimise.to_basictypes(ps_ec_phy))
 
 # Finally, we can measure the stabilizers after error correction to check whether the error is corrected.
-generate_syndrome_dict(code, syndrome_transform(code, measure_syndrome!(reg, st)))
+measure_syndrome!(reg, st)
 
 # And we can calculate the fidelity after error correction to check whether the initial state is recovered.
 apply!(reg, qc')
