@@ -39,6 +39,11 @@ function pauli_repr(m::AbstractMatrix)
     return reshape(pmat, (size(m) .^2)...)
 end
 
+"""
+    pauli_string_map_iter(ps::PauliString{N}, qc::ChainBlock) where N
+
+Map the Pauli string `ps` by a quantum circuit `qc`. Return the mapped Pauli string.
+"""
 function pauli_string_map_iter(ps::PauliString{N}, qc::ChainBlock) where N
        if length(qc)==0
                return ps

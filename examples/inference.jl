@@ -1,4 +1,4 @@
-# # Tensor Network Inference
+# # Inference with Tensor Network
 # This example demonstrates how to define stabilizers, encode data qubits measure syndromes, use tensor network to infer error probability, and correct the error. The main reference is [^Ferris]. 
 # We take the $3*3$ surface code as an example. We use Yao.jl to simulate a physical quantum devise and perform error correction.
 
@@ -41,10 +41,10 @@ p = fill([0.85, 0.05, 0.05, 0.05], 9)
 # We can use the [`syndrome_inference`](@ref) function to infer the error probability.
 pinf = syndrome_inference(cl, syn_dict, p)
 
-# Generate the Pauli string for error correction. Since there is a stabilizer $X_3X_6$, applying $X_3$ or $X_6$ on the coding space are equivalent.
+# Generate the Pauli string for error correction. [`correction_pauli_string`](@ref) generates the error Pauli string in the coding space. To correct the error, we still need to transform it to the physical space by [`pauli_string_map_iter`](@ref). The corretion pauli string here is $X_6$. Since there is a stabilizer $X_3X_6$, applying $X_3$ or $X_6$ on the coding space are equivalent.
 ps_ec_phy = pauli_string_map_iter(correction_pauli_string(9, syn_dict, pinf), qc)
 
-# Or we can simply use the `inference!` function to measure syndrome and infer error probability.
+# Or we can simply use the [`inference`](@ref) function to infer error pauli string in one function.
 ps_ec_phy = inference(measure_outcome, code, qc, p)
 
 # ## Error Correction

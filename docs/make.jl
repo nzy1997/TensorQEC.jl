@@ -27,7 +27,7 @@ makedocs(;
         "Home" => "index.md",
         "Topics" => [
             "QEC Codes" => "generated/codes.md",
-            "Inference" => "generated/inference.md",
+            "Inference with Tensor Network" => "generated/inference.md",
             "Simulation" => "generated/simulation.md"
         ],
         "Manual" => "man.md",

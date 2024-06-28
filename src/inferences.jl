@@ -65,6 +65,19 @@ function syndrome_inference(cl::CliffordNetwork{T}, syn::Dict{Int,Bool}, p::Vect
 	return Dict([k => mp[[cl.mapped_qubits[k]]] for k in 1:n])
 end
 
+"""
+	correction_pauli_string(qubit_num::Int, syn::Dict{Int, Bool}, prob::Dict{Int, Vector{Float64}})
+
+Generate the error Pauli string in the coding space. To correct the error, we still need to transform it to the physical space.
+
+### Arguments
+- `qubit_num`: The number of qubits.
+- `syn`: The syndrome dictionary.
+- `prob`: The inferred error probability of each physical qubit in coding space.
+
+### Returns
+- `ps`: The error Pauli string in the coding space.
+"""
 function correction_pauli_string(qubit_num::Int, syn::Dict{Int, Bool}, prob::Dict{Int, Vector{Float64}})
 	ps = ones(Int, qubit_num)
 	for (k, v) in prob
@@ -81,6 +94,20 @@ function correction_pauli_string(qubit_num::Int, syn::Dict{Int, Bool}, prob::Dic
 	return PauliString(ps[1:end]...)
 end
 
+"""
+	inference(measure_outcome::Vector{Int}, code::Bimatrix, qc::ChainBlock, p::Vector{Vector{Float64}})
+
+Infer the error probability of each qubit from the measurement outcome of the stabilizers.
+
+### Arguments
+- `measure_outcome`: The measurement outcome of the stabilizers, which is either 1 or -1.
+- `code`: The structure storing the encoding information.
+- `qc`: The encoding circuit.
+- `p`: The prior error probability of each physical qubit.
+
+### Returns
+- `ps_ec_phy`: The error Pauli string for error correction.
+"""
 function inference(measure_outcome::Vector{Int}, code::Bimatrix, qc::ChainBlock, p::Vector{Vector{Float64}}) 
 	syn_dict = generate_syndrome_dict(code, syndrome_transform(code, measure_outcome))
 	cl = clifford_network(qc)
