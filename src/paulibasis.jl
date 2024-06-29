@@ -10,19 +10,31 @@
 # 3. pauli_basis(2)[1,2]
 # 4. LinearAlgebra.kron(X,I2)
 # 5. X ⊗ I shown in the print
+
+"""
+    pauli_basis(nqubits::Int)
+
+Generate the n-qubit Pauli basis.
+"""
 function pauli_basis(nqubits::Int)
 	return [PauliString{nqubits}(ci.I) for ci in CartesianIndices(ntuple(_ -> 4, nqubits))]
 end
 
-# pauli decomposition of a matrix
-# returns the coefficients in pauli basis
+"""
+    pauli_decomposition(m::AbstractMatrix)
+
+Decompose a matrix into the Pauli basis.
+"""
 function pauli_decomposition(m::AbstractMatrix)
 	nqubits = Int(log2(size(m, 1)))
 	return [tr(mat(pauli) * m) for pauli in pauli_basis(nqubits)] / (2^nqubits)
 end
 
-# defined the linear mapping in the pauli basis
-# from the coding space to the physical qubits, i.e. (physical..., coding...) or (output..., input...)
+"""
+    pauli_mapping(m::AbstractMatrix)
+
+Convert a linear operator into the Pauli basis.
+"""
 function pauli_mapping(m::AbstractMatrix)
 	nqubits = Int(log2(size(m, 1)))
 	paulis = pauli_basis(nqubits)

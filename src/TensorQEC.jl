@@ -23,7 +23,7 @@ export Mod2
 export clifford_network, CliffordNetwork, generate_tensor_network, circuit2tensornetworks
 export ExtraTensor, UNITY4, PXY, PIZ, PXY_UNITY2, PIZ_UNITY2
 export densitymatrix2sumofpaulis, SumOfPaulis
-export PauliString, PauliGroup, isanticommute
+export PauliString, PauliGroup, isanticommute,paulistring
 
 # inference
 export syndrome_inference, measure_syndrome!,correction_pauli_string, generate_syndrome_dict,pauli_string_map_iter, inference, transformed_sydrome_dict
@@ -41,7 +41,7 @@ export measure_circuit_fault_tol,  measure_circuit_steane,measure_circuit
 export make_table, save_table, load_table,correct_circuit,show_table
 
 # clifford group
-export pauli_group, clifford_group, clifford_simulate
+export pauli_group, clifford_group, clifford_simulate,to_perm_matrix,perm_of_paulistring
 
 # simulation
 export ComplexConj, SymbolRecorder,IdentityRecorder, ein_circ, QCInfo, qc2enisum

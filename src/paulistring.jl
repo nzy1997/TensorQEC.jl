@@ -183,5 +183,12 @@ densitymatrix2sumofpaulis(dm::DensityMatrix) = tensor2sumofpaulis(real.(pauli_de
 # - k is the Pauli operator, 1 for I, 2 for X, 3 for Y, 4 for Z
 # - ids is a vector of qubit ids
 # output: a PauliString object
+
+"""
+    paulistring(n::Int, k::Int, ids::Vector{Int}) -> PauliString
+
+Create a Pauli string with `n` qubits, where the `i`-th qubit is `k` if `i` is in `ids`, otherwise `1`.
+`k` = 1 for I2, 2 for X, 3 for Y, 4 for Z.
+"""
 paulistring(n, k, ids) = PauliString((i ∈ ids ? k : 1 for i in 1:n)...)
 

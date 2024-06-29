@@ -1,5 +1,10 @@
 # generate Clifford group members
 # https://www.nature.com/articles/s41534-022-00583-7
+"""
+    clifford_group(n::Int)
+
+Generate the n-qubit Clifford group.
+"""
 clifford_group(n::Int) = generate_group(clifford_generators(n))
 
 function clifford_generators(n::Int)
@@ -15,6 +20,23 @@ function clifford_generators(n::Int)
         )))
     end
 end
+
+"""
+    to_perm_matrix(::Type{T}, ::Type{Ti}, m::AbstractMatrix; atol=1e-8)
+    to_perm_matrix(::Type{T}, ::Type{Ti}, m::AbstractBlock; atol=1e-8)
+
+Convert a Clifford gate to its permutation representation.
+
+### Arguments
+- `T`: Element type of phase factor.
+- `Ti`: Element type of the permutation matrix.
+- `m`: The matrix representation of the gate.
+- `atol`: The tolerance to zeros in the matrix.
+
+### Returns
+- `pm`: The permutation matrix. pm.perm is the permutation vector, pm.vals is the phase factor.
+"""
+to_perm_matrix(::Type{T}, ::Type{Ti}, m::AbstractBlock; atol=1e-8) where {T, Ti} = to_perm_matrix(T, Ti, pauli_repr(m); atol)
 function to_perm_matrix(::Type{T}, ::Type{Ti}, m::AbstractMatrix; atol=1e-8) where {T, Ti}
     @assert all(j -> count(i->abs(i) > atol, view(m, :, j)) == 1, 1:size(m, 2))
     perm = [findfirst(i->abs(i) > atol, view(m, :, j)) for j=1:size(m, 2)]
@@ -56,6 +78,20 @@ struct CliffordTable{N, Ti}
     table::Vector{PermMatrix{Int8, Ti, Vector{Int8}, Vector{Ti}}}
 end
 
+"""
+    perm_of_paulistring(pm::PermMatrix, ps::PauliString, pos::Vector{Int})
+
+Map the Pauli string `ps` by a permutation matrix `pm`. Return the mapped Pauli string and the phase factor.
+
+### Arguments
+- `pm`: The permutation matrix.
+- `ps`: The Pauli string.
+- `pos`: The positions where the permuation is applied.
+
+### Returns
+- `ps`: The mapped Pauli string.
+- `val`: The phase factor.
+"""
 function perm_of_paulistring(pm::PermMatrix, ps::PauliString, pos::Vector{Int})
     v = collect(ps.ids)
     ps_perm_num = 1+sum((ps.ids[pos] .-1) .* [4^i for i in 0:length(pos)-1])
@@ -63,6 +99,11 @@ function perm_of_paulistring(pm::PermMatrix, ps::PauliString, pos::Vector{Int})
     return PauliString(v...), pm.vals[ps_perm_num]
 end
 
+"""
+    clifford_simulate(ps::PauliString, qc::ChainBlock) 
+    
+Map the Pauli string `ps` by a quantum circuit `qc`. Return the mapped Pauli string and the phase factor.
+"""
 function clifford_simulate(ps::PauliString, qc::ChainBlock)
     gatedict=Dict{UInt64, PermMatrix}()
     valf = 1
