@@ -24,7 +24,7 @@ tn = fidelity_tensornetwork(qc, QCInfo(data_qubits, 3))
 optnet = optimize_code(tn, TreeSA(; ntrials=1, niters=3), OMEinsum.MergeVectors())
 inf = 1-abs(contract(optnet)[1]/4)
 
-# ## Coherent Error Simulation
+# ## Coherent Error Simulation with Tensor Network
 # We add coherent error to the circuit by adding unitary error to every unitary gate. Here we suppose that for each unitary, the errored unitary is fixed to it, i.e., we apply the same errored X gate every time we want to apply an X gate. If you want to apply random errored unitary, you can call [`coherent_error_unitary`](@ref) to generate the errored unitary ervey time you want to apply it. 
 
 # [`error_pairs`](@ref) generates the error pairs for the gates to be replaced. Here we replace all the X gates and CNOT gates with the same errored X gate and CNOT gate. 
