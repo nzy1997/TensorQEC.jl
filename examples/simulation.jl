@@ -45,4 +45,5 @@ tn = fidelity_tensornetwork(qcf, QCInfo(data_qubits, 27))
 optnet = optimize_code(tn, TreeSA(; ntrials=1, niters=5), OMEinsum.MergeVectors()) 
 inf = 1-abs(contract(optnet)[1]/4)
 
+# Here we simulate a 27-qubit density matrix, which is equivalent to simulate a 54-qubit quantum system. That is impossible for full state-vector simulation.
 # [^Heußen]: Heußen, S., Locher, D. F., & Müller, M. (2024). Measurement-Free Fault-Tolerant Quantum Error Correction in Near-Term Devices. PRX Quantum, 5(1), 010333. https://doi.org/10.1103/PRXQuantum.5.010333
