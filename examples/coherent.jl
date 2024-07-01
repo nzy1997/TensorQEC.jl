@@ -25,8 +25,7 @@ vizcircuit(qc)
 # This circuit should act trivially on the data qubit. We will check this later.
 
 # ## Circuit Simulation with Tensor Networks
-# TODO: add reference! 
-# We replace gates and density matries by tensors to get the tensor network representation of the quantum circuit. Applying a quantum channel on a density matix is equivalent to connecting two tensors together and contracting them.
+# Simulating quantum circuits using tensor networks is a powerful technique, particularly for circuits that are not easily amenable to simulation with classical computers[^Markov]. We can replace gates and density matries by tensors to get the tensor network representation of the quantum circuit. Applying a quantum channel on a density matix is equivalent to connecting two tensors together and contracting them.
 # ![](../images/applygate.svg)
 
 # To trace out a matrix in the tensor network, we can simply connect the two indices of the matrix and contract them. To partially trace out the ancilla qubits, we can simply connect the output indices of the ancilla qubits and contract them.
@@ -61,3 +60,5 @@ vizcircuit(eqc)
 tn = fidelity_tensornetwork(eqc, QCInfo(data_qubits, 3))
 optnet = optimize_code(tn, TreeSA(; ntrials=1, niters=3), OMEinsum.MergeVectors())
 infidelity = 1 - abs(contract(optnet)[1])
+
+# [^Markov]: Markov, I. L., & Shi, Y. (2008). Simulating Quantum Computation by Contracting Tensor Networks. SIAM Journal on Computing, 38(3), 963–981. https://doi.org/10.1137/050644756
