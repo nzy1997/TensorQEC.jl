@@ -48,18 +48,39 @@ end
     ein_code = yao2einsum(qcf;optimizer=nothing)
 end
 
+@testset "qc2enisum" begin
+    st = [PauliString((1,4,4)),PauliString((4,1,4))]
+    qcen, data_qubits, code = encode_stabilizers(st)
+    qc = chain(qcen, put(3, 1=>X),put(3,2=>X),put(3,3=>X), qcen', put(3, 3=>X))
+    qc_info = QCInfo(data_qubits, 3)
+    qcf, srs = ein_circ(qc, qc_info)
+    tn,input_inds,outpu_inds = qc2enisum(qcf, srs, qc_info)
+    optnet = optimize_code(tn, TreeSA(), OMEinsum.MergeVectors())
+    matr = contract(optnet)
+    @test size(matr) == (2,2,2,2)
+    @test matr[1,1,1,1] == 1
+    @test matr[2,2,2,2] == 1
+    @test matr[1,2,1,2] == 1
+    @test matr[2,1,2,1] == 1
+    tn2,input_inds2,outpu_inds2= simulation_tensornetwork(qc, qc_info)
+    optnet2 = optimize_code(tn2, TreeSA(), OMEinsum.MergeVectors())
+    mat2 = contract(optnet2) 
+    @test mat2 ≈ matr
+    @test input_inds2 == input_inds
+    @test outpu_inds2 == outpu_inds
+end
+
 function get_kraus(u::AbstractMatrix{T}, ndata::Int) where T
     return [u[i*2^ndata+1:(i+1)*2^ndata,1:2^ndata] for i in 0:2^(Yao.log2i(size(u, 1))-ndata)-1]
 end
 
-@testset "qc2enisum" begin
+@testset "fidelity_tensornetwork" begin
     Random.seed!(214)
     u1 = rand_unitary(2)
     u2 = rand_unitary(4)
-    toyqc = chain(2, put(2,1 => GeneralMatrixBlock(u1; nlevel=2, tag="X")),put(2, (1,2) => GeneralMatrixBlock(u2; nlevel=2, tag="XCNOT")))
+    toyqc = chain(2, put(2,1 => GeneralMatrixBlock(u1; nlevel=2, tag="U1")),put(2, (1,2) => GeneralMatrixBlock(u2; nlevel=2, tag="U2")))
     qc_info = QCInfo([1],[2],2)
-    qcf, srs = ein_circ(toyqc, qc_info)
-    tn = qc2enisum(qcf, srs, qc_info)
+    tn = fidelity_tensornetwork(toyqc, qc_info)
     optnet = optimize_code(tn, TreeSA(), OMEinsum.MergeVectors())
     @show contract(optnet)[1]
 
