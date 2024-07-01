@@ -27,17 +27,6 @@ function YaoPlots.draw!(c::YaoPlots.CircuitGrid, p::ComplexConj{<:PrimitiveBlock
     YaoPlots._draw!(c, [controls..., (getindex.(Ref(address), occupied_locs(p)), bts[1], "conj of "*bts[2])])
 end
 
-struct ColoredBlock{D} <: TrivialGate{D}
-    color
-end
-Yao.nqudits(sr::ColoredBlock) = 1
-Yao.print_block(io::IO, cb::ColoredBlock) = print(io, cb.color)
-
-function YaoPlots.draw!(c::YaoPlots.CircuitGrid, p::ColoredBlock, address, controls)
-    @assert length(controls) == 0
-    YaoPlots._draw!(c, [(getindex.(Ref(address), (1,)), c.gatestyles.g, "$(p.color)")])
-end
-
 abstract type AbstractRecoder{D} <: TrivialGate{D} end
 
 mutable struct IdentityRecorder{D} <: AbstractRecoder{D}
@@ -144,10 +133,30 @@ function qc2enisum(qc::ChainBlock, srs::Vector{SymbolRecorder{D}}, qc_info::QCIn
     push!(jointcode.iy,output_indices...)
     return TensorNetwork(jointcode, ein_code.tensors), input_indices, output_indices
 end
+
+"""
+    simulation_tensornetwork(qc::ChainBlock,qc_info::QCInfo)
+
+Generate the tensor network representation of the quantum circuit with the given [`QCInfo`](@ref), where ancilla qubits are initilized at zero state and partial traced after the circuit.
+
+### Arguments
+- `qc`: The quantum circuit.
+- `qc_info`: The qubit information of the quantum circuit
+
+### Returns
+- `tn`: The tensor network representation of the quantum circuit.
+- `input_indices`: The input indices of the tensor network.
+- `output_indices`: The output indices of the tensor network.
+"""
+function simulation_tensornetwork(qc::ChainBlock,qc_info::QCInfo)
+    qc= simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
+    qce,srs = ein_circ(qc,qc_info)
+    return qc2enisum(qce,srs,qc_info) 
+end
 """
     fidelity_tensornetwork(qc::ChainBlock,qc_info::QCInfo)
 
-Generate the tensor network representation of the quantum circuit fidelity with the given [`QCInfo`](@ref), where ancilla qubits are initilized at zero state and partial traced after the circuit.
+Generate the tensor network representation of the quantum circuit fidelity with the given [`QCInfo`](@ref), where ancilla qubits are initilized at zero state and partial traced after the circuit. The data qubits are traced out.
 
 ### Arguments
 - `qc`: The quantum circuit.
@@ -157,12 +166,12 @@ Generate the tensor network representation of the quantum circuit fidelity with 
 - `tn`: The tensor network representation of the quantum circuit.
 """
 function fidelity_tensornetwork(qc::ChainBlock,qc_info::QCInfo)
-    qc= simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
-    qce,srs = ein_circ(qc,qc_info)
-    tn, input_indices,output_indices = qc2enisum(qce,srs,qc_info) 
+    tn, input_indices,output_indices = simulation_tensornetwork(qc,qc_info)
     jointcode = replace(tn.code, [input_indices[i]=> output_indices[i] for i in 1:length(input_indices)]...)
     empty!(jointcode.iy)
-    return TensorNetwork(jointcode, tn.tensors) 
+    tn = TensorNetwork(jointcode, tn.tensors)
+    tn.tensors[1]./(2^length(qc_info.data_qubits))
+    return tn
 end
 """ 
     coherent_error_unitary(u::AbstractMatrix{T}, error_rate::Real; cache::Union{Vector, Nothing} = nothing) where T

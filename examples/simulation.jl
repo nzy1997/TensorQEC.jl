@@ -43,6 +43,6 @@ tn = fidelity_tensornetwork(qcf, QCInfo(data_qubits, 27))
 
 # Finally, we optimize the contraction order and contract the tensor network to get the infidelity after error correction.
 optnet = optimize_code(tn, TreeSA(; ntrials=1, niters=5), OMEinsum.MergeVectors()) 
-inf = 1-abs(contract(optnet)[1]/4)
+infidelity = 1 - abs(contract(optnet)[1])
 
 # [^Heußen]: Heußen, S., Locher, D. F., & Müller, M. (2024). Measurement-Free Fault-Tolerant Quantum Error Correction in Near-Term Devices. PRX Quantum, 5(1), 010333. https://doi.org/10.1103/PRXQuantum.5.010333

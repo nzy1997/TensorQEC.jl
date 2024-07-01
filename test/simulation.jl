@@ -52,7 +52,6 @@ end
     st = [PauliString((1,4,4)),PauliString((4,1,4))]
     qcen, data_qubits, code = encode_stabilizers(st)
     qc = chain(qcen, put(3, 1=>X),put(3,2=>X),put(3,3=>X), qcen', put(3, 3=>X))
-    tn = fidelity_tensornetwork(qc, QCInfo(data_qubits, 3))
     qc_info = QCInfo(data_qubits, 3)
     qcf, srs = ein_circ(qc, qc_info)
     tn,input_inds,outpu_inds = qc2enisum(qcf, srs, qc_info)
@@ -63,6 +62,12 @@ end
     @test matr[2,2,2,2] == 1
     @test matr[1,2,1,2] == 1
     @test matr[2,1,2,1] == 1
+    tn2,input_inds2,outpu_inds2= simulation_tensornetwork(qc, qc_info)
+    optnet2 = optimize_code(tn2, TreeSA(), OMEinsum.MergeVectors())
+    mat2 = contract(optnet2) 
+    @test mat2 ≈ matr
+    @test input_inds2 == input_inds
+    @test outpu_inds2 == outpu_inds
 end
 
 function get_kraus(u::AbstractMatrix{T}, ndata::Int) where T

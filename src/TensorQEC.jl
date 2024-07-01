@@ -45,7 +45,7 @@ export pauli_group, clifford_group, clifford_simulate,to_perm_matrix,perm_of_pau
 
 # simulation
 export ComplexConj, SymbolRecorder,IdentityRecorder, ein_circ, QCInfo, qc2enisum
-export coherent_error_unitary, error_quantum_circuit,toput, error_pairs,fidelity_tensornetwork
+export coherent_error_unitary, error_quantum_circuit,toput, error_pairs,fidelity_tensornetwork, simulation_tensornetwork
 
 
 @const_gate CCZ::ComplexF64 = diagm([1, 1,1,1,1,1,1,-1])
