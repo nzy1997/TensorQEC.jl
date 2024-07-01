@@ -135,10 +135,14 @@ end
 
 function qc2enisum(qc::ChainBlock, srs::Vector{SymbolRecorder{D}}, qc_info::QCInfo) where D
     ein_code = yao2einsum(qc;initial_state=Dict(x=>0 for x in qc_info.ancilla_qubits ∪ (qc_info.ancilla_qubits.+qc_info.nq)), optimizer=nothing)
-    replace_dict = ([[srs[2*i-1].symbol => srs[2*length(qc_info.data_qubits)+2*i-1].symbol  for i in 1:length(qc_info.data_qubits)]...,[srs[2*i].symbol => srs[2*length(qc_info.data_qubits)+2*i].symbol  for i in 1:length(qc_info.data_qubits)]...,[srs[4*length(qc_info.data_qubits)+2*i-1].symbol => srs[4*length(qc_info.data_qubits)+2*i].symbol for i in 1:length(qc_info.ancilla_qubits)]...])
+    replace_dict = [srs[4*length(qc_info.data_qubits)+2*i-1].symbol => srs[4*length(qc_info.data_qubits)+2*i].symbol for i in 1:length(qc_info.ancilla_qubits)]
     jointcode = replace(ein_code.code, replace_dict...)
-    empty!(jointcode.iy) 
-    return TensorNetwork(jointcode, ein_code.tensors)
+    empty!(jointcode.iy)
+    input_indices = [[srs[2*i-1].symbol  for i in 1:length(qc_info.data_qubits)]..., [srs[2*i].symbol  for i in 1:length(qc_info.data_qubits)]...]
+    output_indices = [[srs[2*length(qc_info.data_qubits)+2*i-1].symbol  for i in 1:length(qc_info.data_qubits)]..., [srs[2*length(qc_info.data_qubits)+2*i].symbol  for i in 1:length(qc_info.data_qubits)]...]
+    push!(jointcode.iy,input_indices...)
+    push!(jointcode.iy,output_indices...)
+    return TensorNetwork(jointcode, ein_code.tensors), input_indices, output_indices
 end
 """
     fidelity_tensornetwork(qc::ChainBlock,qc_info::QCInfo)
@@ -155,7 +159,10 @@ Generate the tensor network representation of the quantum circuit fidelity with 
 function fidelity_tensornetwork(qc::ChainBlock,qc_info::QCInfo)
     qc= simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
     qce,srs = ein_circ(qc,qc_info)
-    return qc2enisum(qce,srs,qc_info) 
+    tn, input_indices,output_indices = qc2enisum(qce,srs,qc_info) 
+    jointcode = replace(tn.code, [input_indices[i]=> output_indices[i] for i in 1:length(input_indices)]...)
+    empty!(jointcode.iy)
+    return TensorNetwork(jointcode, tn.tensors) 
 end
 """ 
     coherent_error_unitary(u::AbstractMatrix{T}, error_rate::Real; cache::Union{Vector, Nothing} = nothing) where T
