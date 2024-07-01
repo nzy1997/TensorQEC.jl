@@ -31,16 +31,16 @@ end
 @testset "perm_of_paulistring" begin
 	pm = TensorQEC.to_perm_matrix(Int8, Int, pauli_repr(H))
 	ps = PauliString((1, 2))
-	ps2, val = TensorQEC.perm_of_paulistring(pm, ps, [2])
+	ps2, val = TensorQEC.perm_of_paulistring(ps, [2]=>pm)
 	@test ps2 == PauliString((1, 4))
 
 	pmcn = TensorQEC.to_perm_matrix(Int8, Int, TensorQEC.pauli_repr(ConstGate.CNOT))
 	ps = PauliString((2, 1, 3, 2))
-	ps2, val = TensorQEC.perm_of_paulistring(pmcn, ps, [4, 2])
+	ps2, val = TensorQEC.perm_of_paulistring(ps, [4, 2]=>pmcn)
 	@test ps2.ids == (2, 2, 3, 2)
 
 	ps = PauliString((2, 4, 3, 2))
-	ps2, val = TensorQEC.perm_of_paulistring(pmcn, ps, [3, 2])
+	ps2, val = TensorQEC.perm_of_paulistring(ps, [3, 2]=>pmcn)
 	@test ps2.ids == (2, 3, 2, 2)
 end
 

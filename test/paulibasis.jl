@@ -1,4 +1,4 @@
-using Test, TensorQEC, TensorQEC.Yao
+using Test, TensorQEC, TensorQEC.Yao, TensorQEC.LinearAlgebra
 
 @testset "pauli_basis" begin
 	@test pauli_basis(1) == PauliString.(1:4)
@@ -29,4 +29,10 @@ end
 	ps = PauliString(1,2,2)
 	qc = chain(cnot(3,3,2), cnot(3,3,1))
 	@test TensorQEC.pauli_string_map_iter(ps, qc).ids == (2,1,2)
+end
+
+@testset "yao interfaces" begin
+    @test paulistring(5, X, (2, 3)) == PauliString(I2, X, X, I2, I2)
+    @test pauli_decomposition(X) ≈ [0, 1, 0, 0]
+    @test pauli_mapping(X) ≈ Diagonal([1, 1, -1, -1])
 end
