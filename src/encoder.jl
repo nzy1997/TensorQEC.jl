@@ -1,12 +1,13 @@
 """
 	Bimatrix
 
-Since the encding process may alter the generators of stabilizer group, we introduce the Bimatrix structure to store the information of encoding process. The Bimatrix structure contains the following fields
+Since the encding process may alter the generators of stabilizer group, we introduce the `Bimatrix` structure to store the information of encoding process.
+The Bimatrix structure contains the following fields
 
-* 'matrix': The bimatrix representation of the stabilizers.
-* 'Q': The matrix records the Gaussian elimination process, whcih is used to recover the original stabilizers.
-* 'ordering': The ordering of qubits.
-* 'xcodenum': The number of X stabilizers.
+* `matrix`: The bimatrix representation of the stabilizers.
+* `Q`: The matrix records the Gaussian elimination process, whcih is used to recover the original stabilizers.
+* `ordering`: The ordering of qubits.
+* `xcodenum`: The number of X stabilizers.
 
 """
 struct Bimatrix

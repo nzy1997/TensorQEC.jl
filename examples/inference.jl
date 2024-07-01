@@ -1,15 +1,16 @@
 # # Inference with Tensor Network
-# This example demonstrates how to define stabilizers, encode data qubits measure syndromes, use tensor network to infer error probability, and correct the error. The main reference is [^Ferris]. 
+# This example demonstrates how to define stabilizers, encode data qubits measure syndromes, and use tensor network to infer the most likely error[^Ferris]. 
 
-# We take the $3*3$ surface code as an example. We use Yao.jl to simulate a physical quantum devise and perform error correction.
+# We take the $3\times 3$ surface code as an example, and use [Yao.jl](https://github.com/QuantumBFS/Yao.jl) to verify the error correction circuit.
 
 # ## Definition of Stabilizers
 using TensorQEC, TensorQEC.Yao
 st = stabilizers(SurfaceCode(3,3))
 
-# Then we can generate the encoding circuits of the stabilizers by [`encode_stabilizers`](@ref). `qc` is the encoding circuit, `data_qubits` are the qubits that we should put initial qubtis in, and `code` is the structure records information of the encoding circuit.
+# Then we can generate the encoding circuits of the stabilizers by [`encode_stabilizers`](@ref).
 qc, data_qubits, code = encode_stabilizers(st)
 vizcircuit(qc)
+# where `qc` is the encoding circuit, `data_qubits` are the qubits that we should put initial qubtis in, and `code` is a [`Bimatrix`](@ref) instance that records information of the encoding circuit.
 
 # During the process of getting the encoding circuit, we may adjust the generators of the stabilizer group. The current generators are
 TensorQEC.bimatrix2stabilizers(code)
