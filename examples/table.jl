@@ -36,14 +36,16 @@ apply!(reg, put(7, 5 => Y))
 # We first measure the stabilizers to get the error syndrome by [`measure_syndrome!`](@ref). 1 means the stabilizer is not violated, and -1 means the stabilizer is violated.
 measure_outcome = measure_syndrome!(reg, st)
 
-# The measrue outcome shows that the stabilizer 4 and 6 are violated. According to the truth table, the error is $X_5$, which is exactly the error we applied. We can use [`table_inference`](@ref) to look up the syndromes in the truth table and infer the error type and position.
-table_inference(table,measure_outcome)
+# The measrue outcome shows that the stabilizer 1,3,4 and 6 are violated. According to the truth table, the error is $X_5$ and $Z_5$, which is exactly the error we applied. We can use [`table_inference`](@ref) to look up the syndromes in the truth table and infer the error type and position.
+table_inference(table, measure_outcome)
 
 # If we look up the syndrome that is not in the truth table, it will return `nothing`.
 table_inference(table, [-1,-1,-1,-1,1,1])
+
 # ## Error Correction
 # Then the following error correction is trivial. We apply the error correction.
 apply!(reg, put(7, 5 => X))
+apply!(reg, put(7, 5 => Z))
 
 # Measure the stabilizers after error correction to check whether the error is corrected.
 measure_syndrome!(reg, st)

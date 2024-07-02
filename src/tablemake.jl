@@ -141,6 +141,18 @@ function error_qubits(v::Int, num_qubits::Int)
 	return findall([Yao.BitBasis.BitStr{num_qubits}(v)...] .== 1)
 end
 
+"""
+    table_inference(table::TruthTable, measure_outcome::Vector{Int})
+
+Infer the error type and position from the measure outcome.
+
+### Arguments
+- `table`: The truth table for error correction.
+- `measure_outcome`: The measure outcome of the stabilizers.
+
+### Returns
+- `error`: The error type and position. If the syndrome is not in the truth table, it will print "No such syndrome in the truth table." and return `nothing`
+"""
 function table_inference(table::TruthTable, measure_outcome::Vector{Int})
     syndrome = 0
     for i in findall(==(-1),measure_outcome)
