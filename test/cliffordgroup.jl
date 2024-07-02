@@ -5,6 +5,8 @@ using TensorQEC: pauli_repr
 	m = pauli_repr(H)
 	pm = TensorQEC.to_perm_matrix(Int8, Int, m)
 	@test Matrix(pm) ≈ m
+	pm = TensorQEC.to_perm_matrix(m)
+	@test Matrix(pm) ≈ m
 
 	m = pauli_repr(ConstGate.CNOT)
 	pm = TensorQEC.to_perm_matrix(Int8, Int, m)
