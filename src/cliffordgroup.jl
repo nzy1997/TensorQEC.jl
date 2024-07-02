@@ -35,7 +35,7 @@ Convert a Clifford gate to its permutation representation.
 ### Returns
 - `pm`: The permutation matrix. pm.perm is the permutation vector, pm.vals is the phase factor.
 """
-to_perm_matrix(m::AbstractBlock; atol=1e-8) = to_perm_matrix(Int8, Int, pauli_repr(m); atol)
+to_perm_matrix(m::AbstractBlock; atol=1e-8) = to_perm_matrix(Int8, Int, m; atol)
 to_perm_matrix(::Type{T}, ::Type{Ti}, m::AbstractBlock; atol=1e-8) where {T, Ti} = to_perm_matrix(T, Ti, pauli_repr(m); atol)
 function to_perm_matrix(::Type{T}, ::Type{Ti}, m::AbstractMatrix; atol=1e-8) where {T, Ti}
     @assert all(j -> count(i->abs(i) > atol, view(m, :, j)) == 1, 1:size(m, 2))

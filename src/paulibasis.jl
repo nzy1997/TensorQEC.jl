@@ -30,7 +30,7 @@ function pauli_decomposition(m::AbstractMatrix{T}) where T
 	return [tr(mat(T, pauli) * m) for pauli in pauli_basis(nqubits)] / (2^nqubits)
 end
 pauli_decomposition(::Type{T}, m::AbstractBlock) where T = pauli_decomposition(mat(T, m))
-pauli_decomposition(m::AbstractBlock) = pauli_decomposition(mat(ComplexF64, m))
+pauli_decomposition(m::AbstractBlock) = pauli_decomposition(ComplexF64, m)
 
 """
     pauli_mapping(m::AbstractMatrix)
@@ -43,7 +43,7 @@ function pauli_mapping(m::AbstractMatrix)
 	return [real(tr(mat(pi) * m * mat(pj) * m')/size(m, 1)) for pi in paulis, pj in paulis]
 end
 pauli_mapping(::Type{T}, m::AbstractBlock) where T = pauli_mapping(mat(T, m))
-pauli_mapping(m::AbstractBlock) = pauli_mapping(mat(ComplexF64, m))
+pauli_mapping(m::AbstractBlock) = pauli_mapping(ComplexF64, m)
 
 function pauli_group(n::Int)
     return [coeff => PauliString(ci.I) for coeff in 0:3, ci in CartesianIndices(ntuple(_ -> 4, n))]
