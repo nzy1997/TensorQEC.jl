@@ -25,21 +25,25 @@ end
 
 Decompose a matrix into the Pauli basis.
 """
-function pauli_decomposition(m::AbstractMatrix)
+function pauli_decomposition(m::AbstractMatrix{T}) where T
 	nqubits = Int(log2(size(m, 1)))
-	return [tr(mat(pauli) * m) for pauli in pauli_basis(nqubits)] / (2^nqubits)
+	return [tr(mat(T, pauli) * m) for pauli in pauli_basis(nqubits)] / (2^nqubits)
 end
+pauli_decomposition(::Type{T}, m::AbstractBlock) where T = pauli_decomposition(mat(T, m))
+pauli_decomposition(m::AbstractBlock) = pauli_decomposition(ComplexF64, m)
 
 """
     pauli_mapping(m::AbstractMatrix)
 
-Convert a linear operator into the Pauli basis.
+Convert a linear operator to a matrix in the Pauli basis.
 """
 function pauli_mapping(m::AbstractMatrix)
 	nqubits = Int(log2(size(m, 1)))
 	paulis = pauli_basis(nqubits)
 	return [real(tr(mat(pi) * m * mat(pj) * m')/size(m, 1)) for pi in paulis, pj in paulis]
 end
+pauli_mapping(::Type{T}, m::AbstractBlock) where T = pauli_mapping(mat(T, m))
+pauli_mapping(m::AbstractBlock) = pauli_mapping(ComplexF64, m)
 
 function pauli_group(n::Int)
     return [coeff => PauliString(ci.I) for coeff in 0:3, ci in CartesianIndices(ntuple(_ -> 4, n))]
