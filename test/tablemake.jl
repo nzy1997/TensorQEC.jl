@@ -4,7 +4,7 @@ using Test, TensorQEC, TensorQEC.Yao
 @testset "make table and save" begin
     st =stabilizers(SurfaceCode(3,3))
     table = make_table(st, 1)
-    @test length(table.table) == 14
+    @test length(table.table) == 23
     save_table(table, "test_table.txt")
     table2 = load_table("test_table.txt", 9, 8, 1)
     @test table.table == table2.table
@@ -17,7 +17,7 @@ end
 @testset "errorcorrect_circuit" begin
     t = ToricCode(3, 3)
 	st = stabilizers(t)
-    table = make_table(st, 1)
+    table = make_table(st, 1;y_error=false)
     qc1,st_pos,num_qubits = measure_circuit_fault_tol(st)
     qc2 = correct_circuit(table, st_pos,num_qubits)
     chain(qc1, qc2)

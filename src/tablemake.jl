@@ -47,6 +47,7 @@ Print the error information for each error pattern in the table.
 - `d`: The maximum number of errors.
 """
 function show_table(io::IO, table::Dict{Int, Int}, num_qubits::Int, num_st::Int, d::Int64)
+    es = Vector{Vector{Int64}}()
 	es = Vector{Vector{Int64}}()
 	eq = []
 	[push!(eq, []) for _ in 1:d]
@@ -80,12 +81,13 @@ Generate the truth table for error correction.
 ### Returns
 - `table`: The truth table for error correction.
 """
-function make_table(st::Vector{PauliString{N}}, d::Int64) where N
+function make_table(st::Vector{PauliString{N}}, d::Int64;y_error=true) where N
 	mat = stabilizers2bimatrix(st).matrix
 	num_st = size(mat, 1)
 	table = Dict{Int, Int}()
+    times = y_error ? 3 : 2
 	for i in 1:d
-		all_combinations = combinations(1:2*N, i)
+		all_combinations = combinations(1:times*N, i)
 		for combo in all_combinations
 			bivec = combo2bivec(combo, N)
 
@@ -128,8 +130,10 @@ end
 function error_type(i::Int, num_qubits::Int)
 	if i <= num_qubits
 		return Z, i
-	else
+    elseif i <= 2 * num_qubits
 		return X, i - num_qubits
+    else
+        return Y, i - 2 * num_qubits
 	end
 end
 
@@ -137,20 +141,25 @@ function error_qubits(v::Int, num_qubits::Int)
 	return findall([Yao.BitBasis.BitStr{num_qubits}(v)...] .== 1)
 end
 
-function table_inference(table::TruthTable, syndrome_vec::Vector{Int})
+function table_inference(table::TruthTable, measure_outcome::Vector{Int})
     syndrome = 0
-    for i in syndrome_vec
+    for i in findall(==(-1),measure_outcome)
         syndrome |= 1 << (i - 1)
     end
     return table_inference(table, syndrome)
 end
 function table_inference(table::TruthTable, syndrome::Int) 
-	error = []
-	for i in error_qubits(table.table[syndrome], 2 * table.num_qubits)
-		type, pos = error_type(i, table.num_qubits)
-		push!(error, (pos => type))
-	end
-	return error
+    if haskey(table.table, syndrome)
+        error = []
+        for i in error_qubits(table.table[syndrome], 2 * table.num_qubits)
+            type, pos = error_type(i, table.num_qubits)
+            push!(error, (pos => type))
+        end
+        return error
+    else
+        print("No such syndrome in the truth table.")
+        return nothing
+    end
 end
 
 """
