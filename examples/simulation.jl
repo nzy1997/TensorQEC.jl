@@ -27,10 +27,9 @@ vizcircuit(qcm)
 
 # Then we generate truth table for the error correction by [`make_table`](@ref). For more detials on truth table, please check [Inference with Truth Table](@ref).
 table = make_table(st, 1)
-show_table(table,7,6)
 
 # Now we use [`correct_circuit`](@ref) to generate the measurement-free correction circuit by encoding the truth table on the quantum circuit directly.
-qccr = correct_circuit(table, collect(st_pos), num_qubits, 6, 7)
+qccr = correct_circuit(table, collect(st_pos), num_qubits)
 vizcircuit(qccr)
 
 # ## Circuit Simulation with Tensor Networks

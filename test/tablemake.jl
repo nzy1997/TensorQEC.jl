@@ -29,3 +29,12 @@ end
     table = make_table(st, 1)
     @show table
 end
+
+@testset "table inference" begin
+    t = SurfaceCode(3, 3)
+    st = stabilizers(t)
+    table = make_table(st, 1)
+    measure_outcome = measure_syndrome!(rand_state(9), st)
+    @test table_inference(table, [-1,1,1,1,1,1])[1] == (2=>Z)
+    @test table_inference(table, [-1,-1,-1,-1,1,1]) === nothing
+end

@@ -130,11 +130,9 @@ end
 function error_type(i::Int, num_qubits::Int)
 	if i <= num_qubits
 		return Z, i
-    elseif i <= 2 * num_qubits
+    else i <= 2 * num_qubits
 		return X, i - num_qubits
-    else
-        return Y, i - 2 * num_qubits
-	end
+    end
 end
 
 function error_qubits(v::Int, num_qubits::Int)
