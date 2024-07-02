@@ -190,5 +190,7 @@ densitymatrix2sumofpaulis(dm::DensityMatrix) = tensor2sumofpaulis(real.(pauli_de
 Create a Pauli string with `n` qubits, where the `i`-th qubit is `k` if `i` is in `ids`, otherwise `1`.
 `k` = 1 for I2, 2 for X, 3 for Y, 4 for Z.
 """
-paulistring(n, k, ids) = PauliString((i ∈ ids ? k : 1 for i in 1:n)...)
+paulistring(n::Int, k, ids) = PauliString((i ∈ ids ? k : _I(k) for i in 1:n)...)
+_I(::Int) = 1
+_I(::YaoBlocks.PauliGate) = I2
 
