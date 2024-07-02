@@ -1,7 +1,7 @@
 function combo2bivec(combo::AbstractVector{Int64}, qubit_num::Int64)
 	bivec = zeros(Bool, 2 * qubit_num)
 	for i in combo
-		bivec[mod1(i,2*qubit_num)] = true
+		bivec[mod1(i, 2 * qubit_num)] = true
 		if i > 2 * qubit_num
 			bivec[i-qubit_num] = true
 		end
@@ -10,9 +10,68 @@ function combo2bivec(combo::AbstractVector{Int64}, qubit_num::Int64)
 end
 
 """
-    make_table(st::Vector{PauliString{N}}, d::Int64) where N
+	TruthTable
 
-Generate the truth table for error correction. Use function [`show_table`](@ref) to print the table. 
+The truth table for error correction.
+
+### Fields
+- `table::Dict{Int,Int}`: The truth table for error correction.
+- `num_qubits::Int`: The number of qubits.
+- `num_st::Int`: The number of stabilizers.
+- `d::Int64`: The maximum number of errors.
+"""
+struct TruthTable
+	table::Dict{Int, Int}
+	num_qubits::Int
+	num_st::Int
+	d::Int64
+end
+
+# visualization
+Base.show(io::IO, ::MIME"text/plain", tb::TruthTable) = show(io, tb)
+function Base.show(io::IO, tb::TruthTable)
+	show_table(io, tb.table, tb.num_qubits, tb.num_st, tb.d)
+	return nothing
+end
+
+"""
+	show_table(table::Dict{Int,Int}, num_qubits::Int, num_st::Int)
+
+Print the error information for each error pattern in the table.
+
+### Arguments
+- `io`: The output stream.
+- `table`: The truth table for error correction.
+- `num_qubits`: The number of qubits.
+- `num_st`: The number of stabilizers.
+- `d`: The maximum number of errors.
+"""
+function show_table(io::IO, table::Dict{Int, Int}, num_qubits::Int, num_st::Int, d::Int64)
+	es = Vector{Vector{Int64}}()
+	eq = []
+	[push!(eq, []) for _ in 1:d]
+    eq = Vector{String}()
+	for (k, v) in table
+        sti=""
+		for i in error_qubits(v, 2 * num_qubits)
+            type, pos = error_type(i, num_qubits)
+            sti *= "$pos => $type"
+            if i != error_qubits(v, 2 * num_qubits)[end]
+                sti *= ", "
+            end
+		end
+		push!(es, error_qubits(k, num_st))
+        push!(eq, sti)
+	end
+	header = ["Sydrome", "Error"]
+	pt = pretty_table(io, hcat(es, eq); header)
+	return pt
+end
+
+"""
+	make_table(st::Vector{PauliString{N}}, d::Int64) where N
+
+Generate the truth table for error correction.
 
 ### Arguments
 - `st`: The vector of Pauli strings, composing the generator of stabilizer group.
@@ -22,81 +81,80 @@ Generate the truth table for error correction. Use function [`show_table`](@ref)
 - `table`: The truth table for error correction.
 """
 function make_table(st::Vector{PauliString{N}}, d::Int64) where N
-    mat = stabilizers2bimatrix(st).matrix
-    num_st=size(mat,1)
-    table = Dict{Int,Int}()
+	mat = stabilizers2bimatrix(st).matrix
+	num_st = size(mat, 1)
+	table = Dict{Int, Int}()
 	for i in 1:d
 		all_combinations = combinations(1:2*N, i)
 		for combo in all_combinations
-            bivec = combo2bivec(combo, N)
+			bivec = combo2bivec(combo, N)
 
-            # sydrome = 0(false) means the measure outcome is 1
-            # sydrome = 1(true) means the measure outcome is -1
-            sydrome = 0
+			# sydrome = 0(false) means the measure outcome is 1
+			# sydrome = 1(true) means the measure outcome is -1
+			sydrome = 0
 
-            for j in 1:num_st
-                reduce(xor, bivec[findall(mat[j,:])]) && (sydrome |= 1<< (j-1))
-            end
-            table[sydrome] = Yao.BitBasis.bit_literal(Int.(bivec)...).buf
+			for j in 1:num_st
+				reduce(xor, bivec[findall(mat[j, :])]) && (sydrome |= 1 << (j - 1))
+			end
+			table[sydrome] = Yao.BitBasis.bit_literal(Int.(bivec)...).buf
 		end
 	end
-    return table
+	return TruthTable(table, N, num_st, d)
 end
+
 """
-    save_table(table::Dict{Int,Int}, filename::String)
+    same_table(tb::TruthTable, filename::String)
 
 Save the truth table for error correction to a file.
 """
-function save_table(table::Dict{Int,Int}, filename::String)
-    writedlm(filename, hcat(collect(keys(table)), collect(values(table))))
+function save_table(tb::TruthTable, filename::String)
+    save_table(tb.table, filename)
+end
+
+function save_table(table::Dict{Int, Int}, filename::String)
+	writedlm(filename, hcat(collect(keys(table)), collect(values(table))))
 end
 
 """
-    load_table(filename::String)
+	load_table(filename::String)
 
 Load the truth table for error correction from a file.
 """
-function load_table(filename::String)
-    data = readdlm(filename)
-    return Dict{Int,Int}(zip(data[:,1], data[:,2]))
-end
-
-"""
-    show_table(table::Dict{Int,Int}, num_qubits::Int, num_st::Int)
-
-Print the error information for each error pattern in the table.
-
-### Arguments
-- `table`: The truth table for error correction.
-- `num_qubits`: The number of qubits.
-- `num_st`: The number of stabilizers.
-"""
-function show_table(table::Dict{Int,Int},num_qubits::Int,num_st::Int)
-    for (k, v) in table
-        println("Errored stabilizers $(error_qubits(k,num_st))")
-        print("Error qubits: ")
-        for i in error_qubits(v,2*num_qubits)
-            type,pos = error_type(i,num_qubits)
-			print("$(pos)=>$(type) ")
-		end
-        println()
-    end
+function load_table(filename::String, num_qubits::Int, num_st::Int, d::Int64)
+	data = readdlm(filename)
+	return TruthTable(Dict{Int, Int}(zip(data[:, 1], data[:, 2])), num_qubits, num_st, d)
 end
 
 function error_type(i::Int, num_qubits::Int)
-    if i <= num_qubits
-        return Z, i
-    else
-        return X, i - num_qubits
-    end
+	if i <= num_qubits
+		return Z, i
+	else
+		return X, i - num_qubits
+	end
 end
 
 function error_qubits(v::Int, num_qubits::Int)
-    return findall([Yao.BitBasis.BitStr{num_qubits}(v)...].==1)
+	return findall([Yao.BitBasis.BitStr{num_qubits}(v)...] .== 1)
+end
+
+function table_inference(table::TruthTable, syndrome_vec::Vector{Int})
+    syndrome = 0
+    for i in syndrome_vec
+        syndrome |= 1 << (i - 1)
+    end
+    return table_inference(table, syndrome)
+end
+function table_inference(table::TruthTable, syndrome::Int) 
+	error = []
+	for i in error_qubits(table.table[syndrome], 2 * table.num_qubits)
+		type, pos = error_type(i, table.num_qubits)
+		push!(error, (pos => type))
+	end
+	return error
 end
 
 """
-    correct_circuit(table::Dict{Int,Int}, st_pos::Vector{Int},num_qubits::Int,num_st::Int,num_data_qubits::Int)
+	correct_circuit(table::Dict{Int,Int}, st_pos::Vector{Int},num_qubits::Int,num_st::Int,num_data_qubits::Int)
 
 Generate the error correction circuit by embedding the truth table into the quantum circuit.
 
@@ -110,12 +168,12 @@ Generate the error correction circuit by embedding the truth table into the quan
 ### Returns
 - `qc`: The error correction circuit.
 """
-function correct_circuit(table::Dict{Int,Int}, st_pos::Vector{Int},num_qubits::Int,num_st::Int,num_data_qubits::Int)
-	qc = chain(num_qubits)
-	for (k, v) in table 
-		for i in error_qubits(v,2*num_data_qubits)
-            type,pos = error_type(i,num_data_qubits)
-			push!(qc, control(num_qubits, st_pos[error_qubits(k,num_st)], pos => type))
+function correct_circuit(tb::TruthTable, st_pos::Vector{Int}, total_qubits::Int)
+	qc = chain(total_qubits)
+	for (k, v) in tb.table
+		for i in error_qubits(v, 2 * tb.num_qubits)
+			type, pos = error_type(i, tb.num_qubits)
+			push!(qc, control(total_qubits, st_pos[error_qubits(k, tb.num_st)], pos => type))
 		end
 	end
 	return qc

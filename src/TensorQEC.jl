@@ -10,6 +10,7 @@ using Combinatorics
 using DelimitedFiles
 using OMEinsum
 using Yao.YaoBlocks.Optimise
+using PrettyTables
 
 # pauli basis
 export pauli_basis, pauli_decomposition, pauli_mapping
@@ -38,7 +39,7 @@ export Bimatrix,syndrome_transform, encode_stabilizers,place_qubits
 export measure_circuit_fault_tol,  measure_circuit_steane,measure_circuit
 
 # tablemake
-export make_table, save_table, load_table,correct_circuit,show_table
+export make_table, save_table, load_table,correct_circuit,show_table,TruthTable,table_inference
 
 # clifford group
 export pauli_group, clifford_group, clifford_simulate,to_perm_matrix,perm_of_paulistring
