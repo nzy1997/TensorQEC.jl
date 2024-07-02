@@ -52,3 +52,23 @@ end
 	ps2, val = TensorQEC.clifford_simulate(ps, qc)
 	@test val * mat(qc) * mat(ps) * mat(qc)' ≈ mat(ps2)
 end
+
+@testset "annotate_history" begin
+	st = stabilizers(SteaneCode())
+	table = make_table(st, 1)
+	qcen, data_qubits, code = encode_stabilizers(st) 
+    qcm ,st_pos, num_qubits = measure_circuit_steane(data_qubits[1],st,3)
+	ps0 = paulistring(27,3,6) 
+	res = clifford_simulate(ps0, qcm)
+	annotate_history(res)
+end
+
+@testset "annotate_history" begin
+	st = stabilizers(SteaneCode())
+	table = make_table(st, 1)
+	qcen, data_qubits, code = encode_stabilizers(st) 
+    qcm ,st_pos, num_qubits = measure_circuit_steane_single_type(data_qubits[1],st[4:6],false)
+	ps0 = paulistring(17,2,6) 
+	res = clifford_simulate(ps0, qcm)
+	annotate_history(res)
+end

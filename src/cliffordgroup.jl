@@ -101,13 +101,45 @@ function perm_of_paulistring(ps::PauliString, operation::Pair{Vector{Int}, <:Per
 end
 
 """
+    CliffordSimulateResult{N}
+
+The result of simulating a Pauli string by a Clifford circuit.
+
+### Fields
+- `output::PauliString{N}`: A mapped Pauli string as the output.
+- `phase::ComplexF64`: The phase factor.
+- `circuit::ChainBlock`: The circuit (simplified, with linear structure).
+- `history::Vector{PauliString{N}}`: The history of Pauli strings, its length is `length(circuit)+1`.
+"""
+struct CliffordSimulateResult{N}
+    output::PauliString{N}
+    phase::Complex{Int}
+    circuit::ChainBlock
+    history::Vector{PauliString{N}}
+    function CliffordSimulateResult(output::PauliString{N}, phase::Complex{Int}, circuit::ChainBlock, history::Vector{PauliString{N}}) where N
+        @assert length(history) == length(circuit) + 1
+        new{N}(output, phase, circuit, history)
+    end
+end
+
+"""
     clifford_simulate(ps::PauliString, qc::ChainBlock) 
     
-Map the Pauli string `ps` by a quantum circuit `qc`. Return the mapped Pauli string and the phase factor.
+Map the Pauli string `ps` by a quantum circuit `qc`. 
+
+### Arguments
+- `ps`: The Pauli string.
+- `qc`: The quantum circuit.
+
+### Returns
+- `result`: A [`CliffordSimulateResult`](@ref) records the output Pauli string, the phase factor, the simplified circuit, and the history of Pauli strings.
 """
-function clifford_simulate(ps::PauliString, qc::ChainBlock)
+function clifford_simulate(ps::PauliString{N}, qc::ChainBlock) where N
+    ps_history = PauliString{N}[]
+    qc = simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
     gatedict=Dict{UInt64, PermMatrix}()
-    valf = 1
+    valf = 1 + 0im
+    push!(ps_history, ps)
     for _gate in qc
         gate = toput(_gate)
         key = hash(gate.content)
@@ -119,6 +151,35 @@ function clifford_simulate(ps::PauliString, qc::ChainBlock)
             ps,val = perm_of_paulistring(ps, collect(gate.locs)=>pm)
         end
         valf *= val
+        push!(ps_history, ps)
     end
-    return ps,valf
+    return CliffordSimulateResult(ps, valf, qc, ps_history)
+end
+
+function paulistring_annotate(ps::PauliString{N}) where N
+    return paulistring_annotate(ps, N)
+end
+function paulistring_annotate(ps::PauliString{N},num_qubits::Int;color = "red") where N
+    qc = chain(num_qubits)
+    for i in occupied_locs(ps)
+        p = pauli(ps.ids[i])
+        push!(qc, put(num_qubits, i=>line_annotation("$p";color)))
+    end
+    return qc
+end
+
+function annotate_history(res::CliffordSimulateResult{N}) where N
+    qcf = chain(N)
+    push!(qcf, paulistring_annotate(res.history[1], N))
+    for i in 1:length(res.circuit)
+        block = res.circuit[i]
+        push!(qcf, block)
+        if !isempty(occupied_locs(block) ∩ occupied_locs(res.history[i+1]))
+            push!(qcf, paulistring_annotate(res.history[i+1], N))
+        end
+    end
+    CircuitStyles.barrier_for_chain[], temp = true, CircuitStyles.barrier_for_chain[]
+    draw = vizcircuit(qcf)
+    CircuitStyles.barrier_for_chain[] = temp
+    return draw
 end
