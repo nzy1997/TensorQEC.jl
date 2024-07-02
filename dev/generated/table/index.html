@@ -7,51 +7,48 @@ st = stabilizers(SteaneCode())</code></pre><pre class="documenter-example-output
  ZIZIZIZ
  IZZIIZZ
  IIIZZZZ</code></pre><p>Then we can generate the encoding circuits of the stabilizers by <a href="../../man/#TensorQEC.encode_stabilizers-Union{Tuple{AbstractArray{PauliString{N}, 1}}, Tuple{N}} where N"><code>encode_stabilizers</code></a>. <code>qc</code> is the encoding circuit, <code>data_qubits</code> are the qubits that we should put initial qubtis in, and <code>code</code> is the structure records information of the encoding circuit.</p><pre><code class="language-julia hljs">qc, data_qubits, code = encode_stabilizers(st)
-vizcircuit(qc)</code></pre><img src="06dc939e.svg" alt="Example block output"/><h2 id="Construction-of-the-Truth-Table"><a class="docs-heading-anchor" href="#Construction-of-the-Truth-Table">Construction of the Truth Table</a><a id="Construction-of-the-Truth-Table-1"></a><a class="docs-heading-anchor-permalink" href="#Construction-of-the-Truth-Table" title="Permalink"></a></h2><p>We can generate the truth table for the error correction by <a href="../../man/#TensorQEC.make_table-Union{Tuple{N}, Tuple{Array{PauliString{N}, 1}, Int64}} where N"><code>make_table</code></a>. The truth table is a dictionary, where the key is the syndrome, and the value is the error Pauli string. We can print the truth table by <a href="../../man/#TensorQEC.show_table-Tuple{Dict{Int64, Int64}, Int64, Int64}"><code>show_table</code></a>.</p><pre><code class="language-julia hljs">table = make_table(st, 1)
-show_table(table, 7, 6)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Errored stabilizers [1, 3]
-Error qubits: 5=&gt;Z
-Errored stabilizers [4, 5, 6]
-Error qubits: 7=&gt;X
-Errored stabilizers [5]
-Error qubits: 2=&gt;X
-Errored stabilizers [4, 5]
-Error qubits: 3=&gt;X
-Errored stabilizers [4]
-Error qubits: 1=&gt;X
-Errored stabilizers [1]
-Error qubits: 1=&gt;Z
-Errored stabilizers [6]
-Error qubits: 4=&gt;X
-Errored stabilizers [2, 3]
-Error qubits: 6=&gt;Z
-Errored stabilizers [1, 2]
-Error qubits: 3=&gt;Z
-Errored stabilizers [1, 2, 3]
-Error qubits: 7=&gt;Z
-Errored stabilizers [4, 6]
-Error qubits: 5=&gt;X
-Errored stabilizers [5, 6]
-Error qubits: 6=&gt;X
-Errored stabilizers [3]
-Error qubits: 4=&gt;Z
-Errored stabilizers [2]
-Error qubits: 2=&gt;Z</code></pre><p>We can save the truth table to a file by <a href="../../man/#TensorQEC.save_table-Tuple{Dict{Int64, Int64}, String}"><code>save_table</code></a>, and load the truth table from a file by <a href="../../man/#TensorQEC.load_table-Tuple{String}"><code>load_table</code></a>.</p><pre><code class="language-julia hljs">save_table(table, &quot;test_table.txt&quot;)
-table2 = load_table(&quot;test_table.txt&quot;)
-table == table2</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">true</code></pre><h2 id="Circuit-Simulation-with-Yao.jl"><a class="docs-heading-anchor" href="#Circuit-Simulation-with-Yao.jl">Circuit Simulation with Yao.jl</a><a id="Circuit-Simulation-with-Yao.jl-1"></a><a class="docs-heading-anchor-permalink" href="#Circuit-Simulation-with-Yao.jl" title="Permalink"></a></h2><p>Create a random qubit state to be encoded.</p><pre><code class="language-julia hljs">reg1 = rand_state(1)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">ArrayReg{2, ComplexF64, Array...}
+vizcircuit(qc)</code></pre><img src="4eaf923a.svg" alt="Example block output"/><h2 id="Construction-of-the-Truth-Table"><a class="docs-heading-anchor" href="#Construction-of-the-Truth-Table">Construction of the Truth Table</a><a id="Construction-of-the-Truth-Table-1"></a><a class="docs-heading-anchor-permalink" href="#Construction-of-the-Truth-Table" title="Permalink"></a></h2><p>We can generate the truth table for the error correction by <a href="../../man/#TensorQEC.make_table-Union{Tuple{N}, Tuple{Array{PauliString{N}, 1}, Int64}} where N"><code>make_table</code></a>. The <a href="../../man/#TensorQEC.TruthTable"><code>TruthTable</code></a> is a struct that records the truth table, the number of qubits, the number of stabilizers, and maximum error legth of the errors.</p><pre><code class="language-julia hljs">table = make_table(st, 1)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">┌────────────────────┬────────────────┐
+│<span class="sgr1">            Sydrome </span>│<span class="sgr1">          Error </span>│
+├────────────────────┼────────────────┤
+│             [1, 3] │         5 =&gt; Z │
+│          [4, 5, 6] │         7 =&gt; X │
+│                [5] │         2 =&gt; X │
+│             [4, 5] │         3 =&gt; X │
+│                [4] │         1 =&gt; X │
+│                [1] │         1 =&gt; Z │
+│                [6] │         4 =&gt; X │
+│             [2, 3] │         6 =&gt; Z │
+│       [1, 3, 4, 6] │ 5 =&gt; Z, 5 =&gt; X │
+│             [3, 6] │ 4 =&gt; Z, 4 =&gt; X │
+│             [1, 4] │ 1 =&gt; Z, 1 =&gt; X │
+│             [1, 2] │         3 =&gt; Z │
+│          [1, 2, 3] │         7 =&gt; Z │
+│             [4, 6] │         5 =&gt; X │
+│             [5, 6] │         6 =&gt; X │
+│                [3] │         4 =&gt; Z │
+│         ⋮          │       ⋮        │
+└────────────────────┴────────────────┘
+<span class="sgr36">                         5 rows omitted</span>
+</code></pre><p>We can save the truth table to a file by <a href="../../man/#TensorQEC.save_table-Tuple{TruthTable, String}"><code>save_table</code></a>, and load the truth table from a file by <a href="../../man/#TensorQEC.load_table-Tuple{String, Int64, Int64, Int64}"><code>load_table</code></a>.</p><pre><code class="language-julia hljs">save_table(table, &quot;test_table.txt&quot;)
+table2 = load_table(&quot;test_table.txt&quot;, 9, 8, 1)
+table.table == table2.table</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">true</code></pre><h2 id="Circuit-Simulation-with-Yao.jl"><a class="docs-heading-anchor" href="#Circuit-Simulation-with-Yao.jl">Circuit Simulation with Yao.jl</a><a id="Circuit-Simulation-with-Yao.jl-1"></a><a class="docs-heading-anchor-permalink" href="#Circuit-Simulation-with-Yao.jl" title="Permalink"></a></h2><p>Create a random qubit state to be encoded.</p><pre><code class="language-julia hljs">reg1 = rand_state(1)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">ArrayReg{2, ComplexF64, Array...}
     active qubits: 1/1
     nlevel: 2</code></pre><p>We use <a href="../../man/#TensorQEC.place_qubits-Tuple{YaoAPI.AbstractRegister, Vector{Int64}, Int64}"><code>place_qubits</code></a> to create a quantum register. <code>data_qubits</code> records the position of data qubits, and the rest ancilla qubits are in the <span>$|0\rangle$</span> state.</p><pre><code class="language-julia hljs">reg = place_qubits(reg1, data_qubits, nqubits(qc))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">ArrayReg{2, ComplexF64, Array...}
     active qubits: 7/7
     nlevel: 2</code></pre><p>Apply the encoding circuits.</p><pre><code class="language-julia hljs">apply!(reg, qc)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">ArrayReg{2, ComplexF64, Array...}
     active qubits: 7/7
-    nlevel: 2</code></pre><p>Apply an X error on the third qubit.</p><pre><code class="language-julia hljs">apply!(reg, put(7, 5 =&gt; X))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">ArrayReg{2, ComplexF64, Array...}
+    nlevel: 2</code></pre><p>Apply an X error on the third qubit.</p><pre><code class="language-julia hljs">apply!(reg, put(7, 5 =&gt; Y))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">ArrayReg{2, ComplexF64, Array...}
     active qubits: 7/7
     nlevel: 2</code></pre><h2 id="Measure-the-Syndrome-and-Inference-the-Error-Type-and-Position"><a class="docs-heading-anchor" href="#Measure-the-Syndrome-and-Inference-the-Error-Type-and-Position">Measure the Syndrome and Inference the Error Type and Position</a><a id="Measure-the-Syndrome-and-Inference-the-Error-Type-and-Position-1"></a><a class="docs-heading-anchor-permalink" href="#Measure-the-Syndrome-and-Inference-the-Error-Type-and-Position" title="Permalink"></a></h2><p>We first measure the stabilizers to get the error syndrome by <a href="../../man/#TensorQEC.measure_syndrome!-Union{Tuple{N}, Tuple{YaoAPI.AbstractRegister, AbstractArray{PauliString{N}, 1}}} where N"><code>measure_syndrome!</code></a>. 1 means the stabilizer is not violated, and -1 means the stabilizer is violated.</p><pre><code class="language-julia hljs">measure_outcome = measure_syndrome!(reg, st)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">6-element Vector{Int64}:
-  1
-  1
-  1
  -1
   1
- -1</code></pre><p>The measrue outcome shows that the stabilizer 4 and 6 are violated. According to the truth table, the error is <span>$X_5$</span>, which is exactly the error we applied.</p><h2 id="Error-Correction"><a class="docs-heading-anchor" href="#Error-Correction">Error Correction</a><a id="Error-Correction-1"></a><a class="docs-heading-anchor-permalink" href="#Error-Correction" title="Permalink"></a></h2><p>Then the following error correction is trivial. We apply the error correction.</p><pre><code class="language-julia hljs">apply!(reg, put(7, 5 =&gt; X))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">ArrayReg{2, ComplexF64, Array...}
+ -1
+ -1
+  1
+ -1</code></pre><p>The measrue outcome shows that the stabilizer 1,3,4 and 6 are violated. According to the truth table, the error is <span>$X_5$</span> and <span>$Z_5$</span>, which is exactly the error we applied. We can use <a href="../../man/#TensorQEC.table_inference-Tuple{TruthTable, Vector{Int64}}"><code>table_inference</code></a> to look up the syndromes in the truth table and infer the error type and position.</p><pre><code class="language-julia hljs">table_inference(table, measure_outcome)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">2-element Vector{Any}:
+ 5 =&gt; Z
+ 5 =&gt; X</code></pre><p>If we look up the syndrome that is not in the truth table, it will return <code>nothing</code>.</p><pre><code class="language-julia hljs">table_inference(table, [-1,-1,-1,-1,1,1])</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">No such syndrome in the truth table.</code></pre><h2 id="Error-Correction"><a class="docs-heading-anchor" href="#Error-Correction">Error Correction</a><a id="Error-Correction-1"></a><a class="docs-heading-anchor-permalink" href="#Error-Correction" title="Permalink"></a></h2><p>Then the following error correction is trivial. We apply the error correction.</p><pre><code class="language-julia hljs">apply!(reg, put(7, 5 =&gt; X))
+apply!(reg, put(7, 5 =&gt; Z))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">ArrayReg{2, ComplexF64, Array...}
     active qubits: 7/7
     nlevel: 2</code></pre><p>Measure the stabilizers after error correction to check whether the error is corrected.</p><pre><code class="language-julia hljs">measure_syndrome!(reg, st)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">6-element Vector{Int64}:
  1
@@ -60,4 +57,4 @@ table == table2</code></pre><pre class="documenter-example-output"><code class="
  1
  1
  1</code></pre><p>And we can calculate the fidelity after error correction to check whether the initial state is recovered.</p><pre><code class="language-julia hljs">apply!(reg, qc&#39;)
-fidelity_after = fidelity(density_matrix(reg, data_qubits), density_matrix(reg1))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">0.9999999999999997</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../inference/">« Inference with Tensor Network</a><a class="docs-footer-nextpage" href="../coherent/">Coherent Error Simulation »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.5.0 on <span class="colophon-date" title="Tuesday 2 July 2024 05:41">Tuesday 2 July 2024</span>. Using Julia version 1.10.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+fidelity_after = fidelity(density_matrix(reg, data_qubits), density_matrix(reg1))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">0.9999999999999994</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../inference/">« Inference with Tensor Network</a><a class="docs-footer-nextpage" href="../coherent/">Coherent Error Simulation »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.5.0 on <span class="colophon-date" title="Tuesday 2 July 2024 07:13">Tuesday 2 July 2024</span>. Using Julia version 1.10.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
