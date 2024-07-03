@@ -64,11 +64,35 @@ end
 end
 
 @testset "annotate_history" begin
+	YaoPlots.darktheme!()
 	st = stabilizers(SteaneCode())
 	table = make_table(st, 1)
 	qcen, data_qubits, code = encode_stabilizers(st) 
     qcm ,st_pos, num_qubits = measure_circuit_steane_single_type(data_qubits[1],st[4:6],false)
 	ps0 = paulistring(17,2,6) 
 	res = clifford_simulate(ps0, qcm)
-	annotate_history(res)
+	qcf,pos = TensorQEC.generate_annotate_circuit(res)
+
+	qcx = paulistring_annotate(paulistring(17,2,(6,13,16,17)))
+	qci = paulistring_annotate(paulistring(17,2,(13,16,17)))
+	push!(qci, put(17, 6 => line_annotation("I";color = "red")))
+	qccr = chain(17,
+	control(17,(15,-16,-17),1=>X),
+	qcx,
+	control(17,(-15,16,-17),2=>X),
+	qcx,
+	control(17,(15,16,-17),3=>X),
+	qcx,
+	control(17,(-15,-16,17),4=>X),
+	qcx,
+	control(17,(15,-16,17),5=>X),
+	qcx,
+	control(17,(-15,16,17),6=>X),
+	qci,
+	control(17,(15,16,17),7=>X),
+	qci
+	)
+
+	push!(qcf,qccr)
+	TensorQEC.annotate_circuit(qcf;filename="test.png")
 end

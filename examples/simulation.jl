@@ -22,19 +22,19 @@ vizcircuit(qcen)
 
 # ## Syndrome Extraction and Measurement-Free Error Correction
 # First, we generate the steane measurement circuit by [`measure_circuit_steane`](@ref) and `st_pos` records the ancilla qubits that store the measurement results of the stabilizers.
-qcm,st_pos, num_qubits = measure_circuit_steane(qcen,data_qubits[1],st,3)
+qcm,st_pos, num_qubits = measure_circuit_steane(data_qubits[1],st,3;qcen)
 vizcircuit(qcm)
 
 # Then we generate truth table for the error correction by [`make_table`](@ref). For more detials on truth table, please check [Inference with Truth Table](@ref).
-table = make_table(st, 1)
+table = make_table(st, 1;error_type = "Z")
 
 # Now we use [`correct_circuit`](@ref) to generate the measurement-free correction circuit by encoding the truth table on the quantum circuit directly.
-qccr = correct_circuit(table, collect(st_pos), num_qubits)
+qccr = correct_circuit(table, 22:24, num_qubits)
 vizcircuit(qccr)
 
 # ## Circuit Simulation with Tensor Networks
 # We connect the encoding circuit, the measurement circuit, and the correction circuit to form a full circuit. And we apply a Y error on the third qubit after encoding.
-qcf=chain(subroutine(num_qubits, qcen, 1:7),put(27,3=>Y),qcm,qccr,subroutine(num_qubits, qcen', 1:7))
+qcf=chain(subroutine(num_qubits, qcen, 1:7),put(27,3=>Z),qcm,qccr,subroutine(num_qubits, qcen', 1:7))
 vizcircuit(qcf)
 
 # Then we transform the circuit to a tensor network and optimize its contraction order. [`QCInfo`](@ref) records the information of the quantum circuit, including the data qubits and the number of qubits. [`fidelity_tensornetwork`](@ref) constructs the tensor network to calculate the fidelity after error correction.

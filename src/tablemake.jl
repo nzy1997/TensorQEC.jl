@@ -81,13 +81,23 @@ Generate the truth table for error correction.
 ### Returns
 - `table`: The truth table for error correction.
 """
-function make_table(st::Vector{PauliString{N}}, d::Int64;y_error=true) where N
+function make_table(st::Vector{PauliString{N}}, d::Int64;error_type="all") where N
 	mat = stabilizers2bimatrix(st).matrix
 	num_st = size(mat, 1)
 	table = Dict{Int, Int}()
-    times = y_error ? 3 : 2
+    if error_type == "all"
+        error_vec = 1:3 * N
+    elseif error_type == "X"
+        error_vec = N+1:2*N
+    elseif error_type == "Z"
+        error_vec = 1:N
+    elseif error_type == "XZ"
+        error_vec = 1:2*N
+    else 
+        error("error_type should be one of 'all', 'X', 'Z', 'XZ'.")
+    end
 	for i in 1:d
-		all_combinations = combinations(1:times*N, i)
+		all_combinations = combinations(error_vec, i)
 		for combo in all_combinations
 			bivec = combo2bivec(combo, N)
 
@@ -187,12 +197,13 @@ Generate the error correction circuit by embedding the truth table into the quan
 ### Returns
 - `qc`: The error correction circuit.
 """
-function correct_circuit(tb::TruthTable, st_pos::Vector{Int}, total_qubits::Int)
+function correct_circuit(tb::TruthTable, st_pos::AbstractVector{Int}, total_qubits::Int)
 	qc = chain(total_qubits)
 	for (k, v) in tb.table
 		for i in error_qubits(v, 2 * tb.num_qubits)
 			type, pos = error_type(i, tb.num_qubits)
-			push!(qc, control(total_qubits, st_pos[error_qubits(k, tb.num_st)], pos => type))
+            # push!(qc, control(total_qubits, st_pos[error_qubits(k, tb.num_st)], pos => type))
+			push!(qc, control(total_qubits, [i ∈ error_qubits(k, tb.num_st) ? st_pos[i] : -st_pos[i] for i in 1:length(st_pos)], pos => type))
 		end
 	end
 	return qc

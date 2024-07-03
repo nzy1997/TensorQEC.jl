@@ -57,7 +57,7 @@ eqc = error_quantum_circuit(qc, pairs)
 vizcircuit(eqc)
 
 # Finally, we can check the infidelity after the circuit with coherent error.
-tn = fidelity_tensornetwork(eqc, QCInfo(data_qubits, 3))
+tn = fidelity_tensornetwork(eqc, QCInfo(data_qubits, 7))
 optnet = optimize_code(tn, TreeSA(; ntrials=1, niters=3), OMEinsum.MergeVectors())
 infidelity = 1 - abs(contract(optnet)[1])
 

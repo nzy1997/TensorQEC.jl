@@ -170,7 +170,9 @@ function fidelity_tensornetwork(qc::ChainBlock,qc_info::QCInfo)
     jointcode = replace(tn.code, [input_indices[i]=> output_indices[i] for i in 1:length(input_indices)]...)
     empty!(jointcode.iy)
     tn = TensorNetwork(jointcode, tn.tensors)
-    tn.tensors[1]./(2^length(qc_info.data_qubits))
+    tn.tensors[1] = tn.tensors[1]./(4^length(qc_info.data_qubits))
+    @show (2^length(qc_info.data_qubits))
+    @show tn.tensors[1]
     return tn
 end
 """ 

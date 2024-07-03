@@ -169,17 +169,46 @@ function paulistring_annotate(ps::PauliString{N},num_qubits::Int;color = "red") 
 end
 
 function annotate_history(res::CliffordSimulateResult{N}) where N
+    qcf,_= generate_annotate_circuit(res)
+    return annotate_circuit(qcf)
+end
+
+function generate_annotate_circuit(res::CliffordSimulateResult{N};color = "red") where N
     qcf = chain(N)
-    push!(qcf, paulistring_annotate(res.history[1], N))
+    pos = [1]
+    push!(qcf, paulistring_annotate(res.history[1], N;color))
     for i in 1:length(res.circuit)
         block = res.circuit[i]
         push!(qcf, block)
         if !isempty(occupied_locs(block) ∩ occupied_locs(res.history[i+1]))
-            push!(qcf, paulistring_annotate(res.history[i+1], N))
+            push!(qcf, paulistring_annotate(res.history[i+1], N;color))
+            push!(pos, length(qcf))
         end
     end
+    return qcf,pos
+end
+
+function annotate_circuit(qcf::ChainBlock;filename = nothing)
     CircuitStyles.barrier_for_chain[], temp = true, CircuitStyles.barrier_for_chain[]
-    draw = vizcircuit(qcf)
+    draw = vizcircuit(qcf;filename)
     CircuitStyles.barrier_for_chain[] = temp
     return draw
+end
+
+function replace_block_color(qc::ChainBlock,color::String)
+    for i in 1:length(qc)
+        qc[i] = replace_block_color(qc[i],color)
+    end
+    return qc
+end
+
+replace_block_color(qc::PutBlock,color::String) = put(qc.n,qc.locs=> line_annotation(qc.content.name; color))
+
+function annotate_circuit_pics(res::CliffordSimulateResult{N},foldername::String) where N
+    qcf,pos = generate_annotate_circuit(res;color = "transparent")
+    annotate_circuit(qcf;filename = "$foldername/0.png")
+    for i in 1:length(pos)
+        qcf[pos[i]] = replace_block_color(qcf[pos[i]],"red")
+        annotate_circuit(qcf;filename = "$foldername/$i.png")
+    end
 end
