@@ -1,4 +1,4 @@
-# TensorQEC
+<img width="420" alt="image" src="https://github.com/nzy1997/TensorQEC.jl/assets/6257240/ab5b781f-9d86-418a-ba9f-5ca90de807e8">
 
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://nzy1997.github.io/TensorQEC.jl/stable/)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://nzy1997.github.io/TensorQEC.jl/dev/)
