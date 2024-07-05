@@ -35,7 +35,7 @@ function measure_circuit_fault_tol(sts::Vector{PauliString{N}}) where N
 	for i in 1:length(sts)
 		measure_circuit_fault_tol!(qc, sts[i], collect(N+st_pos[i]:N+st_pos[i]+st_length[i]-1))
 	end
-	return qc, st_pos .+ N, num_qubits
+	return qc, st_pos .+ N
 end
 
 
@@ -56,7 +56,7 @@ function measure_circuit(sts::Vector{PauliString{N}}) where N
 	for i in 1:length(sts)
 		measure_circuit!(qc, sts[i], N+i)
 	end
-	return qc, collect(N+1:num_qubits), num_qubits
+	return qc, collect(N+1:num_qubits)
 end
 
 """
@@ -75,26 +75,40 @@ Generate the Steane type measurement circuit.
 - `st_pos`: The ancilla qubit indices that measrue corresponding stabilizers.
 - `num_qubits`: The total number of qubits in the circuit.
 """
-function measure_circuit_steane(data_qubit::Int, sts::Vector{PauliString{N}},xst_num::Int;qcen = nothing) where N
+function measure_circuit_steane(data_qubit::Int, sts::Vector{PauliString{N}};qcen = nothing) where N
+	xst_num = count([st.ids[findfirst(!=(1),st.ids)] == 2 for st in sts])
 	num_sts = length(sts)
-	num_qubits = 3 * N + num_sts
+	num_qubits = N
 	qc = chain(num_qubits)
-
-	_single_type!(qc,qcen,(N+1):2*N, 3*N+1:3*N+xst_num, sts[1:xst_num],  true)
-
-	_single_type!(qc,qcen, 2*N+1:3*N,3*N+xst_num+1:3*N+num_sts, sts[xst_num+1:end],  false; data_pos = data_qubit+2*N)
-
-	return qc, 3*N+1:3*N+num_sts, num_qubits
+	st_pos = Int[]
+	if xst_num > 0
+		qc = _single_type(qcen, sts[1:xst_num], true;data_qubit)
+		st_pos = num_qubits+N+1:num_qubits+N+st_num
+		num_qubits += N + xst_num
+	end
+	if xst_num < num_sts
+		zst_num = num_sts - xst_num
+		qcz = _single_type(qcen, sts[xst_num+1:end], false;data_qubit)
+		qc = chain(num_qubits+N+zst_num,subroutine(num_qubits+N+zst_num,qc,1:num_qubits), subroutine(num_qubits+N+zst_num,qcz,(1:N)∪(num_qubits+1:num_qubits+N+zst_num)))
+		st_pos = st_pos ∪ (num_qubits+N+1:num_qubits+N+zst_num)
+	end
+	return qc, st_pos
 end
 
-function measure_circuit_steane_single_type(data_qubit::Int, sts::Vector{PauliString{N}},xtype::Bool;qcen = nothing) where N
+function measure_circuit_steane_single_type(data_qubit::Int, sts::Vector{PauliString{N}};qcen = nothing) where N
+	xtype = (sts[1].ids[findfirst(!=(1),sts[1].ids)] == 2)
 	num_sts = length(sts)
 	num_qubits = 2 * N + num_sts
 	qc = chain(num_qubits)
 	data_pos = nothing
 	xtype || (data_pos = data_qubit+N)
 	_single_type!(qc,qcen,(N+1):2*N, 2*N+1:2*N+num_sts, sts,  xtype;data_pos)
-	return qc, 2*N+1:2*N+num_sts, num_qubits	
+	return qc, 2*N+1:2*N+num_sts	
+end
+
+function _single_type(qcen,sts::Vector{PauliString{N}}, mtype::Bool; data_pos = nothing) where N
+	qc = chain(2*N+length(sts))
+	return _single_type!(qc,qcen,(N+1:2*N),(2*N+1):(2*N+length(sts)),sts,mtype;data_pos)
 end
 function _single_type!(qc::ChainBlock, qcen, copy_pos::AbstractVector{Int},st_pos::AbstractVector{Int}, sts::Vector{PauliString{N}}, mtype::Bool; data_pos=nothing) where N
 	num_qubits = nqubits(qc)
@@ -104,7 +118,7 @@ function _single_type!(qc::ChainBlock, qcen, copy_pos::AbstractVector{Int},st_po
 	else
 		copy_circuit_steane!(qc,1:N,copy_pos)
 	end
-	qcx, _, _ = measure_circuit(sts)
+	qcx, _= measure_circuit(sts)
 	push!(qc, subroutine(num_qubits, qcx, copy_pos ∪ st_pos))
 end
 
