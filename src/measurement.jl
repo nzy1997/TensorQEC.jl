@@ -60,20 +60,18 @@ function measure_circuit(sts::Vector{PauliString{N}}) where N
 end
 
 """
-	measure_circuit_steane(qcen::ChainBlock, data_qubit::Int, sts::Vector{PauliString{N}},xst_num::Int) where N
+	measure_circuit_steane(data_qubit::Int, sts::Vector{PauliString{N}};qcen = nothing) where N
 
 Generate the Steane type measurement circuit.
 
 ### Arguments
-- `qcen`: The encoding circuit.
 - `data_qubit`: The index of the data qubit.
 - `sts`: The vector of Pauli strings, composing the generator of stabilizer group.
-- `xst_num`: The number of X type stabilizers.
+- `qcen`: The encoding circuit. If `nothing`, the measurement circuit will not contain the encoder for ancilla qubits.
 
 ### Returns
 - `qc`: The measurement circuit.
 - `st_pos`: The ancilla qubit indices that measrue corresponding stabilizers.
-- `num_qubits`: The total number of qubits in the circuit.
 """
 function measure_circuit_steane(data_qubit::Int, sts::Vector{PauliString{N}};qcen = nothing) where N
 	xst_num = count([st.ids[findfirst(!=(1),st.ids)] == 2 for st in sts])
@@ -82,28 +80,17 @@ function measure_circuit_steane(data_qubit::Int, sts::Vector{PauliString{N}};qce
 	qc = chain(num_qubits)
 	st_pos = Int[]
 	if xst_num > 0
-		qc = _single_type(qcen, sts[1:xst_num], true;data_qubit)
-		st_pos = num_qubits+N+1:num_qubits+N+st_num
+		qc = _single_type(qcen, sts[1:xst_num], true;data_pos = data_qubit)
+		st_pos = num_qubits+N+1:num_qubits+N+xst_num
 		num_qubits += N + xst_num
 	end
 	if xst_num < num_sts
 		zst_num = num_sts - xst_num
-		qcz = _single_type(qcen, sts[xst_num+1:end], false;data_qubit)
+		qcz = _single_type(qcen, sts[xst_num+1:end], false;data_pos=data_qubit)
 		qc = chain(num_qubits+N+zst_num,subroutine(num_qubits+N+zst_num,qc,1:num_qubits), subroutine(num_qubits+N+zst_num,qcz,(1:N)∪(num_qubits+1:num_qubits+N+zst_num)))
 		st_pos = st_pos ∪ (num_qubits+N+1:num_qubits+N+zst_num)
 	end
 	return qc, st_pos
-end
-
-function measure_circuit_steane_single_type(data_qubit::Int, sts::Vector{PauliString{N}};qcen = nothing) where N
-	xtype = (sts[1].ids[findfirst(!=(1),sts[1].ids)] == 2)
-	num_sts = length(sts)
-	num_qubits = 2 * N + num_sts
-	qc = chain(num_qubits)
-	data_pos = nothing
-	xtype || (data_pos = data_qubit+N)
-	_single_type!(qc,qcen,(N+1):2*N, 2*N+1:2*N+num_sts, sts,  xtype;data_pos)
-	return qc, 2*N+1:2*N+num_sts	
 end
 
 function _single_type(qcen,sts::Vector{PauliString{N}}, mtype::Bool; data_pos = nothing) where N
