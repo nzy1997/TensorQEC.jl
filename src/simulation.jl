@@ -203,9 +203,22 @@ toput(gate::ControlBlock{XGate,2,1}) = put(nqudits(gate), (gate.ctrl_locs..., ga
 toput(gate::ControlBlock{ZGate,2,1}) = put(nqudits(gate), (gate.ctrl_locs..., gate.locs...)=>CCZ)
 toput(gate::AbstractBlock) = gate
 
+
+function error_quantum_circuit(qc::ChainBlock, error_rate::T ) where {T <: Real}
+    qc= simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
+    nq = nqubits(qc)
+    eqc = chain(nq)
+    for _gate in qc
+        gate = toput(_gate)
+        eu = coherent_error_unitary(mat(gate.content),error_rate)
+        push!(eqc,put(nq,gate.locs=>matblock(eu)))
+    end
+    return eqc
+end
+
 """
-    error_quantum_circuit(qc::ChainBlock, error_rate::T ) where {T <: Real}
-    error_quantum_circuit(qc::ChainBlock, pairs)
+    error_quantum_circuit_pair_replace(qc::ChainBlock, error_rate::T ) where {T <: Real}
+    error_quantum_circuit_pair_replace(qc::ChainBlock, pairs)
 
 Generate the error quantum circuit for the given error rate.
 
@@ -218,13 +231,13 @@ Generate the error quantum circuit for the given error rate.
 - `qcf`: The error quantum circuit.
 - `vec`: The vector to store the error rate to each gate.
 """
-function error_quantum_circuit(qc::ChainBlock, error_rate::T ) where {T <: Real}
+function error_quantum_circuit_pair_replace(qc::ChainBlock, error_rate::T ) where {T <: Real}
     pairs,vec = error_pairs(error_rate) 
     qcf = error_quantum_circuit(qc,pairs)
     return qcf, vec
 end
 
-function error_quantum_circuit(qc::ChainBlock, pairs)
+function error_quantum_circuit_pair_replace(qc::ChainBlock, pairs)
     qcf = replace_block(x->toput(x), qc)
     for pa in pairs
         qcf = replace_block(pa, qcf)

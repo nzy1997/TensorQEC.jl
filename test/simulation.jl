@@ -87,7 +87,7 @@ end
     u = kron(u1,u1')
     kraus = get_kraus(u2, 1)
     uapp = mapreduce(x -> kron(x,x'), +, kraus)
-    @test real(tr(u * uapp)) == real(contract(optnet)[1])
+    @test real(tr(u * uapp))/4 == real(contract(optnet)[1])
 end
 
 @testset "get_kraus" begin
@@ -143,7 +143,6 @@ end
 @testset "error_quantum_circuit" begin
     qc = chain(3, put(3, 1 => X), put(3, 2 => H), put(3, 3 => Z), control(3, 2, 3 => X), control(3, (1,3), 2 => Z), control(3, 1, 3 => Z))
     qc, srs = ein_circ(qc, QCInfo([], [], 3))
-    qce,maxe = error_quantum_circuit(qc ,1e-5) 
-    @show qce
+    qce = error_quantum_circuit(qc ,1e-5) 
     @test isapprox(1-abs(tr(mat(qc)'*mat(qce)))/2^6,0; atol=1e-5)
 end

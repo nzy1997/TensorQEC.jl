@@ -80,7 +80,7 @@ function measure_circuit_steane(data_qubit::Int, sts::Vector{PauliString{N}};qce
 	qc = chain(num_qubits)
 	st_pos = Int[]
 	if xst_num > 0
-		qc = _single_type(qcen, sts[1:xst_num], true;data_pos = data_qubit)
+		qc = _single_type(qcen, sts[1:xst_num], true)
 		st_pos = num_qubits+N+1:num_qubits+N+xst_num
 		num_qubits += N + xst_num
 	end
@@ -111,7 +111,7 @@ end
 
 function state_prepare!(qc::ChainBlock,qcen::ChainBlock, pos::AbstractVector{Int64};data_pos = nothing)
 	num_qubits = nqubits(qc)
-	data_pos === nothing || push!(qc, put(num_qubits, data_pos => H))
+	data_pos === nothing || push!(qc, put(num_qubits, pos[data_pos] => H))
 	push!(qc,subroutine(num_qubits, qcen, pos))
 end
 

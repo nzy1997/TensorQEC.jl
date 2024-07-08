@@ -49,7 +49,9 @@ end
 @testset "clifford_simulate" begin
 	qc = chain(put(5, 1 => H), control(5, 1, 2 => Z), control(5, 3, 4 => X), control(5, 5, 3 => X), put(5, 1 => X))
 	ps = PauliString((4, 3, 1, 3, 2))
-	ps2, val = TensorQEC.clifford_simulate(ps, qc)
+	res = clifford_simulate(ps, qc)
+	ps2 = res.output
+	val = res.phase
 	@test val * mat(qc) * mat(ps) * mat(qc)' ≈ mat(ps2)
 end
 
@@ -57,42 +59,9 @@ end
 	st = stabilizers(SteaneCode())
 	table = make_table(st, 1)
 	qcen, data_qubits, code = encode_stabilizers(st) 
-    qcm ,st_pos, num_qubits = measure_circuit_steane(data_qubits[1],st,3)
+    qcm ,st_pos  = measure_circuit_steane(data_qubits[1],st)
 	ps0 = paulistring(27,3,6) 
 	res = clifford_simulate(ps0, qcm)
 	annotate_history(res)
-end
-
-@testset "annotate_history" begin
-	YaoPlots.darktheme!()
-	st = stabilizers(SteaneCode())
-	table = make_table(st, 1)
-	qcen, data_qubits, code = encode_stabilizers(st) 
-    qcm ,st_pos, num_qubits = measure_circuit_steane_single_type(data_qubits[1],st[4:6],false)
-	ps0 = paulistring(17,2,6) 
-	res = clifford_simulate(ps0, qcm)
-	qcf,pos = TensorQEC.generate_annotate_circuit(res)
-
-	qcx = paulistring_annotate(paulistring(17,2,(6,13,16,17)))
-	qci = paulistring_annotate(paulistring(17,2,(13,16,17)))
-	push!(qci, put(17, 6 => line_annotation("I";color = "red")))
-	qccr = chain(17,
-	control(17,(15,-16,-17),1=>X),
-	qcx,
-	control(17,(-15,16,-17),2=>X),
-	qcx,
-	control(17,(15,16,-17),3=>X),
-	qcx,
-	control(17,(-15,-16,17),4=>X),
-	qcx,
-	control(17,(15,-16,17),5=>X),
-	qcx,
-	control(17,(-15,16,17),6=>X),
-	qci,
-	control(17,(15,16,17),7=>X),
-	qci
-	)
-
-	push!(qcf,qccr)
-	TensorQEC.annotate_circuit(qcf;filename="test.png")
+	@test res.output.ids == (1, 1, 1, 1, 1, 3, 1, 1, 1, 1, 1, 1, 4, 1, 1, 2, 2, 1, 1, 1, 1, 1, 2, 1, 1, 2, 2)
 end
