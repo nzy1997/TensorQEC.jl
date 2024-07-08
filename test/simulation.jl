@@ -146,3 +146,10 @@ end
     qce = error_quantum_circuit(qc ,1e-5) 
     @test isapprox(1-abs(tr(mat(qc)'*mat(qce)))/2^6,0; atol=1e-5)
 end
+
+@testset "error_quantum_circuit_pair_replace" begin
+    qc = chain(3, put(3, 1 => X), put(3, 2 => H), put(3, 3 => Z), control(3, 2, 3 => X), control(3, (1,3), 2 => Z), control(3, 1, 3 => Z))
+    qc, srs = ein_circ(qc, QCInfo([], [], 3))
+    qce,vec = error_quantum_circuit_pair_replace(qc ,1e-5) 
+    @test isapprox(1-abs(tr(mat(qc)'*mat(qce)))/2^6,0; atol=1e-5)
+end

@@ -233,7 +233,7 @@ Generate the error quantum circuit for the given error rate.
 """
 function error_quantum_circuit_pair_replace(qc::ChainBlock, error_rate::T ) where {T <: Real}
     pairs,vec = error_pairs(error_rate) 
-    qcf = error_quantum_circuit(qc,pairs)
+    qcf = error_quantum_circuit_pair_replace(qc,pairs)
     return qcf, vec
 end
 
