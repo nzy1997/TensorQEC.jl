@@ -10,7 +10,7 @@ surface_stabilizers = stabilizers(SurfaceCode(3,3))
 # Then we can generate the encoding circuits of the stabilizers by [`encode_stabilizers`](@ref).
 encoder, data_qubits, bimatrix = encode_stabilizers(surface_stabilizers)
 vizcircuit(encoder)
-# where `encoder` is the encoding circuit, `data_qubits` are the qubits that we should put initial qubtis in, and `bimatrix` is a [`Bimatrix`](@ref) instance that records information of the encoding circuit.
+# where `encoder` is the encoding circuit, `data_qubits` are the qubits that we should put initial qubtis in, and `bimatrix` is a [`Bimatrix`](@ref) instance that records information of the encoding circuit. For more details on `Bimatrix`, please check [^Gottesman]. 
 
 # The process of obtaining the encoding circuit requires adjusting the generators of the stabilizer group. The new generators are
 TensorQEC.bimatrix2stabilizers(bimatrix)
@@ -61,3 +61,4 @@ apply!(logic_state, encoder')
 fidelity_after = fidelity(density_matrix(logic_state, data_qubits), density_matrix(data))
 
 # [^Ferris]: Ferris, A. J.; Poulin, D. Tensor Networks and Quantum Error Correction. Phys. Rev. Lett. 2014, 113 (3), 030501. https://doi.org/10.1103/PhysRevLett.113.030501.
+# [^Gottesman]: Gottesman, D. (1997). Stabilizer Codes and Quantum Error Correction (arXiv:quant-ph/9705052). arXiv. http://arxiv.org/abs/quant-ph/9705052
