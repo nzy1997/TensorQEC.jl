@@ -1,4 +1,7 @@
-# TensorQEC
+<p align="center">
+<img width="400" src="./docs/src/images/logoname.svg"/>
+</p>
+
 
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://nzy1997.github.io/TensorQEC.jl/stable/)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://nzy1997.github.io/TensorQEC.jl/dev/)
@@ -18,14 +21,22 @@ Also, we include more general QEC tools, including
 
 ## Installation
 
-Type `]` in a [Julia REPL](https://docs.julialang.org/en/v1/stdlib/REPL/index.html) to enter the `pkg` mode, then type
-```Julia pkg
-pkg> dev https://github.com/nzy1997/TensorQEC.jl.git
+TensorQEC is a &nbsp;
+    <a href="https://julialang.org">
+        <img src="https://raw.githubusercontent.com/JuliaLang/julia-logo-graphics/master/images/julia.ico" width="16em">
+        Julia Language
+    </a>
+    &nbsp; package. To install TensorQEC,
+    please <a href="https://docs.julialang.org/en/v1/manual/getting-started/">open
+    Julia's interactive session (known as REPL)</a> and press the <kbd>]</kbd> key in the REPL to use the package mode, and then type:
+</p>
+
+```julia
+pkg> add https://github.com/nzy1997/TensorQEC.jl.git
 ```
+
+To update, just type `up` in the package mode.
 
 ## Contribute
 
-Suggestions and Comments in the _Issues_ are welcome.
-
-## License
-MIT License
+Suggestions and Comments in the [_Issues_](https://github.com/nzy1997/TensorQEC.jl/issues) are welcome.
