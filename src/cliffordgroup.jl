@@ -168,6 +168,17 @@ function paulistring_annotate(ps::PauliString{N},num_qubits::Int;color = "red") 
     return qc
 end
 
+"""
+    annotate_history(res::CliffordSimulateResult{N})
+
+Annotate the history of Pauli strings in the result of `clifford_simulate`.
+
+### Arguments
+- `res`: The result of `clifford_simulate`.
+
+### Returns
+- `draw`: The visualization of the history.
+"""
 function annotate_history(res::CliffordSimulateResult{N}) where N
     qcf,_= generate_annotate_circuit(res)
     return annotate_circuit(qcf)

@@ -57,4 +57,7 @@ vizcircuit(clifford_simulation_circuit)
 CircuitStyles.barrier_for_chain[] = false  # disable barrier
 res.phase * mat(clifford_simulation_circuit) ≈ mat(ps2)
 
+# We can also visualize the history of Pauli strings by [`annotate_history`](@ref).
+annotate_history(res)
+
 # [^Bravyi2022]: Bravyi, S., Latone, J.A., Maslov, D., 2022. 6-qubit optimal Clifford circuits. npj Quantum Inf 8, 1–12. https://doi.org/10.1038/s41534-022-00583-7
