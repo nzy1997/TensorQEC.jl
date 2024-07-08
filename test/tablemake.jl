@@ -1,7 +1,15 @@
 using Test, TensorQEC, TensorQEC.Yao
 
 
-@testset "make table and save" begin
+@testset "make table" begin
+    st =stabilizers(SurfaceCode(3,3))
+    for (error_type,l) in [("XZ",14), ("Z",7), ("X",7),("all",23)]
+        table = make_table(st, 1;error_type = error_type)
+        @test length(table.table) == l
+    end
+end
+
+@testset "save table and load" begin
     st =stabilizers(SurfaceCode(3,3))
     table = make_table(st, 1)
     @test length(table.table) == 23

@@ -49,6 +49,7 @@ end
 @testset "clifford_simulate" begin
 	qc = chain(put(5, 1 => H), control(5, 1, 2 => Z), control(5, 3, 4 => X), control(5, 5, 3 => X), put(5, 1 => X))
 	ps = PauliString((4, 3, 1, 3, 2))
+	
 	res = clifford_simulate(ps, qc)
 	ps2 = res.output
 	val = res.phase
@@ -64,4 +65,6 @@ end
 	res = clifford_simulate(ps0, qcm)
 	annotate_history(res)
 	@test res.output.ids == (1, 1, 1, 1, 1, 3, 1, 1, 1, 1, 1, 1, 4, 1, 1, 2, 2, 1, 1, 1, 1, 1, 2, 1, 1, 2, 2)
+
+	annotate_circuit_pics(res)
 end

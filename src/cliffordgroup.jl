@@ -156,8 +156,8 @@ function clifford_simulate(ps::PauliString{N}, qc::ChainBlock) where N
     return CliffordSimulateResult(ps, valf, qc, ps_history)
 end
 
-function paulistring_annotate(ps::PauliString{N}) where N
-    return paulistring_annotate(ps, N)
+function paulistring_annotate(ps::PauliString{N};color = "red") where N
+    return paulistring_annotate(ps, N;color)
 end
 function paulistring_annotate(ps::PauliString{N},num_qubits::Int;color = "red") where N
     qc = chain(num_qubits)
@@ -176,12 +176,12 @@ end
 function generate_annotate_circuit(res::CliffordSimulateResult{N};color = "red") where N
     qcf = chain(N)
     pos = [1]
-    push!(qcf, paulistring_annotate(res.history[1], N;color))
+    push!(qcf, paulistring_annotate(res.history[1];color))
     for i in 1:length(res.circuit)
         block = res.circuit[i]
         push!(qcf, block)
         if !isempty(occupied_locs(block) ∩ occupied_locs(res.history[i+1]))
-            push!(qcf, paulistring_annotate(res.history[i+1], N;color))
+            push!(qcf, paulistring_annotate(res.history[i+1];color))
             push!(pos, length(qcf))
         end
     end
@@ -204,11 +204,14 @@ end
 
 replace_block_color(qc::PutBlock,color::String) = put(qc.n,qc.locs=> line_annotation(qc.content.name; color))
 
-function annotate_circuit_pics(res::CliffordSimulateResult{N},foldername::String) where N
+function annotate_circuit_pics(res::CliffordSimulateResult{N};foldername=nothing) where N
     qcf,pos = generate_annotate_circuit(res;color = "transparent")
-    annotate_circuit(qcf;filename = "$foldername/0.png")
+    filename = nothing
+    (foldername === nothing) || (filename = "$foldername/0.png")
+    annotate_circuit(qcf;filename)
     for i in 1:length(pos)
         qcf[pos[i]] = replace_block_color(qcf[pos[i]],"red")
-        annotate_circuit(qcf;filename = "$foldername/$i.png")
+        (foldername === nothing) || (filename = "$foldername/$i.png")
+        annotate_circuit(qcf;filename)
     end
 end
