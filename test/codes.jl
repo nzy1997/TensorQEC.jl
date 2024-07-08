@@ -1,4 +1,4 @@
-using Test, TensorQEC, TensorQEC.Yao, TensorQEC.LinearAlgebra, TensorQEC.Yao
+using Test, TensorQEC, TensorQEC.Yao, TensorQEC.LinearAlgebra
 using Random
 
 @testset "toric code" begin
