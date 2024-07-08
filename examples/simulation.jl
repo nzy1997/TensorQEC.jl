@@ -4,67 +4,61 @@
 
 # ## History of Measurement-Free Quantum Error Correction
 
-# Traditional Quantum Error Correction requires measurment and feed back into
-# quantum circuit. Limited by laws of physics, measurements are doomed to be costly
-# timewise. Decoherence may very well happen during measurement. Measurement-free
-# quantum error correction was a scheme to circumvent this problem.
+# Traditional quantum error correction requires measurment and feed back into
+# quantum circuit. Limited by laws of physics, measurements are doomed to be
+# costly timewise. Decoherence may very well happen during measurement.
+# Measurement-free quantum error correction was a scheme to circumvent this
+# problem.
 
-# The concept and proof for fault-tolerant measurement-free schemes have all been
-# done in the 90s. The rest of the work are either experimental proof or pushing
-# the threshold up.
+# The concept and proof for fault-tolerant measurement-free schemes have all
+# been done in the 90s. The rest of the work are either experimental proof or
+# pushing the threshold up.
 
 # ### First of Measurement Free Schemes
 
-# The first paper that mentions measurement free quantum error correction was due
-# to Aharonov et. al [^Aharonov]. Not only did they improve Shor's previous result on
-# threshold of quantum error correction from being polylogarithmic to circuit
-# size and depth to constant, but also did they show in Section 4. in the paper [^Aharonov] that
-# no-measurement was necessary for quantum error correction. More concretely, they
-# constructed a universal set of fault-tolerant gates without using measurement. In the paper,
-# they used CSS code and assumed noise is local and un-correlated in time, i.e
-# Markovian. The threshold they obtain is $\eta_c \approx 10^{-6}$.
+# Measurement-free quantum error correction was first proposed by Aharonov et.
+# al [^Aharonov]. Without using measurements, a universal set of fault-tolerant
+# gates on encoded qubits was constructed in section 4 of the paper [^Aharonov].
+# They used CSS code and assumed noise is local and un-correlated in time, i.e
+# Markovian. They obtained a threshold of $\eta_c \approx 10^{-6}$.
 
-# In a following paper [^Boykin], measurement free quantum error correction was used to
-# circumvent the problem of single molecule measurement being impossible on NMR
-# machine. They included concrete example of how to implement a measurement free error correction scheme.
+# To circumvent the problem of single molecule measurement being impossible on
+# NMR machine in a following paper [^Boykin], the measurement-free scheme as
+# employed. Concrete example of how to implement such scheme was given.
 
 
 # !!! note "Entanglement Understanding"
-#     In a different paper by Peres[^Peres], he linked the measurement of error
-#     syndrom being un-necessary with entanglement and teleportation. However, no
-#     concrete construction or threshold analysis was given.
+#     A link between entanglement and measurement free quantum error correction
+#     was made by Peres[^Peres]. However, no concrete construction or threshold
+#     analysis was given.
 
 # ### Later Developments
 
-# Much later, [^Divincenzo] mentions what measurement free scheme was. However, he did not give any
-# reference to paper. In this paper he was considering the effect of slow and fast
-# measurement on error correction threshold. [^Ercan] reasoned that slow measurement
-# was ok because "measurements can take place concurrently within the many levels
-# of concatenation required to achieve fault tolerance." Hence making
-# measurement-free scheme only desirable in intermediate scale.
+# Previously, replacing measurement by coherent operation will cause the
+# noise threshold to be considerably lower [^DiVincenzo]. DiVincenzo has shown that
+# slow measurement was not a problem for obtaining high error correction
+# threshold [^DiVincenzo]. It is because "measurements can take place
+# concurrently within the many levels of concatenation required to achieve fault
+# tolerance" [^Ercan]. Hence making measurement-free scheme only desirable in
+# intermediate scale.
 
-# The next development in measurement free scheme was in [^Paz]. It used Bacon-Shor
-# code for example. They have shown that the measurement free scheme was "only about an
-# order of magnitude worse than conventional schemes" [^Ercan].
+# The misunderstanding on noise threshold was debunked later. Measurement-free
+# scheme was used on Bacon-Shor code in [^Paz]. They have shown that the
+# measurement free scheme was "only about an order of magnitude worse than
+# conventional schemes" [^Ercan].
 
 # ### Experimental Realizations and Numerical Estimations
 
-# We collect some experimental realizations and  numerical estimations
-# of measurement free quantum error correction.
+# - Realization on trapped ion platform [^Schindler]
 
-# [^Schindler] is an experimental paper that realizes measurement-free quantum error
-# correction on trapped ions.
+# - Realization on bosonic code qubits. [^Gertler]
 
-# [^Crow] improved the design of Measurement-Free Quantum Error Correction "by using redundant
-# syndrome extractions and reported thresholds for three qubit bitflip (BF),
-# Bacon-Shor, and Steane codes that are comparable to measurement-based values".[^Ercan]
+# - Improved the design of "by using redundant syndrome extractions and reported thresholds for three qubit bitflip (BF), Bacon-Shor, and Steane codes that are comparable to measurement-based values".[^Ercan] [^Crow]
 
-# [^Omanakuttan] provides usage of Measurement-Free Quantum Error Correction on platform with spins implemnting qudits.
+# - Simulation on platform with qubits encoded with spin-cat code on large spin qudits.[^Omanakuttan]
 
-# [^Ercan] benchmarks measurement free quantum error correction on quantum dots
-# systems.
+# - Simulation on quantum dots systems [^Ercan].
 
-# [^Gertler] implemented Measurement-Free Quantum Error Correction in bosonic code.
 
 # ## Implementation
 
@@ -113,7 +107,7 @@ infidelity = 1 - abs(contract(optnet)[1])
 # [^Aharonov]: Aharonov, D. and Ben-Or, M. (1997). Fault-tolerant quantum computation with constant error. In: Proceedings of the twenty-ninth annual ACM symposium on Theory of computing; pp. 176–188.
 # [^Boykin]: Roychowdhury, V. P.; Boykin, P.; Vatan, F. and Mor, T. (jul 2004). Fault Tolerant Computation on Ensemble Quantum Computers. In: 2004 International Conference on Dependable Systems and Networks (IEEE Computer Society, Los Alamitos, CA, USA); p. 157.
 # [^Peres]: Peres, A. (1998). Quantum disentanglement and computation. Superlattices and Microstructures 23, 373–379.
-# [^Divincenzo]: DiVincenzo, D. P. and Aliferis, P. (2007). Effective fault-tolerant quantum computation with slow measurements. Physical review letters 98, 020501.
+# [^DiVincenzo]: DiVincenzo, D. P. and Aliferis, P. (2007). Effective fault-tolerant quantum computation with slow measurements. Physical review letters 98, 020501.
 # [^Ercan]: Ercan, H. E.; Ghosh, J.; Crow, D.; Premakumar, V. N.; Joynt, R.; Friesen, M. and Coppersmith, S. (2018). Measurement-free implementations of small-scale surface codes for quantum-dot qubits. Physical Review A 97, 012318.
 # [^Paz]: Paz-Silva, G. A.; Brennen, G. K. and Twamley, J. (2010). On fault-tolerance with noisy and slow measurements, arXiv preprint arXiv:1002.1536.
 # [^Schindler]: Schindler, P.; Barreiro, J. T.; Monz, T.; Nebendahl, V.; Nigg, D.; Chwalla, M.; Hennrich, M. and Blatt, R. (2011). Experimental Repetitive Quantum Error Correction. Science 332, 1059–1061, arXiv:https://www.science.org/doi/pdf/10.1126/science.1203329.
