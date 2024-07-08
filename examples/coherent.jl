@@ -47,13 +47,8 @@ optnet = optimize_code(tn, TreeSA(; ntrials=1, niters=3), OMEinsum.MergeVectors(
 infidelity = 1 - abs(contract(optnet)[1])
 
 # ## Coherent Error Simulation with Tensor Network
-# We add coherent error to the circuit by adding unitary error to every unitary gate. Here we suppose that for each unitary, the errored unitary is fixed to it, i.e., we apply the same errored X gate every time we want to apply an X gate. If you want to apply random errored unitary, you can call [`coherent_error_unitary`](@ref) to generate the errored unitary ervey time you want to apply it. 
-
-# [`error_pairs`](@ref) generates the error pairs for the gates to be replaced. Here we replace all the X gates and CNOT gates with the same errored X gate and CNOT gate. 
-pairs, vector = error_pairs(1e-5; gates = [X,ConstGate.CNOT])
-
-# Then we can generate the error quantum circuit by [`error_quantum_circuit`](@ref), which replaces the gates in the original circuit with the errored gates.
-eqc = error_quantum_circuit(qc, pairs)
+# We add coherent error to the circuit by adding unitary error to every unitary gate by [`error_quantum_circuit`](@ref), which replaces the gates in the original circuit with the errored gates.
+eqc = error_quantum_circuit(qc, 1e-5)
 vizcircuit(eqc)
 
 # Finally, we can check the infidelity after the circuit with coherent error.

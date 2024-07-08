@@ -203,7 +203,18 @@ toput(gate::ControlBlock{XGate,2,1}) = put(nqudits(gate), (gate.ctrl_locs..., ga
 toput(gate::ControlBlock{ZGate,2,1}) = put(nqudits(gate), (gate.ctrl_locs..., gate.locs...)=>CCZ)
 toput(gate::AbstractBlock) = gate
 
+"""
+    error_quantum_circuit(qc::ChainBlock, error_rate::T ) where {T <: Real}
 
+Generate the error quantum circuit for the given error rate.
+
+### Arguments
+- `qc`: The quantum circuit.
+- `error_rate`: The error rate.
+
+### Returns
+- `eqc`: The error quantum circuit.
+"""
 function error_quantum_circuit(qc::ChainBlock, error_rate::T ) where {T <: Real}
     qc= simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
     nq = nqubits(qc)
@@ -220,7 +231,7 @@ end
     error_quantum_circuit_pair_replace(qc::ChainBlock, error_rate::T ) where {T <: Real}
     error_quantum_circuit_pair_replace(qc::ChainBlock, pairs)
 
-Generate the error quantum circuit for the given error rate.
+Generate the error quantum circuit for the given error rate. The errored gate to the same type of gate is the same.
 
 ### Arguments
 - `qc`: The quantum circuit.

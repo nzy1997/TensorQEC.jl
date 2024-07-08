@@ -22,13 +22,14 @@ vizcircuit(qcen)
 
 # ## Syndrome Extraction and Measurement-Free Error Correction
 # First, we generate the steane measurement circuit by [`measure_circuit_steane`](@ref) and `st_pos` records the ancilla qubits that store the measurement results of the stabilizers.
-qcm,st_pos, num_qubits = measure_circuit_steane(data_qubits[1],st,3;qcen)
+qcm,st_pos  = measure_circuit_steane(data_qubits[1],st;qcen)
 vizcircuit(qcm)
 
 # Then we generate truth table for the error correction by [`make_table`](@ref). For more detials on truth table, please check [Inference with Truth Table](@ref).
 table = make_table(st, 1;error_type = "Z")
 
 # Now we use [`correct_circuit`](@ref) to generate the measurement-free correction circuit by encoding the truth table on the quantum circuit directly.
+num_qubits = nqubits(qcm)
 qccr = correct_circuit(table, 22:24, num_qubits)
 vizcircuit(qccr)
 
