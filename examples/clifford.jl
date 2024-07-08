@@ -45,15 +45,16 @@ vizcircuit(qc)
 
 # Apply the circuit to Pauli string $Z_1Y_2I_3Y_4X_5$, we get $Y_1X_2Y_3Y_4Y_5$ with a phase $1$.
 ps = PauliString(Z, Y, I2, Y, X)
-ps2, phase = clifford_simulate(ps, qc)
+res = clifford_simulate(ps, qc)
+ps2 = res.output
 
-# where `ps2` is the Pauli string after the Clifford circuit and `phase` is the phase factor. It corresponds to the following quantum circuit.
+# where `res.output` is the Pauli string after the Clifford circuit and `res.phase` is the phase factor. It corresponds to the following quantum circuit.
 clifford_simulation_circuit = chain(qc', ps, qc)
 CircuitStyles.barrier_for_chain[] = true  # setup barrier for better visualization
 vizcircuit(clifford_simulation_circuit)
 
 # We can check the result by
 CircuitStyles.barrier_for_chain[] = false  # disable barrier
-phase * mat(clifford_simulation_circuit) ≈ mat(ps2)
+res.phase * mat(clifford_simulation_circuit) ≈ mat(ps2)
 
 # [^Bravyi2022]: Bravyi, S., Latone, J.A., Maslov, D., 2022. 6-qubit optimal Clifford circuits. npj Quantum Inf 8, 1–12. https://doi.org/10.1038/s41534-022-00583-7

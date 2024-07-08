@@ -170,7 +170,9 @@ function fidelity_tensornetwork(qc::ChainBlock,qc_info::QCInfo)
     jointcode = replace(tn.code, [input_indices[i]=> output_indices[i] for i in 1:length(input_indices)]...)
     empty!(jointcode.iy)
     tn = TensorNetwork(jointcode, tn.tensors)
-    tn.tensors[1]./(2^length(qc_info.data_qubits))
+    tn.tensors[1] = tn.tensors[1]./(4^length(qc_info.data_qubits))
+    @show (2^length(qc_info.data_qubits))
+    @show tn.tensors[1]
     return tn
 end
 """ 
@@ -203,9 +205,33 @@ toput(gate::AbstractBlock) = gate
 
 """
     error_quantum_circuit(qc::ChainBlock, error_rate::T ) where {T <: Real}
-    error_quantum_circuit(qc::ChainBlock, pairs)
 
 Generate the error quantum circuit for the given error rate.
+
+### Arguments
+- `qc`: The quantum circuit.
+- `error_rate`: The error rate.
+
+### Returns
+- `eqc`: The error quantum circuit.
+"""
+function error_quantum_circuit(qc::ChainBlock, error_rate::T ) where {T <: Real}
+    qc= simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
+    nq = nqubits(qc)
+    eqc = chain(nq)
+    for _gate in qc
+        gate = toput(_gate)
+        eu = coherent_error_unitary(mat(gate.content),error_rate)
+        push!(eqc,put(nq,gate.locs=>matblock(eu)))
+    end
+    return eqc
+end
+
+"""
+    error_quantum_circuit_pair_replace(qc::ChainBlock, error_rate::T ) where {T <: Real}
+    error_quantum_circuit_pair_replace(qc::ChainBlock, pairs)
+
+Generate the error quantum circuit for the given error rate. The errored gate to the same type of gate is the same.
 
 ### Arguments
 - `qc`: The quantum circuit.
@@ -216,13 +242,13 @@ Generate the error quantum circuit for the given error rate.
 - `qcf`: The error quantum circuit.
 - `vec`: The vector to store the error rate to each gate.
 """
-function error_quantum_circuit(qc::ChainBlock, error_rate::T ) where {T <: Real}
+function error_quantum_circuit_pair_replace(qc::ChainBlock, error_rate::T ) where {T <: Real}
     pairs,vec = error_pairs(error_rate) 
-    qcf = error_quantum_circuit(qc,pairs)
+    qcf = error_quantum_circuit_pair_replace(qc,pairs)
     return qcf, vec
 end
 
-function error_quantum_circuit(qc::ChainBlock, pairs)
+function error_quantum_circuit_pair_replace(qc::ChainBlock, pairs)
     qcf = replace_block(x->toput(x), qc)
     for pa in pairs
         qcf = replace_block(pa, qcf)

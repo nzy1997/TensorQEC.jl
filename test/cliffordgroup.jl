@@ -49,6 +49,19 @@ end
 @testset "clifford_simulate" begin
 	qc = chain(put(5, 1 => H), control(5, 1, 2 => Z), control(5, 3, 4 => X), control(5, 5, 3 => X), put(5, 1 => X))
 	ps = PauliString((4, 3, 1, 3, 2))
-	ps2, val = TensorQEC.clifford_simulate(ps, qc)
+	res = clifford_simulate(ps, qc)
+	ps2 = res.output
+	val = res.phase
 	@test val * mat(qc) * mat(ps) * mat(qc)' ≈ mat(ps2)
+end
+
+@testset "annotate_history" begin
+	st = stabilizers(SteaneCode())
+	table = make_table(st, 1)
+	qcen, data_qubits, code = encode_stabilizers(st) 
+    qcm ,st_pos  = measure_circuit_steane(data_qubits[1],st)
+	ps0 = paulistring(27,3,6) 
+	res = clifford_simulate(ps0, qcm)
+	annotate_history(res)
+	@test res.output.ids == (1, 1, 1, 1, 1, 3, 1, 1, 1, 1, 1, 1, 4, 1, 1, 2, 2, 1, 1, 1, 1, 1, 2, 1, 1, 2, 2)
 end

@@ -17,9 +17,9 @@ end
 @testset "errorcorrect_circuit" begin
     t = ToricCode(3, 3)
 	st = stabilizers(t)
-    table = make_table(st, 1;y_error=false)
-    qc1,st_pos,num_qubits = measure_circuit_fault_tol(st)
-    qc2 = correct_circuit(table, st_pos,num_qubits)
+    table = make_table(st, 1;error_type = "XZ")
+    qc1,st_pos = measure_circuit_fault_tol(st)
+    qc2 = correct_circuit(table, st_pos,nqubits(qc1))
     chain(qc1, qc2)
 end
 
