@@ -171,8 +171,6 @@ function fidelity_tensornetwork(qc::ChainBlock,qc_info::QCInfo)
     empty!(jointcode.iy)
     tn = TensorNetwork(jointcode, tn.tensors)
     tn.tensors[1] = tn.tensors[1]./(4^length(qc_info.data_qubits))
-    @show (2^length(qc_info.data_qubits))
-    @show tn.tensors[1]
     return tn
 end
 """ 
