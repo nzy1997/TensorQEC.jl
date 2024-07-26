@@ -186,12 +186,25 @@ Generate the error unitary near the given error rate.
 ### Returns
 - `q`: The errored unitary.
 """
-function coherent_error_unitary(u::AbstractMatrix{T}, error_rate::Real; cache::Union{Vector, Nothing} = nothing) where T
+function coherent_error_unitary(u::AbstractMatrix{T}, error_rate::Real;cache = nothing) where T
+    error_rate0 = error_rate
+    for i in 1:100
+        u2,inf = _coherent_error_unitary(u,error_rate0)
+        if inf<error_rate/2
+            error_rate0 = error_rate0*2
+        elseif inf>error_rate*2
+            error_rate0 = error_rate0/2
+        else
+            cache === nothing || push!(cache,inf)
+            return u2
+        end
+    end
+end
+function _coherent_error_unitary(u::AbstractMatrix{T}, error_rate::Real) where T
     appI = randn(T,size(u))*error_rate + I
     q2 , _ = qr(appI)
     q = u * q2
-    cache === nothing || push!(cache, 1 - abs(tr(q'*u)/size(u,1)))
-    return Matrix(q)
+    return Matrix(q), 1 - abs(tr(q'*u)/size(u,1)) 
 end
 
 toput(gate::ControlBlock{XGate,1,1}) = put(nqudits(gate), (gate.ctrl_locs..., gate.locs...)=>ConstGate.CNOT)
