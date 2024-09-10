@@ -12,6 +12,10 @@ using OMEinsum
 using Yao.YaoBlocks.Optimise
 using PrettyTables
 
+using Graphs
+using LuxorGraphPlot.Layouts
+using LuxorGraphPlot
+
 # pauli basis
 export pauli_basis, pauli_decomposition, pauli_mapping
 import Yao.YaoArrayRegister.StaticArrays: SizedVector
@@ -49,7 +53,7 @@ export ComplexConj, SymbolRecorder,IdentityRecorder, ein_circ, QCInfo, qc2enisum
 export coherent_error_unitary, error_quantum_circuit,toput, error_pairs,fidelity_tensornetwork, simulation_tensornetwork,error_quantum_circuit_pair_replace
 
 # ldpc
-export SimpleTannerGraph
+export SimpleTannerGraph,sydrome_extraction,product_graph,CSSTannerGraph,plot_graph,dual_graph,get_graph,belief_propagation
 
 @const_gate CCZ::ComplexF64 = diagm([1, 1,1,1,1,1,1,-1])
 
