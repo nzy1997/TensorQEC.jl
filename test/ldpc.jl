@@ -2,6 +2,7 @@ using Test
 using TensorQEC
 using LuxorGraphPlot.Luxor
 using Graphs.Experimental: has_isomorph
+using Random
 @testset "SimpleTannerGraph" begin
     sts = [[1, 2,3,4],[2,3,4,5]]
     nq = 5
@@ -65,4 +66,10 @@ end
     errored_qubits = Mod2[1,0,0]
     synd = sydrome_extraction(errored_qubits, tanner1)
     @show belief_propagation(synd, tanner1, 0.05)
+end
+
+@testset "random_ldpc" begin
+    Random.seed!(123)
+    r34ldpc = random_ldpc(3,4,6)
+    plot_graph(r34ldpc)
 end

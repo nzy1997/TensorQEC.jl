@@ -87,3 +87,22 @@ function belief_propagation(sydrome::Vector{Mod2}, tanner::SimpleTannerGraph, p:
     mq2s =[[p for _ in v] for v in tanner.q2s]
     
 end
+
+function random_ldpc(n1::Int,n2::Int,nq::Int)
+    ns = nq*n2/n1
+    qcount = zeros(nq)
+    sts = Vector{Vector{Int}}()
+    qvec = collect(1:nq)
+    for _ in 1:ns
+        stsi=Int[]
+        for _ in 1:n1
+            # @show qvec,stsi,qcount[20],qcount[26]
+            q = rand(setdiff(qvec, stsi))   
+            push!(stsi, q)
+            qcount[q] += 1
+        end
+        push!(sts, stsi)
+        qvec = setdiff(qvec, findall(x -> x==n2,qcount))
+    end
+    return SimpleTannerGraph(nq, sts)
+end
