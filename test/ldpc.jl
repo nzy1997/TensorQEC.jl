@@ -73,3 +73,21 @@ end
     r34ldpc = random_ldpc(3,4,6)
     plot_graph(r34ldpc)
 end
+
+@testset "messages2q" begin
+    sts = [[1, 2],[2,3]]
+    nq = 3
+    tanner = SimpleTannerGraph(nq, sts)
+    mq2s =[[log(0.05) for _ in v] for v in tanner.q2s]
+    @show TensorQEC.messages2q(mq2s,Mod2(false),[2],1,tanner)
+    
+end
+@testset "belief_propagation" begin
+    sts = [[1, 2,3,4],[2,3,5,7],[3,4,5,6]]
+    nq = 7
+    tanner = SimpleTannerGraph(nq, sts)
+    errored_qubits = Mod2[1,0,0,0,0,0,0]
+    syd = sydrome_extraction(errored_qubits, tanner)
+    @show belief_propagation(syd, tanner, 0.05;max_iter=1)
+
+end
