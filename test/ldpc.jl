@@ -82,13 +82,20 @@ end
     syd = sydrome_extraction(errored_qubits, tanner)
     @test belief_propagation(syd, tanner, 0.05;max_iter=10) == errored_qubits
 
-    Random.seed!(2346)
-    r34ldpc = random_ldpc(3,4,80)
+    Random.seed!(38956783)
+    r34ldpc = random_ldpc(3,4,120)
     # plot_graph(r34ldpc)
-    errored_qubits = random_errored_qubits(80,0.05)
+    errored_qubits = random_errored_qubits(120,0.05)
     syd = sydrome_extraction(errored_qubits, r34ldpc)
     bp_error = belief_propagation(syd, r34ldpc, 0.05;max_iter=100)
     @test syd == sydrome_extraction(bp_error, r34ldpc)
+    @show check_decode(errored_qubits,bp_error,r34ldpc)
+
+    errored_qubits = random_errored_qubits(120,0.3)
+    syd = sydrome_extraction(errored_qubits, r34ldpc)
+    bp_error = belief_propagation(syd, r34ldpc, 0.3;max_iter=200)
+    @test syd == sydrome_extraction(bp_error, r34ldpc)
+    @show check_decode(errored_qubits,bp_error,r34ldpc)
 end
 
 @testset "message_list" begin
@@ -107,6 +114,7 @@ end
     errored_qubits1 = Mod2[1,0,0,0,0,0,0]
     errored_qubits2 = Mod2[0,1,1,1,0,0,0]
     errored_qubits3 = Mod2[0,0,0,1,0,1,0]
-    @show check_decode(errored_qubits1,errored_qubits2,tanner)
-    @show check_decode(errored_qubits1,errored_qubits3,tanner)
+    @test check_decode(errored_qubits1,errored_qubits2,tanner) == true
+    @test check_decode(errored_qubits1,errored_qubits3,tanner) == false
 end
+

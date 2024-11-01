@@ -48,11 +48,12 @@ end
 
 function gaussian_elimination!(bimat::Bimatrix, rows::UnitRange, col_offset::Int, qubit_offset::Int;double_matrix=true)
 	start_col = col_offset + qubit_offset + 1
+	zero_row = 0
 	for i in rows
 		Q = Matrix{Mod2}(I, length(rows), length(rows))
-		offset = i - rows.start
+		offset = i - rows.start -zero_row
 		j = findfirst(!iszero, bimat.matrix[i, start_col:end])
-		j === nothing && continue
+		j === nothing && (zero_row += 1; continue)
 		switch_qubits!(bimat, qubit_offset + offset + 1, j + qubit_offset;double_matrix)
 		for k in rows
 			if k != i && bimat.matrix[k, offset+start_col]  # got 1, eliminate by ⊻ current row (i) to the k-th row

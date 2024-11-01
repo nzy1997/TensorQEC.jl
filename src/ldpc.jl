@@ -86,16 +86,22 @@ end
 function belief_propagation(sydrome::Vector{Mod2}, tanner::SimpleTannerGraph, p::Float64;max_iter=100)
     mu = [log((1-p)/p) for _ in 1:tanner.nq]
     mq2s =[[mu[i] for _ in 1:length(tanner.q2s[i])] for i in 1:tanner.nq]
+    ms2q = [[0.0 for _ in 1:length(tanner.s2q[s])] for s in 1:tanner.ns]
     # mq2s =[[rand() for _ in v] for v in tanner.q2s]
     errored_qubits = Mod2[]
+    success_tag = false
     for _ in 1:max_iter
         ms2q = [[messages2q(message_list(mq2s,s,tanner.q2s,tanner.s2q;exampt_qubit = q),sydrome[s]) for q in tanner.s2q[s]] for s in 1:tanner.ns]
         mq2s = [[messageq2s(message_list(ms2q,qubit,tanner.s2q,tanner.q2s;exampt_qubit = s),mu[qubit]) for s in tanner.q2s[qubit]] for qubit in 1:tanner.nq]
-        @show error_qubits(ms2q,tanner,mu)
         errored_qubits = error_qubits(ms2q,tanner,mu)
         if sydrome_extraction(errored_qubits, tanner) == sydrome
+            success_tag = true
             break
         end
+    end
+    if !success_tag
+        println("BP failed to converge")
+        return [messageq2s(message_list(ms2q,qubit,tanner.s2q,tanner.q2s),mu[qubit])  for qubit in 1:tanner.nq]
     end
     return errored_qubits
 end
@@ -117,7 +123,7 @@ function messages2q(mlist,sydrome)
 end
 
 function messageq2s(mlist,muq)
-    return sum(mlist) + muq
+    return max(min(sum(mlist) + muq,10),-10)
 end
 
 function random_ldpc(n1::Int,n2::Int,nq::Int)
