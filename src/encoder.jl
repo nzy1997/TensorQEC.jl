@@ -37,21 +37,23 @@ function bimatrix2stabilizers(bimat::Bimatrix)
 	return vcat(xs, zs)
 end
 
-function switch_qubits!(bimat::Bimatrix, i::Int, j::Int)
+function switch_qubits!(bimat::Bimatrix, i::Int, j::Int;double_matrix=true)
 	qubit_num = size(bimat.matrix, 2) ÷ 2
+	double_matrix || (qubit_num = size(bimat.matrix, 2) )
 	bimat.matrix[:, [i, j]] = bimat.matrix[:, [j, i]]
-	bimat.matrix[:, [qubit_num + i, qubit_num + j]] = bimat.matrix[:, [qubit_num + j, qubit_num + i]]
+	double_matrix && (bimat.matrix[:, [qubit_num + i, qubit_num + j]] = bimat.matrix[:, [qubit_num + j, qubit_num + i]])
 	bimat.ordering[i], bimat.ordering[j] = bimat.ordering[j], bimat.ordering[i]
 	return bimat
 end
 
-function gaussian_elimination!(bimat::Bimatrix, rows::UnitRange, col_offset::Int, qubit_offset::Int)
+function gaussian_elimination!(bimat::Bimatrix, rows::UnitRange, col_offset::Int, qubit_offset::Int;double_matrix=true)
 	start_col = col_offset + qubit_offset + 1
 	for i in rows
 		Q = Matrix{Mod2}(I, length(rows), length(rows))
 		offset = i - rows.start
 		j = findfirst(!iszero, bimat.matrix[i, start_col:end])
-		switch_qubits!(bimat, qubit_offset + offset + 1, j + qubit_offset)
+		j === nothing && continue
+		switch_qubits!(bimat, qubit_offset + offset + 1, j + qubit_offset;double_matrix)
 		for k in rows
 			if k != i && bimat.matrix[k, offset+start_col]  # got 1, eliminate by ⊻ current row (i) to the k-th row
 				bimat.matrix[k, :] .= xor.(bimat.matrix[k, :], bimat.matrix[i, :])

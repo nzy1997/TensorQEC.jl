@@ -84,42 +84,40 @@ function product_graph(tanner1::SimpleTannerGraph, tanner2::SimpleTannerGraph)
 end
 
 function belief_propagation(sydrome::Vector{Mod2}, tanner::SimpleTannerGraph, p::Float64;max_iter=100)
-    mq2s =[[log(p) for _ in v] for v in tanner.q2s]
+    mu = [log((1-p)/p) for _ in 1:tanner.nq]
+    mq2s =[[mu[i] for _ in 1:length(tanner.q2s[i])] for i in 1:tanner.nq]
     # mq2s =[[rand() for _ in v] for v in tanner.q2s]
+    errored_qubits = Mod2[]
     for _ in 1:max_iter
-        # ms2q = [[messages2q(mq2s,sydrome[i],setdiff(tanner.s2q[i],q),i) for q in tanner.s2q[i]] for i in 1:length(tanner.s2q)]
-        ms2q = [[messages2q(mq2s,sydrome[i],setdiff(tanner.s2q[i],q), i ,tanner) for q in tanner.s2q[i]] for i in 1:length(tanner.s2q)]
-        # mq2s = [[messageq2s(ms2q,qubit,setdiff(tanner.q2s[qubit],s),tanner) for s in tanner.q2s[qubit]] for qubit in 1:length(tanner.q2s)]
-        # @show error_qubits(ms2q,tanner)
+        ms2q = [[messages2q(message_list(mq2s,s,tanner.q2s,tanner.s2q;exampt_qubit = q),sydrome[s]) for q in tanner.s2q[s]] for s in 1:tanner.ns]
+        mq2s = [[messageq2s(message_list(ms2q,qubit,tanner.s2q,tanner.q2s;exampt_qubit = s),mu[qubit]) for s in tanner.q2s[qubit]] for qubit in 1:tanner.nq]
+        @show error_qubits(ms2q,tanner,mu)
+        errored_qubits = error_qubits(ms2q,tanner,mu)
+        if sydrome_extraction(errored_qubits, tanner) == sydrome
+            break
+        end
     end
+    return errored_qubits
 end
 
-function error_qubits(ms2q,tanner)
-    @show [sum([ ms2q[j][findfirst(x->x==i,tanner.s2q[j])] for j in tanner.q2s[i]])/length(tanner.q2s[i])  for i in 1:tanner.nq]
-    return Mod2.([sum([ ms2q[j][findfirst(x->x==i,tanner.s2q[j])] for j in tanner.q2s[i]])/length(tanner.q2s[i])  for i in 1:tanner.nq] .> log(0.5))
+function message_list(mq2s,s,tq2s,ts2q;exampt_qubit = 0)
+    return [mq2s[q][findfirst(==(s),tq2s[q])] for q in ts2q[s] if q != exampt_qubit]
 end
 
-function messages2q(mq2s,sydrome,qlist,stabilizer,tanner)
-    @show sydrome
-    s = 0.0
-    for i in 0:1:2^length(qlist)-1
-        bits =  bitstring(i)[end-length(qlist)+1:end]
-        iseven(count_ones(i)) == sydrome.x || continue
-        @show count_ones(i)
-        @show bits
-        @show i
-
-        
-
-    end
+function error_qubits(ms2q,tanner,mu)
+    Mod2.([messageq2s(message_list(ms2q,qubit,tanner.s2q,tanner.q2s),mu[qubit])  for qubit in 1:tanner.nq] .< 0 )
 end
 
-function messageq2s(ms2q,qubit,slist,tanner)
-    s = 0.0
-    for i in 1:length(slist)
-        s += ms2q[slist[i]][findfirst(x->x==qubit,tanner.s2q[slist[i]])]
+function messages2q(mlist,sydrome)
+    pro = 1.0
+    for m in mlist
+        pro *= tanh(m)
     end
-    return s/length(slist)
+    return (-1)^sydrome.x*atanh(pro)
+end
+
+function messageq2s(mlist,muq)
+    return sum(mlist) + muq
 end
 
 function random_ldpc(n1::Int,n2::Int,nq::Int)
@@ -139,4 +137,14 @@ function random_ldpc(n1::Int,n2::Int,nq::Int)
         qvec = setdiff(qvec, findall(x -> x==n2,qcount))
     end
     return SimpleTannerGraph(nq, sts)
+end
+
+function random_errored_qubits(qubit_number,p)
+    return Mod2.([rand() < p for _ in 1:qubit_number])
+end
+
+function check_decode(errored_qubits1, errored_qubits2, tanner)
+    bm = Bimatrix([a.x for a in [tanner.H;transpose(errored_qubits1+errored_qubits2)]],Matrix{Mod2}(I, tanner.ns+1, tanner.ns+1),collect(1:tanner.nq),tanner.ns+1)
+    gaussian_elimination!(bm, 1:bm.xcodenum, 0, 0;double_matrix=false)
+    return bm.matrix[end,1:tanner.nq] == fill(Mod2(0),tanner.nq)
 end
