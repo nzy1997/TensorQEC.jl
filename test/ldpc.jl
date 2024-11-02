@@ -104,8 +104,8 @@ end
     nq = 7
     tanner = SimpleTannerGraph(nq, sts)
     mq2s =[[i for i in v] for v in tanner.q2s]
-    @test TensorQEC.message_list(mq2s,2,tanner;exampt_qubit = 2) == [2,2,2]
-    @test TensorQEC.message_list(mq2s,2,tanner;exampt_qubit = 1) == [2,2,2,2]
+    @test TensorQEC.message_list(mq2s,2,tanner.q2s,tanner.s2q;exampt_qubit = 2) == [2,2,2]
+    @test TensorQEC.message_list(mq2s,2,tanner.q2s,tanner.s2q;exampt_qubit = 1) == [2,2,2,2]
 end
 
 @testset "check_decode" begin

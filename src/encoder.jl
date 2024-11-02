@@ -1,3 +1,4 @@
+abstract type Bimatrix end
 """
 	CSSBimatrix
 
@@ -10,12 +11,19 @@ The CSSBimatrix structure contains the following fields
 * `xcodenum`: The number of X stabilizers.
 
 """
-struct CSSBimatrix
+struct CSSBimatrix <: Bimatrix
 	matrix::Matrix{Bool}
 	Q::Matrix{Mod2}
 	ordering::Vector{Int}
 	xcodenum::Int
 end
+
+struct SimpleBimatrix <: Bimatrix
+    matrix::Matrix{Bool}
+	Q::Matrix{Mod2}
+	ordering::Vector{Int}
+end
+
 Base.copy(b::CSSBimatrix) = CSSBimatrix(copy(b.matrix), copy(b.Q), copy(b.ordering), b.xcodenum)
 Yao.nqubits(b::CSSBimatrix) = size(b.matrix, 2) ÷ 2
 
@@ -37,16 +45,21 @@ function bimatrix2stabilizers(bimat::CSSBimatrix)
 	return vcat(xs, zs)
 end
 
-function switch_qubits!(bimat::CSSBimatrix, i::Int, j::Int;double_matrix=true)
+function switch_qubits!(bimat::CSSBimatrix, i::Int, j::Int)
 	qubit_num = size(bimat.matrix, 2) ÷ 2
-	double_matrix || (qubit_num = size(bimat.matrix, 2) )
 	bimat.matrix[:, [i, j]] = bimat.matrix[:, [j, i]]
-	double_matrix && (bimat.matrix[:, [qubit_num + i, qubit_num + j]] = bimat.matrix[:, [qubit_num + j, qubit_num + i]])
+	(bimat.matrix[:, [qubit_num + i, qubit_num + j]] = bimat.matrix[:, [qubit_num + j, qubit_num + i]])
 	bimat.ordering[i], bimat.ordering[j] = bimat.ordering[j], bimat.ordering[i]
 	return bimat
 end
 
-function gaussian_elimination!(bimat::CSSBimatrix, rows::UnitRange, col_offset::Int, qubit_offset::Int;double_matrix=true)
+function switch_qubits!(bimat::SimpleBimatrix, i::Int, j::Int)
+	bimat.matrix[:, [i, j]] = bimat.matrix[:, [j, i]]
+	bimat.ordering[i], bimat.ordering[j] = bimat.ordering[j], bimat.ordering[i]
+	return bimat
+end
+
+function gaussian_elimination!(bimat::Bimatrix, rows::UnitRange, col_offset::Int, qubit_offset::Int)
 	start_col = col_offset + qubit_offset + 1
 	zero_row = 0
 	for i in rows
@@ -54,7 +67,7 @@ function gaussian_elimination!(bimat::CSSBimatrix, rows::UnitRange, col_offset::
 		offset = i - rows.start -zero_row
 		j = findfirst(!iszero, bimat.matrix[i, start_col:end])
 		j === nothing && (zero_row += 1; continue)
-		switch_qubits!(bimat, qubit_offset + offset + 1, j + qubit_offset;double_matrix)
+		switch_qubits!(bimat, qubit_offset + offset + 1, j + qubit_offset)
 		for k in rows
 			if k != i && bimat.matrix[k, offset+start_col]  # got 1, eliminate by ⊻ current row (i) to the k-th row
 				bimat.matrix[k, :] .= xor.(bimat.matrix[k, :], bimat.matrix[i, :])
