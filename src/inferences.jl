@@ -16,16 +16,16 @@ function measure_syndrome!(reg::AbstractRegister, stabilizers::AbstractVector{Pa
 	return [round(Int, real.(measure!(op,reg))) for op in measure_oprators]
 end
 
-function syndrome_transform(bimat::Bimatrix,syn::Vector{Int})
+function syndrome_transform(bimat::CSSBimatrix,syn::Vector{Int})
 	return bimat.Q * (syn .≈ -1)
 end
 
-function generate_syndrome_dict(bimat::Bimatrix, syn::Vector{Mod2})
+function generate_syndrome_dict(bimat::CSSBimatrix, syn::Vector{Mod2})
 	return Dict([bimat.ordering[i]=>syn[i].x for i in 1:size(bimat.Q,2)])
 end
 
 """
-	transformed_sydrome_dict(measure_outcome::Vector{Int}, code::Bimatrix)
+	transformed_sydrome_dict(measure_outcome::Vector{Int}, code::CSSBimatrix)
 
 Generate the syndrome dictionary on the transformed stabilizers from the measurement outcome. 
 
@@ -36,7 +36,7 @@ Generate the syndrome dictionary on the transformed stabilizers from the measure
 ### Returns
 - `syn_dict`: The syndrome dictionary on the transformed stabilizers. 1 is transformed to 0, -1 is transformed to 1. 
 """
-function transformed_sydrome_dict(measure_outcome::Vector{Int}, code::Bimatrix)
+function transformed_sydrome_dict(measure_outcome::Vector{Int}, code::CSSBimatrix)
 	return generate_syndrome_dict(code, syndrome_transform(code, measure_outcome))
 end
 
@@ -95,7 +95,7 @@ function correction_pauli_string(qubit_num::Int, syn::Dict{Int, Bool}, prob::Dic
 end
 
 """
-	inference(measure_outcome::Vector{Int}, code::Bimatrix, qc::ChainBlock, p::Vector{Vector{Float64}})
+	inference(measure_outcome::Vector{Int}, code::CSSBimatrix, qc::ChainBlock, p::Vector{Vector{Float64}})
 
 Infer the error probability of each qubit from the measurement outcome of the stabilizers.
 
@@ -108,7 +108,7 @@ Infer the error probability of each qubit from the measurement outcome of the st
 ### Returns
 - `ps_ec_phy`: The error Pauli string for error correction.
 """
-function inference(measure_outcome::Vector{Int}, code::Bimatrix, qc::ChainBlock, p::Vector{Vector{Float64}}) 
+function inference(measure_outcome::Vector{Int}, code::CSSBimatrix, qc::ChainBlock, p::Vector{Vector{Float64}}) 
 	syn_dict = generate_syndrome_dict(code, syndrome_transform(code, measure_outcome))
 	cl = clifford_network(qc)
 	pinf = syndrome_inference(cl, syn_dict, p)

@@ -101,7 +101,7 @@ function belief_propagation(sydrome::Vector{Mod2}, tanner::SimpleTannerGraph, p:
     end
     if !success_tag
         println("BP failed to converge")
-        return [messageq2s(message_list(ms2q,qubit,tanner.s2q,tanner.q2s),mu[qubit])  for qubit in 1:tanner.nq]
+        return sortperm(messageq(ms2q,tanner,mu))
     end
     return errored_qubits
 end
@@ -110,8 +110,12 @@ function message_list(mq2s,s,tq2s,ts2q;exampt_qubit = 0)
     return [mq2s[q][findfirst(==(s),tq2s[q])] for q in ts2q[s] if q != exampt_qubit]
 end
 
+function messageq(ms2q,tanner,mu)
+    [messageq2s(message_list(ms2q,qubit,tanner.s2q,tanner.q2s),mu[qubit])  for qubit in 1:tanner.nq]
+end
+
 function error_qubits(ms2q,tanner,mu)
-    Mod2.([messageq2s(message_list(ms2q,qubit,tanner.s2q,tanner.q2s),mu[qubit])  for qubit in 1:tanner.nq] .< 0 )
+    Mod2.(messageq(ms2q,tanner,mu) .< 0 )
 end
 
 function messages2q(mlist,sydrome)
@@ -153,4 +157,27 @@ function check_decode(errored_qubits1, errored_qubits2, tanner)
     bm = Bimatrix([a.x for a in [tanner.H;transpose(errored_qubits1+errored_qubits2)]],Matrix{Mod2}(I, tanner.ns+1, tanner.ns+1),collect(1:tanner.nq),tanner.ns+1)
     gaussian_elimination!(bm, 1:bm.xcodenum, 0, 0;double_matrix=false)
     return bm.matrix[end,1:tanner.nq] == fill(Mod2(0),tanner.nq)
+end
+
+function osd(tanner,order,syndrome)
+    H = tanner.H[order[1],:]
+
+    for i in 1:length(order)
+        if check_linear_indepent([H; tanner.H[order[i],:]])
+            H = [H; tanner.H[order[i],:]]
+        end
+    end
+
+    # hinv = inv(H)
+
+    # error = hinv * syndrome
+
+    # error_qubits = error ∪ 0 
+
+    return error_qubits
+end
+
+function check_linear_indepent(H)
+
+    
 end
