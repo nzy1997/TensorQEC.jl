@@ -1,7 +1,7 @@
 using Test
 using TensorQEC
-using LuxorGraphPlot.Luxor
-using Graphs.Experimental: has_isomorph
+using TensorQEC.LuxorGraphPlot.Luxor
+using TensorQEC.Graphs.Experimental: has_isomorph
 using Random
 @testset "SimpleTannerGraph" begin
     sts = [[1, 2,3,4],[2,3,4,5]]
