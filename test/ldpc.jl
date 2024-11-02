@@ -119,3 +119,13 @@ end
     @test check_decode(errored_qubits1,errored_qubits3,tanner) == false
 end
 
+@testset "check_linear_indepent" begin
+    H = Bool[1 1 1 0; 0 1 1 1]
+    @test check_linear_indepent(H) == true
+    H = Bool[1 1 1 0; 0 1 1 0; 0 0 0 1; 1 0 0 0]
+    @test check_linear_indepent(H) == false
+    H = Mod2[1 1 1 0; 0 1 1 1]
+    @test check_linear_indepent(H) == true
+    H = Mod2[1 1 1 0; 0 1 1 0; 0 0 0 1; 1 0 0 0]
+    @test check_linear_indepent(H) == false
+end

@@ -1,4 +1,3 @@
-
 struct SimpleTannerGraph
     nq::Int
     ns::Int
@@ -155,9 +154,7 @@ function random_errored_qubits(qubit_number,p)
 end
 
 function check_decode(errored_qubits1, errored_qubits2, tanner)
-    bm = SimpleBimatrix([a.x for a in [tanner.H;transpose(errored_qubits1+errored_qubits2)]],Matrix{Mod2}(I, tanner.ns+1, tanner.ns+1),collect(1:tanner.nq))
-    gaussian_elimination!(bm, 1:size(bm.matrix,1), 0, 0)
-    return bm.matrix[end,1:tanner.nq] == fill(Mod2(0),tanner.nq)
+    return !check_linear_indepent([a.x for a in [tanner.H;transpose(errored_qubits1+errored_qubits2)]])
 end
 
 function osd(tanner,order,syndrome)
@@ -168,7 +165,7 @@ function osd(tanner,order,syndrome)
             H = [H; tanner.H[order[i],:]]
         end
     end
-
+    
     # hinv = inv(H)
 
     # error = hinv * syndrome
@@ -178,7 +175,12 @@ function osd(tanner,order,syndrome)
     return error_qubits
 end
 
-function check_linear_indepent(H)
+function check_linear_indepent(H::Matrix{Bool})
+    bm = SimpleBimatrix(H,Matrix{Mod2}(I, size(H,1), size(H,1)),collect(1:size(H,2)))
+    gaussian_elimination!(bm, 1:size(bm.matrix,1), 0, 0)
+    return !(bm.matrix[end,:] == fill(Mod2(0),size(H,2)))
+end
 
-
+function check_linear_indepent(H::Matrix{Mod2})
+    return check_linear_indepent([a.x for a in H])
 end
