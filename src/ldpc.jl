@@ -14,6 +14,16 @@ struct SimpleTannerGraph
     H::Matrix{Mod2}
 end
 
+function SimpleTannerGraph(nq::Int, sts::Vector{Vector{Int}})
+    ns = length(sts)
+    q2s = [findall(x-> i ∈ x , sts) for i in 1:nq]
+    H = zeros(Mod2, ns, nq)
+    for i in 1:ns, j in sts[i]
+        H[i, j] = 1
+    end
+    SimpleTannerGraph(nq, ns, q2s, sts, H)
+end
+
 struct CSSTannerGraph
     stgx::SimpleTannerGraph
     stgz::SimpleTannerGraph
@@ -54,15 +64,7 @@ function CSSTannerGraph(nq::Int, stxs::Vector{Vector{Int}}, stzs::Vector{Vector{
     return CSSTannerGraph(SimpleTannerGraph(nq, stxs), SimpleTannerGraph(nq, stzs))
 end
 
-function SimpleTannerGraph(nq::Int, sts::Vector{Vector{Int}})
-    ns = length(sts)
-    q2s = [findall(x-> i ∈ x , sts) for i in 1:nq]
-    H = zeros(Mod2, ns, nq)
-    for i in 1:ns, j in sts[i]
-        H[i, j] = 1
-    end
-    SimpleTannerGraph(nq, ns, q2s, sts, H)
-end
+
 
 function CSSTannerGraph(sts::Vector{PauliString{N}}) where N
     xlabel = findall([st.ids[findfirst(!=(1),st.ids)] == 2 for st in sts])
@@ -193,21 +195,27 @@ function check_linear_indepent(H::Matrix{Mod2})
     return check_linear_indepent([a.x for a in H])
 end
 
-function ldpc2tensor(tanner::SimpleTannerGraph)
+function ldpc2tensor(tanner::SimpleTannerGraph, p::Float64, syndrome::Vector{Mod2})
     nvars = tanner.nq + tanner.ns 
     cards = fill(2, nvars)
     factors = [Factor(((tanner.s2q[s] ∪ (s+tanner.nq))...,), parity_check_matrix(length(tanner.s2q[s]))) for s in 1:(tanner.ns)]
-	@show factors
+    pfac = [Factor((q,), [1-p, p]) for q in 1:tanner.nq]
+    sfac = [Factor((s+tanner.nq,), syndrome[s].x ? [0.0, 1.0] : [1.0, 0.0 ]) for s in 1:tanner.ns]
     return TensorNetworkModel(
 		1:nvars,
 		cards,
-		factors;
+		factors ∪ pfac ∪ sfac;
 		openvars = [],
-		mars = 1:nvars,
+		mars = [[i] for i in 1:tanner.nq],
 	)
 end
 
 function parity_check_matrix(qubit_num::Int)
-    return reshape([count_ones(i-1)%2 for i in 1:2^(qubit_num+1)], (fill(2,qubit_num+1)...))
+    return reshape([Float64(count_ones(i-1)%2) for i in 1:2^(qubit_num+1)], (fill(2,qubit_num+1)...))
 end
 
+function tensor_infer(tanner::SimpleTannerGraph, p::Float64, syndrome::Vector{Mod2})
+    tn = ldpc2tensor(tanner, p, syndrome)
+    mp = marginals(tn)
+    return Dict([k => mp[[k]] for k in 1:tanner.nq])
+end

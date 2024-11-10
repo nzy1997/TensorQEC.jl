@@ -88,6 +88,7 @@ end
     errored_qubits = random_errored_qubits(120,0.05)
     syd = sydrome_extraction(errored_qubits, r34ldpc)
     bp_error = belief_propagation(syd, r34ldpc, 0.05;max_iter=100)
+
     @test syd == sydrome_extraction(bp_error, r34ldpc)
     @test check_decode(errored_qubits,bp_error,r34ldpc)
 
@@ -134,6 +135,17 @@ end
     sts = [[1, 2,3,4],[2,3,5,7],[3,4,5,6]]
     nq = 7
     tanner = SimpleTannerGraph(nq, sts)
-    H = ldpc2tensor(tanner)
-    @test H == Bool[1 1 1 0 0 0 0; 0 1 0 1 1 0 0; 0 0 1 1 0 1 0; 1 0 0 0 0 0 1]
+    errored_qubits = Mod2[1,0,0,0,0,0,0]
+    syd = sydrome_extraction(errored_qubits, tanner)
+
+    tn = ldpc2tensor(tanner, 0.05, syd)
+    tensor_infer(tanner, 0.05,syd)
+
+    # Random.seed!(23456)
+    # r34ldpc = random_ldpc(4,3,32)
+    # # plot_graph(r34ldpc)
+    # errored_qubits = random_errored_qubits(32,0.05)
+    # syd = sydrome_extraction(errored_qubits, r34ldpc)
+    # tensor_error = tensor_infer(r34ldpc, 0.05,syd)
+    # belief_propagation(syd, r34ldpc, 0.05;max_iter=100)
 end
