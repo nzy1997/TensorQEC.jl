@@ -1,3 +1,11 @@
+"""
+    SimpleTannerGraph(nq::Int, sts::Vector{Vector{Int}})
+
+Construct a simple tanner graph from a list of stabilizers.
+Input:
+    nq: number of qubits
+    sts: a list of stabilizers, each stabilizer is a list of qubits
+"""
 struct SimpleTannerGraph
     nq::Int
     ns::Int
@@ -184,3 +192,22 @@ end
 function check_linear_indepent(H::Matrix{Mod2})
     return check_linear_indepent([a.x for a in H])
 end
+
+function ldpc2tensor(tanner::SimpleTannerGraph)
+    nvars = tanner.nq + tanner.ns 
+    cards = fill(2, nvars)
+    factors = [Factor(((tanner.s2q[s] ∪ (s+tanner.nq))...,), parity_check_matrix(length(tanner.s2q[s]))) for s in 1:(tanner.ns)]
+	@show factors
+    return TensorNetworkModel(
+		1:nvars,
+		cards,
+		factors;
+		openvars = [],
+		mars = 1:nvars,
+	)
+end
+
+function parity_check_matrix(qubit_num::Int)
+    return reshape([count_ones(i-1)%2 for i in 1:2^(qubit_num+1)], (fill(2,qubit_num+1)...))
+end
+

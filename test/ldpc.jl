@@ -129,3 +129,11 @@ end
     H = Mod2[1 1 1 0; 0 1 1 0; 0 0 0 1; 1 0 0 0]
     @test check_linear_indepent(H) == false
 end
+
+@testset "ldpc2tensor" begin
+    sts = [[1, 2,3,4],[2,3,5,7],[3,4,5,6]]
+    nq = 7
+    tanner = SimpleTannerGraph(nq, sts)
+    H = ldpc2tensor(tanner)
+    @test H == Bool[1 1 1 0 0 0 0; 0 1 0 1 1 0 0; 0 0 1 1 0 1 0; 1 0 0 0 0 0 1]
+end
