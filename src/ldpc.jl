@@ -163,42 +163,39 @@ function random_errored_qubits(qubit_number,p)
     return Mod2.([rand() < p for _ in 1:qubit_number])
 end
 
-function check_decode(errored_qubits1, errored_qubits2, tanner)
-    return !check_linear_indepent([a.x for a in [tanner.H;transpose(errored_qubits1+errored_qubits2)]])
+function check_decode(errored_qubits1, errored_qubits2, H)
+    return !check_linear_indepent([a.x for a in [H;transpose(errored_qubits1+errored_qubits2)]])
 end
 
 function osd(tanner::SimpleTannerGraph,order::Vector{Int},syndrome::Vector{Mod2})
     H = tanner.H[:,order[1:1]]
-    hinv = 0 
+    hinv = 0
+    qubit_list = [order[1]]
     for i in 1:length(order)
-        bm,res = _check_linear_indepent(Matrix([H  tanner.H[:,order[i:i]]]'))
-        if res
+        if check_linear_indepent(Matrix([H  tanner.H[:,order[i:i]]]'))
             H = [H  tanner.H[:,order[i:i]]]
+            push!(qubit_list,order[i])
         end
-        @show size(H,2)
         if size(H,2) == tanner.ns
-            hinv = bm.Q
             break
         end
     end
 
+    hinv = mod2matrix_inverse(H)
 
-    error = hinv' * syndrome
-
-    return error
-    # error_qubits = error ∪ 0 
-
-    # return error_qubits
+    error = hinv * syndrome
+    return [(i ∈ qubit_list) ? (error[findfirst(==(i),qubit_list)]) : Mod2(0)  for i in 1:tanner.nq]
 end
 
 function mod2matrix_inverse(H::Matrix{Bool})
-    bm = SimpleBimatrix(H,Matrix{Mod2}(I, size(H,1), size(H,1)),collect(1:size(H,2)))
-    gaussian_elimination!(bm, 1:size(bm.matrix,1), 0, 0)
+    bm = SimpleBimatrix(copy(H),Matrix{Mod2}(I, size(H,1), size(H,1)),collect(1:size(H,2)))
+    gaussian_elimination!(bm, 1:size(bm.matrix,1), 0, 0;allow_col_operation = false)
     return bm.Q
-
-
 end
 
+function mod2matrix_inverse(H::Matrix{Mod2})
+    return mod2matrix_inverse([a.x for a in H])
+end
 function _check_linear_indepent(H::Matrix{Bool})
     bm = SimpleBimatrix(H,Matrix{Mod2}(I, size(H,1), size(H,1)),collect(1:size(H,2)))
     gaussian_elimination!(bm, 1:size(bm.matrix,1), 0, 0)
@@ -208,10 +205,6 @@ end
 function check_linear_indepent(H::Matrix{Bool})
     _ , res= _check_linear_indepent(H)
     return res
-end
-
-function _check_linear_indepent(H::Matrix{Mod2})
-    return _check_linear_indepent([a.x for a in H])
 end
 
 function check_linear_indepent(H::Matrix{Mod2})
@@ -241,8 +234,4 @@ function tensor_infer(tanner::SimpleTannerGraph, p::Float64, syndrome::Vector{Mo
     tn = ldpc2tensor(tanner, p, syndrome)
     mp = marginals(tn)
     return [ mp[[k]][2] for k in 1:tanner.nq]
-end
-
-function mod2invers(m::Matrix{Bool})
-
 end

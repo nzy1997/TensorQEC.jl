@@ -59,21 +59,30 @@ function switch_qubits!(bimat::SimpleBimatrix, i::Int, j::Int)
 	return bimat
 end
 
-function make_corner_non_zero!(bimat,offset,start_col)
-	j = findfirst(!iszero, bimat.matrix[i, start_col:end])
-	j === nothing && (zero_row += 1; continue)
-	switch_qubits!(bimat, qubit_offset + offset + 1, j + qubit_offset)
-end
 
-function gaussian_elimination!(bimat::Bimatrix, rows::UnitRange, col_offset::Int, qubit_offset::Int)
+function gaussian_elimination!(bimat::Bimatrix, rows::UnitRange, col_offset::Int, qubit_offset::Int;allow_col_operation = true)
 	start_col = col_offset + qubit_offset + 1
 	zero_row = 0
 	for i in rows
-		Q = Matrix{Mod2}(I, length(rows), length(rows))
 		offset = i - rows.start -zero_row
-		j = findfirst(!iszero, bimat.matrix[i, start_col:end])
-		j === nothing && (zero_row += 1; continue)
-		switch_qubits!(bimat, qubit_offset + offset + 1, j + qubit_offset)
+		if allow_col_operation
+			j = findfirst(!iszero, bimat.matrix[i, :])
+			j === nothing && (zero_row += 1; continue)
+			switch_qubits!(bimat, qubit_offset + offset + 1, j + qubit_offset)
+		else 
+			j = findfirst(!iszero, bimat.matrix[i:end,i])
+			j = i+j-1
+			if j != i
+				Q = Matrix{Mod2}(I, length(rows), length(rows))
+				Q[i,j] = true
+				Q[j,i] = true
+				Q[i,i] = false
+				Q[j,j] = false
+				bimat.Q[rows, :] .= Q * bimat.Q[rows, :]
+				bimat.matrix[ [i, j],:] = bimat.matrix[ [j, i],:]
+			end
+		end
+		Q = Matrix{Mod2}(I, length(rows), length(rows))
 		for k in rows
 			if k != i && bimat.matrix[k, offset+start_col]  # got 1, eliminate by ⊻ current row (i) to the k-th row
 				bimat.matrix[k, :] .= xor.(bimat.matrix[k, :], bimat.matrix[i, :])

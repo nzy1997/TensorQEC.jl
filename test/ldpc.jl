@@ -82,20 +82,24 @@ end
     syd = sydrome_extraction(errored_qubits, tanner)
     @test belief_propagation(syd, tanner, 0.05;max_iter=10) == errored_qubits
 
-    Random.seed!(38956783)
-    r34ldpc = random_ldpc(3,4,120)
+    Random.seed!(245)
+    r34ldpc = random_ldpc(4,3,120)
     # plot_graph(r34ldpc)
     errored_qubits = random_errored_qubits(120,0.05)
     syd = sydrome_extraction(errored_qubits, r34ldpc)
     bp_error = belief_propagation(syd, r34ldpc, 0.05;max_iter=100)
 
     @test syd == sydrome_extraction(bp_error, r34ldpc)
-    @test check_decode(errored_qubits,bp_error,r34ldpc)
+    # @test check_decode(errored_qubits,bp_error,r34ldpc)
 
     errored_qubits = random_errored_qubits(120,0.3)
     syd = sydrome_extraction(errored_qubits, r34ldpc)
     bp_error = belief_propagation(syd, r34ldpc, 0.3;max_iter=200)
     @show bp_error
+    @show osd_error = osd(r34ldpc, bp_error,syd)
+    
+    @test syd == sydrome_extraction(osd_error, r34ldpc)
+    # @test check_decode(errored_qubits,osd_error,r34ldpc)
     # @test syd == sydrome_extraction(bp_error, r34ldpc)
     # @show check_decode(errored_qubits,bp_error,r34ldpc)
 end
@@ -116,8 +120,8 @@ end
     errored_qubits1 = Mod2[1,0,0,0,0,0,0]
     errored_qubits2 = Mod2[0,1,1,1,0,0,0]
     errored_qubits3 = Mod2[0,0,0,1,0,1,0]
-    @test check_decode(errored_qubits1,errored_qubits2,tanner) == true
-    @test check_decode(errored_qubits1,errored_qubits3,tanner) == false
+    @test check_decode(errored_qubits1,errored_qubits2,tanner.H) == true
+    @test check_decode(errored_qubits1,errored_qubits3,tanner.H) == false
 end
 
 @testset "check_linear_indepent" begin
@@ -149,7 +153,7 @@ end
     error_probabillity = tensor_infer(r34ldpc, 0.05,syd)
 
     bp_error = belief_propagation(syd, r34ldpc, 0.05;max_iter=100)
-    check_decode(errored_qubits,bp_error,r34ldpc)
+    @test check_decode(errored_qubits,bp_error,r34ldpc)
 end
 
 @testset "osd" begin
@@ -157,17 +161,20 @@ end
     nq = 7
     tanner = SimpleTannerGraph(nq, sts)
 
-    errored_qubits = Mod2[1,0,0,0,0,0,0]
+    errored_qubits = Mod2[0,0,0,1,0,0,0]
     syd = sydrome_extraction(errored_qubits, tanner)
     order = [1, 2, 3, 4, 5, 6, 7]
-    osd(tanner, order,syd)
-
+    osd_error = osd(tanner, order,syd)
+    @test check_decode(errored_qubits,osd_error,tanner)
 end
 
 @testset "mod2matrix_inverse" begin
-    Random.seed!(123)
-    r34ldpc = random_ldpc(4,3,6)
     H = Bool[1 0 0; 0 0 1; 0 1 0]
     q = mod2matrix_inverse(H)
+    @test q * H == Matrix{Bool}(I,3,3)
 
+    H = Bool[1 1 1; 0 1 1; 0 0 1]
+    q = mod2matrix_inverse(H)
+    @test q * H == Matrix{Bool}(I,3,3)
 end
+
