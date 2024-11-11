@@ -167,28 +167,51 @@ function check_decode(errored_qubits1, errored_qubits2, tanner)
     return !check_linear_indepent([a.x for a in [tanner.H;transpose(errored_qubits1+errored_qubits2)]])
 end
 
-function osd(tanner,order,syndrome)
-    H = tanner.H[order[1],:]
-
+function osd(tanner::SimpleTannerGraph,order::Vector{Int},syndrome::Vector{Mod2})
+    H = tanner.H[:,order[1:1]]
+    hinv = 0 
     for i in 1:length(order)
-        if check_linear_indepent([H; tanner.H[order[i],:]])
-            H = [H; tanner.H[order[i],:]]
+        bm,res = _check_linear_indepent(Matrix([H  tanner.H[:,order[i:i]]]'))
+        if res
+            H = [H  tanner.H[:,order[i:i]]]
+        end
+        @show size(H,2)
+        if size(H,2) == tanner.ns
+            hinv = bm.Q
+            break
         end
     end
-    
-    # hinv = inv(H)
 
-    # error = hinv * syndrome
 
+    error = hinv' * syndrome
+
+    return error
     # error_qubits = error ∪ 0 
 
-    return error_qubits
+    # return error_qubits
+end
+
+function mod2matrix_inverse(H::Matrix{Bool})
+    bm = SimpleBimatrix(H,Matrix{Mod2}(I, size(H,1), size(H,1)),collect(1:size(H,2)))
+    gaussian_elimination!(bm, 1:size(bm.matrix,1), 0, 0)
+    return bm.Q
+
+
+end
+
+function _check_linear_indepent(H::Matrix{Bool})
+    bm = SimpleBimatrix(H,Matrix{Mod2}(I, size(H,1), size(H,1)),collect(1:size(H,2)))
+    gaussian_elimination!(bm, 1:size(bm.matrix,1), 0, 0)
+    return bm,!(bm.matrix[end,:] == fill(Mod2(0),size(H,2)))
 end
 
 function check_linear_indepent(H::Matrix{Bool})
-    bm = SimpleBimatrix(H,Matrix{Mod2}(I, size(H,1), size(H,1)),collect(1:size(H,2)))
-    gaussian_elimination!(bm, 1:size(bm.matrix,1), 0, 0)
-    return !(bm.matrix[end,:] == fill(Mod2(0),size(H,2)))
+    _ , res= _check_linear_indepent(H)
+    return res
+end
+
+function _check_linear_indepent(H::Matrix{Mod2})
+    return _check_linear_indepent([a.x for a in H])
 end
 
 function check_linear_indepent(H::Matrix{Mod2})
@@ -200,7 +223,7 @@ function ldpc2tensor(tanner::SimpleTannerGraph, p::Float64, syndrome::Vector{Mod
     cards = fill(2, nvars)
     factors = [Factor(((tanner.s2q[s] ∪ (s+tanner.nq))...,), parity_check_matrix(length(tanner.s2q[s]))) for s in 1:(tanner.ns)]
     pfac = [Factor((q,), [1-p, p]) for q in 1:tanner.nq]
-    sfac = [Factor((s+tanner.nq,), syndrome[s].x ? [0.0, 1.0] : [1.0, 0.0 ]) for s in 1:tanner.ns]
+    sfac = [Factor((s+tanner.nq,), syndrome[s].x ? [1.0, 0.0] : [0.0, 1.0 ]) for s in 1:tanner.ns]
     return TensorNetworkModel(
 		1:nvars,
 		cards,
@@ -217,5 +240,9 @@ end
 function tensor_infer(tanner::SimpleTannerGraph, p::Float64, syndrome::Vector{Mod2})
     tn = ldpc2tensor(tanner, p, syndrome)
     mp = marginals(tn)
-    return Dict([k => mp[[k]] for k in 1:tanner.nq])
+    return [ mp[[k]][2] for k in 1:tanner.nq]
+end
+
+function mod2invers(m::Matrix{Bool})
+
 end

@@ -59,6 +59,12 @@ function switch_qubits!(bimat::SimpleBimatrix, i::Int, j::Int)
 	return bimat
 end
 
+function make_corner_non_zero!(bimat,offset,start_col)
+	j = findfirst(!iszero, bimat.matrix[i, start_col:end])
+	j === nothing && (zero_row += 1; continue)
+	switch_qubits!(bimat, qubit_offset + offset + 1, j + qubit_offset)
+end
+
 function gaussian_elimination!(bimat::Bimatrix, rows::UnitRange, col_offset::Int, qubit_offset::Int)
 	start_col = col_offset + qubit_offset + 1
 	zero_row = 0

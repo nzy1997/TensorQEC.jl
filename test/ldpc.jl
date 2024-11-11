@@ -141,11 +141,33 @@ end
     tn = ldpc2tensor(tanner, 0.05, syd)
     tensor_infer(tanner, 0.05,syd)
 
-    # Random.seed!(23456)
-    # r34ldpc = random_ldpc(4,3,32)
-    # # plot_graph(r34ldpc)
-    # errored_qubits = random_errored_qubits(32,0.05)
-    # syd = sydrome_extraction(errored_qubits, r34ldpc)
-    # tensor_error = tensor_infer(r34ldpc, 0.05,syd)
-    # belief_propagation(syd, r34ldpc, 0.05;max_iter=100)
+    Random.seed!(23456)
+    r34ldpc = random_ldpc(4,3,32)
+    # plot_graph(r34ldpc)
+    errored_qubits = random_errored_qubits(32,0.05)
+    syd = sydrome_extraction(errored_qubits, r34ldpc)
+    error_probabillity = tensor_infer(r34ldpc, 0.05,syd)
+
+    bp_error = belief_propagation(syd, r34ldpc, 0.05;max_iter=100)
+    check_decode(errored_qubits,bp_error,r34ldpc)
+end
+
+@testset "osd" begin
+    sts = [[1, 2,3,4],[2,3,5,7],[3,4,5,6]]
+    nq = 7
+    tanner = SimpleTannerGraph(nq, sts)
+
+    errored_qubits = Mod2[1,0,0,0,0,0,0]
+    syd = sydrome_extraction(errored_qubits, tanner)
+    order = [1, 2, 3, 4, 5, 6, 7]
+    osd(tanner, order,syd)
+
+end
+
+@testset "mod2matrix_inverse" begin
+    Random.seed!(123)
+    r34ldpc = random_ldpc(4,3,6)
+    H = Bool[1 0 0; 0 0 1; 0 1 0]
+    q = mod2matrix_inverse(H)
+
 end

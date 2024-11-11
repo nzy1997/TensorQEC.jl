@@ -82,12 +82,12 @@ end
     qc_info = QCInfo([1],[2],2)
     tn = fidelity_tensornetwork(toyqc, qc_info)
     optnet = optimize_code(tn, TreeSA(), OMEinsum.MergeVectors())
-    @show contract(optnet)[1]
+    # @show contract(optnet)[1]
 
     u = kron(u1,u1')
     kraus = get_kraus(u2, 1)
     uapp = mapreduce(x -> kron(x,x'), +, kraus)
-    @test real(tr(u * uapp))/4 == real(contract(optnet)[1])
+    @test real(tr(u * uapp))/4 ≈ real(contract(optnet)[1])
 end
 
 @testset "get_kraus" begin
