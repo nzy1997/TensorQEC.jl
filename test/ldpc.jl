@@ -3,6 +3,7 @@ using TensorQEC
 using TensorQEC.LuxorGraphPlot.Luxor
 using TensorQEC.Graphs.Experimental: has_isomorph
 using Random
+using TensorQEC.LinearAlgebra
 @testset "SimpleTannerGraph" begin
     sts = [[1, 2,3,4],[2,3,4,5]]
     nq = 5
@@ -34,8 +35,8 @@ end
     sts = [[1, 2,3,4],[2,3,4,5]]
     nq = 5
     tanner = SimpleTannerGraph(nq, sts)
-    errored_qubits = Mod2[1,0,1,1,0]
-    @test sydrome_extraction(errored_qubits, tanner) == Mod2[1,0]
+    error_qubits = Mod2[1,0,1,1,0]
+    @test sydrome_extraction(error_qubits, tanner) == Mod2[1,0]
 end
 
 @testset "product_graph" begin
@@ -59,49 +60,46 @@ end
     @test has_isomorph(g1, g2)
 end
 
-@testset "error correct" begin
-    sts1 = [[1, 2],[2,3],[3,1]]
-    nq1 = 3
-    tanner1 = SimpleTannerGraph(nq1, sts1)
-    errored_qubits = Mod2[1,0,0]
-    synd = sydrome_extraction(errored_qubits, tanner1)
-    @show belief_propagation(synd, tanner1, 0.05)
-end
-
 @testset "random_ldpc" begin
     Random.seed!(123)
     r34ldpc = random_ldpc(3,4,6)
-    plot_graph(r34ldpc)
+    @test plot_graph(r34ldpc) isa Luxor.Drawing
 end
 
-@testset "belief_propagation" begin
+@testset "belief_propagation1" begin
     sts = [[1, 2,3,4],[2,3,5,7],[3,4,5,6]]
     nq = 7
     tanner = SimpleTannerGraph(nq, sts)
-    errored_qubits = Mod2[1,0,0,0,0,0,0]
-    syd = sydrome_extraction(errored_qubits, tanner)
-    @test belief_propagation(syd, tanner, 0.05;max_iter=10) == errored_qubits
+    error_qubits = Mod2[1,0,0,0,0,0,0]
+    syd = sydrome_extraction(error_qubits, tanner)
+    bpres = belief_propagation(syd, tanner, 0.05;max_iter=100)
+    @test bpres.error_qubits == error_qubits
+end
 
+@testset "belief_propagation2" begin
     Random.seed!(245)
     r34ldpc = random_ldpc(4,3,120)
     # plot_graph(r34ldpc)
-    errored_qubits = random_errored_qubits(120,0.05)
-    syd = sydrome_extraction(errored_qubits, r34ldpc)
-    bp_error = belief_propagation(syd, r34ldpc, 0.05;max_iter=100)
+    error_qubits = random_error_qubits(120,0.05)
+    syd = sydrome_extraction(error_qubits, r34ldpc)
+    bpres = belief_propagation(syd, r34ldpc, 0.05;max_iter=100)
 
-    @test syd == sydrome_extraction(bp_error, r34ldpc)
-    # @test check_decode(errored_qubits,bp_error,r34ldpc)
+    @test syd == sydrome_extraction(bpres.error_qubits, r34ldpc)
+    # @test check_decode(error_qubits,bp_error,r34ldpc)
+end 
 
-    errored_qubits = random_errored_qubits(120,0.3)
-    syd = sydrome_extraction(errored_qubits, r34ldpc)
-    bp_error = belief_propagation(syd, r34ldpc, 0.3;max_iter=200)
-    @show bp_error
-    @show osd_error = osd(r34ldpc, bp_error,syd)
+@testset "belief_propagation3" begin
+    Random.seed!(245)
+    r34ldpc = random_ldpc(4,3,120)
+    error_qubits = random_error_qubits(120,0.3)
+    syd = sydrome_extraction(error_qubits, r34ldpc)
+    bpres = belief_propagation(syd, r34ldpc, 0.3;max_iter=200)
+    osd_error = osd(r34ldpc, bpres.error_perm,syd)
     
-    @test syd == sydrome_extraction(osd_error, r34ldpc)
-    # @test check_decode(errored_qubits,osd_error,r34ldpc)
+    @test check_decode(error_qubits,syd,r34ldpc.H)
+    # @test check_decode(error_qubits,osd_error,r34ldpc)
     # @test syd == sydrome_extraction(bp_error, r34ldpc)
-    # @show check_decode(errored_qubits,bp_error,r34ldpc)
+    # @show check_decode(error_qubits,bp_error,r34ldpc)
 end
 
 @testset "message_list" begin
@@ -117,11 +115,14 @@ end
     sts = [[1, 2,3,4],[2,3,5,7],[3,4,5,6]]
     nq = 7
     tanner = SimpleTannerGraph(nq, sts)
-    errored_qubits1 = Mod2[1,0,0,0,0,0,0]
-    errored_qubits2 = Mod2[0,1,1,1,0,0,0]
-    errored_qubits3 = Mod2[0,0,0,1,0,1,0]
-    @test check_decode(errored_qubits1,errored_qubits2,tanner.H) == true
-    @test check_decode(errored_qubits1,errored_qubits3,tanner.H) == false
+    error_qubits1 = Mod2[1,0,0,0,0,0,0]
+    syd1 = sydrome_extraction(error_qubits1, tanner)
+    error_qubits2 = Mod2[0,1,1,1,0,0,0]
+    syd2 = sydrome_extraction(error_qubits2, tanner)
+    error_qubits3 = Mod2[0,0,0,1,0,1,0]
+    syd3 = sydrome_extraction(error_qubits3, tanner)
+    @test check_decode(error_qubits1,syd2,tanner.H) == true
+    @test check_decode(error_qubits1,syd3,tanner.H) == true
 end
 
 @testset "check_linear_indepent" begin
@@ -139,8 +140,8 @@ end
     sts = [[1, 2,3,4],[2,3,5,7],[3,4,5,6]]
     nq = 7
     tanner = SimpleTannerGraph(nq, sts)
-    errored_qubits = Mod2[1,0,0,0,0,0,0]
-    syd = sydrome_extraction(errored_qubits, tanner)
+    error_qubits = Mod2[1,0,0,0,0,0,0]
+    syd = sydrome_extraction(error_qubits, tanner)
 
     tn = ldpc2tensor(tanner, 0.05, syd)
     tensor_infer(tanner, 0.05,syd)
@@ -148,12 +149,11 @@ end
     Random.seed!(23456)
     r34ldpc = random_ldpc(4,3,32)
     # plot_graph(r34ldpc)
-    errored_qubits = random_errored_qubits(32,0.05)
-    syd = sydrome_extraction(errored_qubits, r34ldpc)
+    error_qubits = random_error_qubits(32,0.05)
+    syd = sydrome_extraction(error_qubits, r34ldpc)
     error_probabillity = tensor_infer(r34ldpc, 0.05,syd)
 
-    bp_error = belief_propagation(syd, r34ldpc, 0.05;max_iter=100)
-    @test check_decode(errored_qubits,bp_error,r34ldpc)
+    bpres = belief_propagation(syd, r34ldpc, 0.05;max_iter=100)
 end
 
 @testset "osd" begin
@@ -161,11 +161,11 @@ end
     nq = 7
     tanner = SimpleTannerGraph(nq, sts)
 
-    errored_qubits = Mod2[0,0,0,1,0,0,0]
-    syd = sydrome_extraction(errored_qubits, tanner)
+    error_qubits = Mod2[0,0,0,1,0,0,0]
+    syd = sydrome_extraction(error_qubits, tanner)
     order = [1, 2, 3, 4, 5, 6, 7]
     osd_error = osd(tanner, order,syd)
-    @test check_decode(errored_qubits,osd_error,tanner)
+    @test check_decode(error_qubits,syd,tanner)
 end
 
 @testset "mod2matrix_inverse" begin
@@ -178,3 +178,19 @@ end
     @test q * H == Matrix{Bool}(I,3,3)
 end
 
+@testset "bp_osd" begin
+    Random.seed!(245)
+    r34ldpc = random_ldpc(4,3,120)
+    # plot_graph(r34ldpc)
+    error_qubits = random_error_qubits(120,0.05)
+    syd = sydrome_extraction(error_qubits, r34ldpc)
+    res = bp_osd(syd, r34ldpc, 0.05;max_iter=100)
+
+    @test check_decode(res,syd,r34ldpc.H)
+
+    error_qubits = random_error_qubits(120,0.3)
+    syd = sydrome_extraction(error_qubits, r34ldpc)
+    res = bp_osd(syd, r34ldpc, 0.3;max_iter=100)
+
+    @test check_decode(res,syd,r34ldpc.H)
+end

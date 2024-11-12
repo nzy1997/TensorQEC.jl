@@ -14,6 +14,13 @@ struct SimpleTannerGraph
     H::Matrix{Mod2}
 end
 
+struct BPResult
+    success_tag::Bool
+    error_qubits::Vector{Mod2}
+    iter::Int
+    error_perm::Vector{Int}
+end
+
 function SimpleTannerGraph(nq::Int, sts::Vector{Vector{Int}})
     ns = length(sts)
     q2s = [findall(x-> i ∈ x , sts) for i in 1:nq]
@@ -74,8 +81,11 @@ function CSSTannerGraph(sts::Vector{PauliString{N}}) where N
     return CSSTannerGraph(N, stxs, stzs)
 end
 
+function sydrome_extraction(errored_qubits::Vector{Mod2}, H::Matrix{Mod2})
+    return H * errored_qubits
+end
 function sydrome_extraction(errored_qubits::Vector{Mod2}, tanner::SimpleTannerGraph)
-    return tanner.H * errored_qubits
+    return sydrome_extraction(errored_qubits, tanner.H)
 end
 
 function coordinate_transform(i::Int, j::Int, nq2::Int)
@@ -100,7 +110,8 @@ function belief_propagation(sydrome::Vector{Mod2}, tanner::SimpleTannerGraph, p:
     # mq2s =[[rand() for _ in v] for v in tanner.q2s]
     errored_qubits = Mod2[]
     success_tag = false
-    for _ in 1:max_iter
+    iter = 0
+    for iter in 1:max_iter
         ms2q = [[messages2q(message_list(mq2s,s,tanner.q2s,tanner.s2q;exampt_qubit = q),sydrome[s]) for q in tanner.s2q[s]] for s in 1:tanner.ns]
         mq2s = [[messageq2s(message_list(ms2q,qubit,tanner.s2q,tanner.q2s;exampt_qubit = s),mu[qubit]) for s in tanner.q2s[qubit]] for qubit in 1:tanner.nq]
         errored_qubits = error_qubits(ms2q,tanner,mu)
@@ -109,11 +120,7 @@ function belief_propagation(sydrome::Vector{Mod2}, tanner::SimpleTannerGraph, p:
             break
         end
     end
-    if !success_tag
-        println("BP failed to converge")
-        return sortperm(messageq(ms2q,tanner,mu))
-    end
-    return errored_qubits
+    return BPResult(success_tag, errored_qubits, iter, sortperm(messageq(ms2q,tanner,mu)))
 end
 
 function message_list(mq2s,s,tq2s,ts2q;exampt_qubit = 0)
@@ -159,11 +166,19 @@ function random_ldpc(n1::Int,n2::Int,nq::Int)
     return SimpleTannerGraph(nq, sts)
 end
 
-function random_errored_qubits(qubit_number,p)
+function random_error_qubits(qubit_number,p)
     return Mod2.([rand() < p for _ in 1:qubit_number])
 end
 
-function check_decode(errored_qubits1, errored_qubits2, H)
+function check_decode(error_qubits::Vector{Mod2}, syd::Vector{Mod2}, H::Matrix{Mod2})
+    return syd == sydrome_extraction(error_qubits, H)
+end
+
+function check_decode(error_qubits::Vector{Mod2}, syd::Vector{Mod2}, tanner::SimpleTannerGraph)
+    return check_decode(error_qubits, syd, tanner.H)
+end
+
+function check_decode(errored_qubits1::Vector{Mod2}, errored_qubits2::Vector{Mod2}, H)
     return !check_linear_indepent([a.x for a in [H;transpose(errored_qubits1+errored_qubits2)]])
 end
 
@@ -234,4 +249,13 @@ function tensor_infer(tanner::SimpleTannerGraph, p::Float64, syndrome::Vector{Mo
     tn = ldpc2tensor(tanner, p, syndrome)
     mp = marginals(tn)
     return [ mp[[k]][2] for k in 1:tanner.nq]
+end
+
+function bp_osd(sydrome::Vector{Mod2}, tanner::SimpleTannerGraph, p::Float64;max_iter=100)
+    bp_res = belief_propagation(sydrome, tanner, p;max_iter=max_iter)
+    if bp_res.success_tag
+        return bp_res.error_qubits
+    else
+        return osd(tanner, bp_res.error_perm, sydrome)
+    end
 end

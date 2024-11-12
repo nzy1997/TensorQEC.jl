@@ -48,7 +48,7 @@ end
 function switch_qubits!(bimat::CSSBimatrix, i::Int, j::Int)
 	qubit_num = size(bimat.matrix, 2) ÷ 2
 	bimat.matrix[:, [i, j]] = bimat.matrix[:, [j, i]]
-	(bimat.matrix[:, [qubit_num + i, qubit_num + j]] = bimat.matrix[:, [qubit_num + j, qubit_num + i]])
+	bimat.matrix[:, [qubit_num + i, qubit_num + j]] = bimat.matrix[:, [qubit_num + j, qubit_num + i]]
 	bimat.ordering[i], bimat.ordering[j] = bimat.ordering[j], bimat.ordering[i]
 	return bimat
 end
@@ -59,14 +59,13 @@ function switch_qubits!(bimat::SimpleBimatrix, i::Int, j::Int)
 	return bimat
 end
 
-
 function gaussian_elimination!(bimat::Bimatrix, rows::UnitRange, col_offset::Int, qubit_offset::Int;allow_col_operation = true)
 	start_col = col_offset + qubit_offset + 1
 	zero_row = 0
 	for i in rows
 		offset = i - rows.start -zero_row
 		if allow_col_operation
-			j = findfirst(!iszero, bimat.matrix[i, :])
+			j = findfirst(!iszero, bimat.matrix[i, start_col:end])
 			j === nothing && (zero_row += 1; continue)
 			switch_qubits!(bimat, qubit_offset + offset + 1, j + qubit_offset)
 		else 
