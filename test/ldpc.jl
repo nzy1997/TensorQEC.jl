@@ -180,7 +180,6 @@ end
 @testset "bp_osd" begin
     Random.seed!(245)
     r34ldpc = random_ldpc(4,3,120)
-    # plot_graph(r34ldpc)
     error_qubits = random_error_qubits(120,0.05)
     syd = sydrome_extraction(error_qubits, r34ldpc)
     res = bp_osd(syd, r34ldpc, 0.05;max_iter=100)
