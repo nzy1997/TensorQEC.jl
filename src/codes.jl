@@ -176,6 +176,11 @@ function stabilizers(::Code832)
 	return pauli_string
 end
 
+"""
+	Code422
+
+Construct a [[4,2,2]] CSS code instance.
+"""
 struct Code422 end
 
 function stabilizers(::Code422)
