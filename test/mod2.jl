@@ -16,4 +16,5 @@ using TensorQEC, Test
     # test zero and one
     @test zero(a) == Mod2(false)
     @test one(a) == Mod2(true)
+    @test iszero(a) == true
 end

@@ -111,3 +111,9 @@ end
     regrs = rand_state(3)
     reg = place_qubits(regrs, data_qubits, nqubits(qcen))
 end
+
+@testset "code422" begin
+	st = stabilizers(Code422())
+	@test st[1] == PauliString((2,2,2,2))
+	@test st[2] == PauliString((4,4,4,4))
+end

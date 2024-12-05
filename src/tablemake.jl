@@ -209,7 +209,7 @@ function correct_circuit(tb::TruthTable, st_pos::AbstractVector{Int}, total_qubi
 	return qc
 end
 
-# function code_distance(bimat::Bimatrix; max_distance::Int = 5)
+# function code_distance(bimat::CSSBimatrix; max_distance::Int = 5)
 # 	for k in 1:max_distance
 # 		qubit_num = size(bimat.matrix, 2) ÷ 2
 # 		all_combinations = combinations(1:qubit_num, k)

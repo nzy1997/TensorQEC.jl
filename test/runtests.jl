@@ -43,3 +43,7 @@ end
 @testset "simulation" begin
     include("simulation.jl") 
 end
+
+@testset "ldpc" begin
+    include("ldpc.jl")
+end

@@ -175,3 +175,13 @@ function stabilizers(::Code832)
 	push!(pauli_string, paulistring(nq, 4, (1,2,5,6)))
 	return pauli_string
 end
+
+struct Code422 end
+
+function stabilizers(::Code422)
+	nq = 4
+	pauli_string = PauliString{nq}[]
+	push!(pauli_string, PauliString(fill(2, 4)...))
+	push!(pauli_string, PauliString(fill(4, 4)...))
+	return pauli_string
+end

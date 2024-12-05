@@ -10,7 +10,7 @@ surface_stabilizers = stabilizers(SurfaceCode(3,3))
 # Then we can generate the encoding circuits of the stabilizers by [`encode_stabilizers`](@ref).
 encoder, data_qubits, bimatrix = encode_stabilizers(surface_stabilizers)
 vizcircuit(encoder)
-# where `encoder` is the encoding circuit, `data_qubits` are the qubits that we should put initial qubtis in, and `bimatrix` is a [`Bimatrix`](@ref) instance that records information of the encoding circuit. For more details on `Bimatrix`, please check [^Gottesman]. 
+# where `encoder` is the encoding circuit, `data_qubits` are the qubits that we should put initial qubtis in, and `bimatrix` is a [`CSSBimatrix`](@ref) instance that records information of the encoding circuit. For more details on `Bimatrix`, please check [^Gottesman]. 
 
 # The process of obtaining the encoding circuit requires adjusting the generators of the stabilizer group. The new generators are
 TensorQEC.bimatrix2stabilizers(bimatrix)

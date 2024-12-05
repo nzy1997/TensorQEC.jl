@@ -12,6 +12,10 @@ using OMEinsum
 using Yao.YaoBlocks.Optimise
 using PrettyTables
 
+using Graphs
+using LuxorGraphPlot.Layouts
+using LuxorGraphPlot
+
 # pauli basis
 export pauli_basis, pauli_decomposition, pauli_mapping
 import Yao.YaoArrayRegister.StaticArrays: SizedVector
@@ -30,10 +34,10 @@ export PauliString, PauliGroup, isanticommute,paulistring
 export syndrome_inference, measure_syndrome!,correction_pauli_string, generate_syndrome_dict,pauli_string_map_iter, inference, transformed_sydrome_dict
 
 # codes 
-export toric_code, stabilizers,ToricCode, SurfaceCode, ShorCode,SteaneCode,Code832
+export toric_code, stabilizers,ToricCode, SurfaceCode, ShorCode,SteaneCode,Code832, Code422
 
 # encoder
-export Bimatrix,syndrome_transform, encode_stabilizers,place_qubits
+export CSSBimatrix,syndrome_transform, encode_stabilizers,place_qubits
 
 # measurement
 export measure_circuit_fault_tol,  measure_circuit_steane,measure_circuit, measure_circuit_steane_single_type
@@ -48,6 +52,9 @@ export pauli_group, clifford_group, clifford_simulate,to_perm_matrix,perm_of_pau
 export ComplexConj, SymbolRecorder,IdentityRecorder, ein_circ, QCInfo, qc2enisum
 export coherent_error_unitary, error_quantum_circuit,toput, error_pairs,fidelity_tensornetwork, simulation_tensornetwork,error_quantum_circuit_pair_replace
 
+# ldpc
+export SimpleTannerGraph,sydrome_extraction,product_graph,CSSTannerGraph,plot_graph,dual_graph,get_graph,belief_propagation,random_ldpc,random_error_qubits,check_decode, check_linear_indepent,ldpc2tensor
+export tensor_infer,osd,mod2matrix_inverse,bp_osd,tensor_osd
 
 @const_gate CCZ::ComplexF64 = diagm([1, 1,1,1,1,1,1,-1])
 
@@ -62,4 +69,5 @@ include("inferences.jl")
 include("measurement.jl")
 include("tablemake.jl")       
 include("simulation.jl")
+include("ldpc.jl")
 end
