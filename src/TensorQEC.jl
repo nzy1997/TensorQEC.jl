@@ -20,6 +20,7 @@ using LuxorGraphPlot
 export pauli_basis, pauli_decomposition, pauli_mapping
 import Yao.YaoArrayRegister.StaticArrays: SizedVector
 import Yao.YaoArrayRegister.LuxurySparse
+export arrayreg2sumofpaulis
 
 # Mod
 export Mod2
@@ -67,7 +68,7 @@ include("codes.jl")
 include("encoder.jl")
 include("inferences.jl")
 include("measurement.jl")
-include("tablemake.jl")       
+include("tablemake.jl")
 include("simulation.jl")
 include("ldpc.jl")
 end
