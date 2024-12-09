@@ -46,6 +46,16 @@ end
 	@test ps2.ids == (2, 3, 2, 2)
 end
 
+@testset "perm_of_pauligroup" begin
+	ps = PauliString(2,3,4,3,2,1)
+	pg = PauliGroup(1, ps)
+	pm = TensorQEC.to_perm_matrix(Int8, Int, pauli_repr(ConstGate.CNOT))
+
+	pg2 = perm_of_pauligroup(pg, [2, 3]=>pm)
+	ps2, val = perm_of_paulistring(ps, [2, 3]=>pm)
+	@test pg2 == PauliGroup(1, ps2)
+end
+
 @testset "clifford_simulate" begin
 	qc = chain(put(5, 1 => H), control(5, 1, 2 => Z), control(5, 3, 4 => X), control(5, 5, 3 => X), put(5, 1 => X))
 	ps = PauliString((4, 3, 1, 3, 2))
@@ -68,3 +78,4 @@ end
 
 	annotate_circuit_pics(res)
 end
+

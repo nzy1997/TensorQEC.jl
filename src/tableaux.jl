@@ -1,35 +1,25 @@
 struct Tableau{N}
-    xfactor::Vector{ComplexF64}
-    zfactor::Vector{ComplexF64}
-    tabx::Vector{PauliString{N}}
-    tabz::Vector{PauliString{N}}
+    tabx::Vector{PauliGroup{N}}
+    tabz::Vector{PauliGroup{N}}
 end
 
 function new_tableau(n::Int)
-    return Tableau(ones(ComplexF64,n), ones(ComplexF64,n), [paulistring(n,2,i) for i in 1:n], [paulistring(n,4,i) for i in 1:n])
+    return Tableau([PauliGroup(0,paulistring(n,2,i)) for i in 1:n], [PauliGroup(0,paulistring(n,4,i)) for i in 1:n])
 end
 
 Base.show(io::IO, ::MIME"text/plain", tab::Tableau) = show(io, tab)
 function Base.show(io::IO, tab::Tableau{N}) where {N}
     for i in 1:N
-        print(io,"X_$i:")
-        print(io, tab.xfactor[i])
-        print(io, " ")
-        println(io, tab.tabx[i])
+        print(io, "X$(i): ", tab.tabx[i], "\n")
     end
     for i in 1:N
-        print(io,"Z_$i:")
-        print(io, tab.zfactor[i])
-        print(io, " ")
-        println(io, tab.tabz[i])
+        print(io, "Z$(i): ", tab.tabz[i], "\n")
     end
 end
 
 
 function tableau_simulate(tab::Tableau{N}, operation::Pair{Vector{Int}, <:PermMatrix}) where N
-    resx = [perm_of_paulistring(tab.tabx[i], operation) for i in 1:N]
-    resz = [perm_of_paulistring(tab.tabz[i], operation) for i in 1:N]
-    return Tableau([resx[i][2] * tab.xfactor[i] for i in 1:N], [resz[i][2] * tab.zfactor[i] for i in 1:N], [resx[i][1] for i in 1:N], [resz[i][1] for i in 1:N])
+    return Tableau([perm_of_pauligroup(tab.tabx[i], operation) for i in 1:N], [perm_of_pauligroup(tab.tabz[i], operation) for i in 1:N])
 end
 
 function tableau_simulate(tab::Tableau{N}, qc::ChainBlock) where N
@@ -48,24 +38,23 @@ function tableau_simulate(tab::Tableau{N}, qc::ChainBlock) where N
     end
     return tab
 end
-
+function tableau_simulate(qc::ChainBlock)
+    tab = new_tableau(nqubits(qc))
+    return tableau_simulate(tab, qc)
+end
 function tableau_simulate(ps::PauliString{N}, qc::ChainBlock) where N
-    tab = new_tableau(N)
-    tab = tableau_simulate(tab, qc)
-    val = 1 + 0im
-    psout = paulistring(N, 1,1)
-    res = PauliGroup{N}(0, psout)
+    tab = tableau_simulate(qc)
+    res = PauliGroup{N}(0, paulistring(N, 1,1))
+    count = 0
     for i in 1:N
         if ps.ids[i] == 2
-            val *= tab.xfactor[i]
-            psout = psout * tab.tabx[i]
+            res *= tab.tabx[i]
         elseif ps.ids[i] == 4
-            val *= tab.zfactor[i]
-            psout = psout * tab.tabz[i]
+            res *= tab.tabz[i]
         elseif ps.ids[i] == 3
-            val *= im*tab.xfactor[i] * tab.zfactor[i]
-            psout = psout * tab.tabx[i] * tab.tabz[i]
+            res *= tab.tabx[i] * tab.tabz[i]
+            count += 1
         end
     end
-    return psout, val
+    return PauliGroup{N}(_mul_coeff(res.coeff,count), res.ps)
 end
