@@ -16,6 +16,18 @@ end
 	@test mat(sp) ≈ dm.state
 end
 
+@testset "arrayreg2sumofpaulis" begin 
+	reg = rand_state(3)
+	dm = density_matrix(reg)
+	sp1 = arrayreg2sumofpaulis(reg)
+	@test mat(sp1) ≈ dm.state
+
+	reg = ghz_state(3)
+	dm = density_matrix(reg)
+	sp2 = arrayreg2sumofpaulis(reg)
+	@test mat(sp2) ≈ dm.state
+end
+
 @testset "pauli_string_map" begin
 	ps = PauliString(2,3,4,3,2,1)
 	@test TensorQEC.pauli_string_map(ps, pauli_mapping(mat(ComplexF64,cnot(2,1,2))), [5,6]).ids ==(2,3,4,3,2,2)

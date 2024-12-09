@@ -47,3 +47,7 @@ end
 @testset "ldpc" begin
     include("ldpc.jl")
 end
+
+@testset "tableau" begin
+    include("tableaux.jl")
+end

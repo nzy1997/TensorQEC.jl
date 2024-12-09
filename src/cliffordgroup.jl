@@ -79,7 +79,7 @@ struct CliffordTable{N, Ti}
 end
 
 """
-    perm_of_paulistring(pm::PermMatrix, ps::PauliString, pos::Vector{Int})
+    perm_of_paulistring(ps::PauliString, operation::Pair{Vector{Int}, <:PermMatrix})
 
 Map the Pauli string `ps` by a permutation matrix `pm`. Return the mapped Pauli string and the phase factor.
 
@@ -98,6 +98,12 @@ function perm_of_paulistring(ps::PauliString, operation::Pair{Vector{Int}, <:Per
     ps_perm_num = 1+sum((ps.ids[pos] .-1) .* [4^i for i in 0:length(pos)-1])
     v[pos]=[mod(div(pm.perm[ps_perm_num]-1, 4^(j-1)), 4)+1 for j in 1:length(pos)]
     return PauliString(v...), pm.vals[ps_perm_num]
+end
+_complex2int(x) = x==1+0im ? 0 : x==0+1im ? 1 : x==-1+0im ? 2 : 3
+function perm_of_pauligroup(pg::PauliGroup, operation::Pair{Vector{Int}, <:PermMatrix})
+    ps, val = perm_of_paulistring(pg.ps, operation)
+
+    return PauliGroup(_mul_coeff(pg.coeff,_complex2int(val)), ps)
 end
 
 """
