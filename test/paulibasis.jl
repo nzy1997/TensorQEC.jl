@@ -19,10 +19,10 @@ end
 @testset "arrayreg2sumofpaulis" begin 
 	reg = rand_state(3)
 	dm = density_matrix(reg)
-	sp2 = arrayreg2sumofpaulis(reg)
-	@test mat(sp2) ≈ dm.state
+	sp1 = arrayreg2sumofpaulis(reg)
+	@test mat(sp1) ≈ dm.state
 
-	reg = ghz_state(4)
+	reg = ghz_state(3)
 	dm = density_matrix(reg)
 	sp2 = arrayreg2sumofpaulis(reg)
 	@test mat(sp2) ≈ dm.state

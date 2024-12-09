@@ -79,7 +79,7 @@ struct CliffordTable{N, Ti}
 end
 
 """
-    perm_of_paulistring(pm::PermMatrix, ps::PauliString, pos::Vector{Int})
+    perm_of_paulistring(ps::PauliString, operation::Pair{Vector{Int}, <:PermMatrix})
 
 Map the Pauli string `ps` by a permutation matrix `pm`. Return the mapped Pauli string and the phase factor.
 

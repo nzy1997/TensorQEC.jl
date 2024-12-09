@@ -57,6 +57,9 @@ export coherent_error_unitary, error_quantum_circuit,toput, error_pairs,fidelity
 export SimpleTannerGraph,sydrome_extraction,product_graph,CSSTannerGraph,plot_graph,dual_graph,get_graph,belief_propagation,random_ldpc,random_error_qubits,check_decode, check_linear_indepent,ldpc2tensor
 export tensor_infer,osd,mod2matrix_inverse,bp_osd,tensor_osd
 
+# tableaux
+export Tableau, new_tableau,tableau_simulate
+
 @const_gate CCZ::ComplexF64 = diagm([1, 1,1,1,1,1,1,-1])
 
 include("mod2.jl")
@@ -71,4 +74,5 @@ include("measurement.jl")
 include("tablemake.jl")
 include("simulation.jl")
 include("ldpc.jl")
+include("tableaux.jl")
 end
