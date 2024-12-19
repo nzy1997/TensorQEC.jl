@@ -190,3 +190,24 @@ function stabilizers(::Code422)
 	push!(pauli_string, PauliString(fill(4, 4)...))
 	return pauli_string
 end
+
+"""
+	Code1573
+
+Construct a [[15,7,3]] CSS code instance.
+"""
+struct Code1573 end
+
+function stabilizers(::Code1573)
+	nq = 15
+	pauli_string = PauliString{nq}[]
+	push!(pauli_string, paulistring(nq, 2, 8:15))
+	push!(pauli_string, paulistring(nq, 2, (4:7) ∪ (12:15)))
+	push!(pauli_string, paulistring(nq, 2, (2,3,6,7,10,11,14,15)))
+	push!(pauli_string, paulistring(nq, 2, 1:2:15))
+	push!(pauli_string, paulistring(nq, 4, 8:15))
+	push!(pauli_string, paulistring(nq, 4, (4:7) ∪ (12:15)))
+	push!(pauli_string, paulistring(nq, 4, (2,3,6,7,10,11,14,15)))
+	push!(pauli_string, paulistring(nq, 4, 1:2:15))
+	return pauli_string
+end

@@ -35,7 +35,7 @@ export PauliString, PauliGroup, isanticommute,paulistring
 export syndrome_inference, measure_syndrome!,correction_pauli_string, generate_syndrome_dict,pauli_string_map_iter, inference, transformed_sydrome_dict
 
 # codes 
-export toric_code, stabilizers,ToricCode, SurfaceCode, ShorCode,SteaneCode,Code832, Code422
+export toric_code, stabilizers,ToricCode, SurfaceCode, ShorCode,SteaneCode,Code832, Code422, Code1573
 
 # encoder
 export CSSBimatrix,syndrome_transform, encode_stabilizers,place_qubits
@@ -44,10 +44,10 @@ export CSSBimatrix,syndrome_transform, encode_stabilizers,place_qubits
 export measure_circuit_fault_tol,  measure_circuit_steane,measure_circuit, measure_circuit_steane_single_type
 
 # tablemake
-export make_table, save_table, load_table,correct_circuit,show_table,TruthTable,table_inference
+export make_table, save_table, load_table,correct_circuit,show_table,TruthTable,table_inference,code_distance
 
 # clifford group
-export pauli_group, clifford_group, clifford_simulate,to_perm_matrix,perm_of_paulistring,paulistring_annotate,annotate_history,annotate_circuit_pics,perm_of_pauligroup
+export pauli_group, clifford_group, clifford_simulate,to_perm_matrix,perm_of_paulistring,paulistring_annotate,annotate_history,annotate_circuit_pics,perm_of_pauligroup,generate_group
 
 # simulation
 export ComplexConj, SymbolRecorder,IdentityRecorder, ein_circ, QCInfo, qc2enisum

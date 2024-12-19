@@ -34,6 +34,8 @@ end
 		0  0  0  0  0  0  0  0  1  1  0  0  0  1  0  1;
 		0  0  0  0  0  0  0  0  0  0  1  1  1  0  1  0
 	]
+
+	@test code_distance(result) == 2
 end
 
 @testset "surfacecode" begin
@@ -46,11 +48,15 @@ end
 	for i in 1:size(code.matrix, 1)
 		@test u * mat(ComplexF64, put(9, code.ordering[i] => Z)) * u' ≈ mat(ComplexF64, st[i])
 	end
+
+	@test code_distance(result) == 3
 end
 
 
 @testset "ShorCode" begin
 	st = stabilizers(ShorCode())
+
+	@test code_distance(st) == 3
 	qcen, data_qubits, code = encode_stabilizers(st)
 	qcen = chain(9, put(9, 9 => H), qcen)
 
@@ -110,10 +116,29 @@ end
     qcen, data_qubits, code = encode_stabilizers(st)
     regrs = rand_state(3)
     reg = place_qubits(regrs, data_qubits, nqubits(qcen))
+
+	@test code_distance(st) == 2
 end
 
 @testset "code422" begin
 	st = stabilizers(Code422())
 	@test st[1] == PauliString((2,2,2,2))
 	@test st[2] == PauliString((4,4,4,4))
+
+	@test code_distance(st) == 2
+end
+
+@testset "code1573" begin
+	sts = stabilizers(Code1573())
+	@test code_distance(sts) == 3
+end
+
+@testset "ShorCode" begin
+	st = stabilizers(ShorCode())
+	@test code_distance(st) == 3
+end
+
+@testset "SteaneCode" begin
+	st = stabilizers(SteaneCode())
+	@test code_distance(st) == 3
 end

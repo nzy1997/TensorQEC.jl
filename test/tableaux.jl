@@ -8,7 +8,6 @@ using Test, TensorQEC, TensorQEC.Yao, TensorQEC.LinearAlgebra
 	tab3 = new_tableau(3)
 	@test getfield.(tab3.tabx,:ps) == [paulistring(3,2,1), paulistring(3,2,2), paulistring(3,2,3)]
 	@test getfield.(tab3.tabz,:ps) == [paulistring(3,4,1), paulistring(3,4,2), paulistring(3,4,3)]
-	@show tab3
 end
 
 @testset "tableau_simulate" begin
