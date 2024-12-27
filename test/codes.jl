@@ -142,3 +142,7 @@ end
 	st = stabilizers(SteaneCode())
 	@test code_distance(st) == 3
 end
+
+@testset "Code513" begin
+	st = stabilizers(Code513())
+end

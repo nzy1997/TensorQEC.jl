@@ -211,3 +211,20 @@ function stabilizers(::Code1573)
 	push!(pauli_string, paulistring(nq, 4, 1:2:15))
 	return pauli_string
 end
+
+"""
+	Code513
+
+Construct a [[5,1,3]] code instance.
+"""	
+struct Code513 end
+
+function stabilizers(::Code513)
+	nq = 5
+	pauli_string = PauliString{nq}[]
+	push!(pauli_string, PauliString((2,4,4,2,1)))
+	push!(pauli_string, PauliString((1,2,4,4,2)))
+	push!(pauli_string, PauliString((2,1,2,4,4)))
+	push!(pauli_string, PauliString((4,2,1,2,4)))
+	return pauli_string
+end

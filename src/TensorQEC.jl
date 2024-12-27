@@ -35,7 +35,7 @@ export PauliString, PauliGroup, isanticommute,paulistring
 export syndrome_inference, measure_syndrome!,correction_pauli_string, generate_syndrome_dict,pauli_string_map_iter, inference, transformed_sydrome_dict
 
 # codes 
-export toric_code, stabilizers,ToricCode, SurfaceCode, ShorCode,SteaneCode,Code832, Code422, Code1573
+export toric_code, stabilizers,ToricCode, SurfaceCode, ShorCode,SteaneCode,Code832, Code422, Code1573, Code513
 
 # encoder
 export CSSBimatrix,syndrome_transform, encode_stabilizers,place_qubits
