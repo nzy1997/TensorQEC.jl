@@ -192,3 +192,40 @@ end
 
     @test check_decode(res,syd,r34ldpc.H)
 end
+
+@testset "multi_round_qec" begin
+    st = stabilizers(SurfaceCode(3, 3))
+    tannerxz = CSSTannerGraph(st)
+    tannerz = tannerxz.stgz
+    res = TensorQEC.multi_round_qec(tannerz, 0.05,100,tannerxz.stgx)
+end
+
+@testset "threshold_qec" begin
+    st = stabilizers(SurfaceCode(3, 3))
+    tannerxz = CSSTannerGraph(st)
+    tannerz = tannerxz.stgz
+    tannerx = tannerxz.stgx
+    a3,b3 = TensorQEC.threshold_qec(tannerz,tannerx)
+
+    st = stabilizers(SurfaceCode(5, 5))
+    tannerxz = CSSTannerGraph(st)
+    tannerz = tannerxz.stgz
+    tannerx = tannerxz.stgx
+    a5,b5 = TensorQEC.threshold_qec(tannerz,tannerx)
+    
+    st = stabilizers(SurfaceCode(7, 7))
+    tannerxz = CSSTannerGraph(st)
+    tannerz = tannerxz.stgz
+    tannerx = tannerxz.stgx
+    a7,b7 = TensorQEC.threshold_qec(tannerz,tannerx)
+
+end
+
+@testset "check_logical_error" begin
+    st = stabilizers(SurfaceCode(3, 3))
+    tannerxz = CSSTannerGraph(st)
+    tannerz = tannerxz.stgz
+    tannerx = tannerxz.stgx
+    @test !TensorQEC.check_logical_error(Mod2[0,0,0,0,0,0,0,0,0],Mod2[1,1,1,0,0,0,0,0,0],tannerx.H)
+    @test TensorQEC.check_logical_error(Mod2[0,0,0,0,0,0,0,0,0],Mod2[1,1,0,1,1,0,0,0,0],tannerx.H)
+end

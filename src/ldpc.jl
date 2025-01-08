@@ -35,7 +35,8 @@ struct CSSTannerGraph
     stgx::SimpleTannerGraph
     stgz::SimpleTannerGraph
 end
-
+nq(stg::SimpleTannerGraph) = stg.nq
+nq(stg::CSSTannerGraph) = stg.stgx.nq
 function dual_graph(tanner::SimpleTannerGraph)
     return SimpleTannerGraph( tanner.ns,  tanner.nq, tanner.s2q, tanner.q2s, transpose(tanner.H))
 end
@@ -71,14 +72,16 @@ function CSSTannerGraph(nq::Int, stxs::Vector{Vector{Int}}, stzs::Vector{Vector{
     return CSSTannerGraph(SimpleTannerGraph(nq, stxs), SimpleTannerGraph(nq, stzs))
 end
 
-
-
 function CSSTannerGraph(sts::Vector{PauliString{N}}) where N
     xlabel = findall([st.ids[findfirst(!=(1),st.ids)] == 2 for st in sts])
     zlabel = findall([st.ids[findfirst(!=(1),st.ids)] == 4 for st in sts])
     stxs = [findall(!=(1),st.ids) for st in sts[xlabel]]
     stzs = [findall(!=(1),st.ids) for st in sts[zlabel]]
     return CSSTannerGraph(N, stxs, stzs)
+end
+
+function CSSTannerGraph()
+
 end
 
 function sydrome_extraction(errored_qubits::Vector{Mod2}, H::Matrix{Mod2})
@@ -166,20 +169,12 @@ function random_ldpc(n1::Int,n2::Int,nq::Int)
     return SimpleTannerGraph(nq, sts)
 end
 
-function random_error_qubits(qubit_number,p)
-    return Mod2.([rand() < p for _ in 1:qubit_number])
-end
-
 function check_decode(error_qubits::Vector{Mod2}, syd::Vector{Mod2}, H::Matrix{Mod2})
     return syd == sydrome_extraction(error_qubits, H)
 end
 
 function check_decode(error_qubits::Vector{Mod2}, syd::Vector{Mod2}, tanner::SimpleTannerGraph)
     return check_decode(error_qubits, syd, tanner.H)
-end
-
-function check_decode(errored_qubits1::Vector{Mod2}, errored_qubits2::Vector{Mod2}, H)
-    return !check_linear_indepent([a.x for a in [H;transpose(errored_qubits1+errored_qubits2)]])
 end
 
 function osd(tanner::SimpleTannerGraph,order::Vector{Int},syndrome::Vector{Mod2})
@@ -263,4 +258,64 @@ end
 function tensor_osd(sydrome::Vector{Mod2}, tanner::SimpleTannerGraph, p::Float64)
     error_p = tensor_infer(tanner, p, sydrome)
     return osd(tanner, sortperm(-error_p), sydrome)
+end
+
+function single_round_qec(tanner::SimpleTannerGraph, p::Float64,tanner2)
+    errored_qubits1 = random_error_qubits(tanner.nq, p)
+    syd = sydrome_extraction(errored_qubits1, tanner)
+    errored_qubits2 = bp_osd(syd, tanner, p)
+    return  check_logical_error(errored_qubits1, errored_qubits2, tanner2.H)
+end
+
+function multi_round_qec(tanner::SimpleTannerGraph, p::Float64, rounds::Int,tanner2)
+    return 1-sum([single_round_qec(tanner, p,tanner2) for _ in 1:rounds])/rounds
+end
+
+function threshold_qec(tanner::SimpleTannerGraph,tanner2;rounds = 1000,pvec = 0.01:0.01:0.15)
+    return [multi_round_qec(tanner, p, rounds,tanner2) for p in pvec],pvec
+end
+
+function check_logical_error(errored_qubits1::Vector{Mod2}, errored_qubits2::Vector{Mod2}, H)
+    return !check_linear_indepent([a.x for a in [H;transpose(errored_qubits1+errored_qubits2)]])
+end
+
+function threshold_qec_bit_flip(tanner::CSSTannerGraph;rounds = 1000,pvec = 0.01:0.01:0.15)
+    return [multi_round_qec(tanner.stgz, p, rounds,tanner.stgx) for p in pvec],pvec
+end
+
+function threshold_qec_phase_flip(tanner::CSSTannerGraph;rounds = 1000,pvec = 0.01:0.01:0.15)
+    return [multi_round_qec(tanner.stgx, p, rounds,tanner.stgz) for p in pvec],pvec
+end
+
+
+struct SimulationResult
+    rounds::Int
+    logical_xerror::Int
+    logical_zerror::Int
+    logical_error::Int
+end
+
+function multi_round_qec(tanner::CSSTannerGraph,em::ErrorModel;rounds = 1000)
+    logical_xerror = 0
+    logical_zerror = 0
+    logical_error = 0
+    for _ in 1:rounds
+        resx,resz = single_round_qec(tanner.stgx, tanner.stgz, em)
+        logical_xerror += resx ? 1 : 0
+        logical_zerror += resz ? 1 : 0
+        logical_error += (resx || resz) ? 1 : 0
+    end
+    return SimulationResult(rounds,logical_xerror,logical_zerror,logical_error)
+end
+
+function single_round_qec(tanner::CSSTannerGraph, em::ErrorModel)
+    ex,ez = random_error_qubits(nq(tanner), em)
+
+    sydz = sydrome_extraction(ex, tanner.stgz)
+    ex_app = bp_osd(sydz, tanner.stgz, em.px)
+
+    sydx = sydrome_extraction(ez, tanner.stgx)
+    ez_app = bp_osd(sydx, tanner.stgx, em.pz)
+
+    return  check_logical_error(ex, ex_app, tanner.stgx), check_logical_error(ez, ez_app, tanner.stgz)
 end
