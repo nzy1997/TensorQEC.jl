@@ -75,7 +75,7 @@ include("inferences.jl")
 include("measurement.jl")
 include("tablemake.jl")
 include("simulation.jl")
+include("error_model.jl")
 include("ldpc.jl")
 include("tableaux.jl")
-include("error_model.jl")
 end

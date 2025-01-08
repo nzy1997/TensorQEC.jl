@@ -80,8 +80,8 @@ function CSSTannerGraph(sts::Vector{PauliString{N}}) where N
     return CSSTannerGraph(N, stxs, stzs)
 end
 
-function CSSTannerGraph()
-
+function CSSTannerGraph(cqc::CSSQuantumCode)
+    return CSSTannerGraph(stabilizers(cqc))
 end
 
 function sydrome_extraction(errored_qubits::Vector{Mod2}, H::Matrix{Mod2})
@@ -271,10 +271,6 @@ function multi_round_qec(tanner::SimpleTannerGraph, p::Float64, rounds::Int,tann
     return 1-sum([single_round_qec(tanner, p,tanner2) for _ in 1:rounds])/rounds
 end
 
-function threshold_qec(tanner::SimpleTannerGraph,tanner2;rounds = 1000,pvec = 0.01:0.01:0.15)
-    return [multi_round_qec(tanner, p, rounds,tanner2) for p in pvec],pvec
-end
-
 function check_logical_error(errored_qubits1::Vector{Mod2}, errored_qubits2::Vector{Mod2}, H)
     return !check_linear_indepent([a.x for a in [H;transpose(errored_qubits1+errored_qubits2)]])
 end
@@ -290,25 +286,27 @@ end
 
 struct SimulationResult
     rounds::Int
-    logical_xerror::Int
-    logical_zerror::Int
-    logical_error::Int
+    logical_xerror_rate::Float64
+    logical_zerror_rate::Float64
+    logical_error_rate::Float64
 end
 
-function multi_round_qec(tanner::CSSTannerGraph,em::ErrorModel;rounds = 1000)
+function multi_round_qec(tanner::CSSTannerGraph,em::AbstractErrorModel;rounds = 100)
     logical_xerror = 0
     logical_zerror = 0
     logical_error = 0
-    for _ in 1:rounds
-        resx,resz = single_round_qec(tanner.stgx, tanner.stgz, em)
-        logical_xerror += resx ? 1 : 0
-        logical_zerror += resz ? 1 : 0
-        logical_error += (resx || resz) ? 1 : 0
+    for i in 1:rounds
+        resx,resz = single_round_qec(tanner, em)
+        logical_xerror += resx ? 0 : 1
+        logical_zerror += resz ? 0 : 1
+        logical_error += (resx && resz) ? 0 : 1
+        @info "round $i, logical x error: $logical_xerror, logical z error: $logical_zerror, logical error: $(logical_error)"
+        @info "error model: $(em)"
     end
-    return SimulationResult(rounds,logical_xerror,logical_zerror,logical_error)
+    return SimulationResult(rounds,logical_xerror/rounds,logical_zerror/rounds,logical_error/rounds)
 end
 
-function single_round_qec(tanner::CSSTannerGraph, em::ErrorModel)
+function single_round_qec(tanner::CSSTannerGraph, em::AbstractErrorModel)
     ex,ez = random_error_qubits(nq(tanner), em)
 
     sydz = sydrome_extraction(ex, tanner.stgz)
@@ -317,5 +315,9 @@ function single_round_qec(tanner::CSSTannerGraph, em::ErrorModel)
     sydx = sydrome_extraction(ez, tanner.stgx)
     ez_app = bp_osd(sydx, tanner.stgx, em.pz)
 
-    return  check_logical_error(ex, ex_app, tanner.stgx), check_logical_error(ez, ez_app, tanner.stgz)
+    return  check_logical_error(ex, ex_app, tanner.stgx.H), check_logical_error(ez, ez_app, tanner.stgz.H)
+end
+
+function threshold_qec(tanner::CSSTannerGraph,error_model_vec::Vector;rounds = 100)
+    return [multi_round_qec(tanner, em; rounds) for em in error_model_vec]
 end

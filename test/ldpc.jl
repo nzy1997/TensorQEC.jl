@@ -194,10 +194,8 @@ end
 end
 
 @testset "multi_round_qec" begin
-    st = stabilizers(SurfaceCode(3, 3))
-    tannerxz = CSSTannerGraph(st)
-    tannerz = tannerxz.stgz
-    res = TensorQEC.multi_round_qec(tannerz, 0.05,100,tannerxz.stgx)
+    tanner = CSSTannerGraph(SurfaceCode(3, 3))
+    res = TensorQEC.multi_round_qec(tanner, DepolarizingError(0.05);rounds = 100)
 end
 
 @testset "threshold_qec" begin
