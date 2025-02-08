@@ -20,12 +20,12 @@ struct BPResult
 end
 
 function decode(deocder::BPDecoder, tanner::SimpleTannerGraph, p::Float64, sydrome::Vector{Mod2})
-    res = belief_propagation(sydrome, tanner, p;max_iter=deocder.max_iter)
+    res = belief_propagation(sydrome, tanner, p;max_iter=deocder.bp_max_iter)
     return DecodingResult(res.success_tag, res.error_qubits)
 end
 
 function decode(deocder::BPOSD, tanner::SimpleTannerGraph, p::Float64, sydrome::Vector{Mod2})
-    eqs = bp_osd(sydrome, tanner, p;max_iter=deocder.max_iter)
+    eqs = bp_osd(sydrome, tanner, p;max_iter=deocder.bp_max_iter)
     return DecodingResult(true, eqs)
 end
 

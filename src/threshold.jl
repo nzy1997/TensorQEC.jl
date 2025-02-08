@@ -1,11 +1,19 @@
-struct SimulationResult
+abstract type AbstractSimulationResult end
+
+struct ClassicalSimulationResult <: AbstractSimulationResult
+    rounds::Int
+    logical_error_rate::Float64
+end
+
+struct QuantumSimulationResult <: AbstractSimulationResult
     rounds::Int
     logical_xerror_rate::Float64
     logical_zerror_rate::Float64
     logical_error_rate::Float64
 end
 
-function multi_round_qec(tanner::CSSTannerGraph,decoder,em::AbstractErrorModel;rounds = 100)
+# quantum error model
+function multi_round_qec(tanner::CSSTannerGraph,decoder,em::AbstractQuantumErrorModel;rounds = 100)
     logical_xerror = 0
     logical_zerror = 0
     logical_error = 0
@@ -17,7 +25,7 @@ function multi_round_qec(tanner::CSSTannerGraph,decoder,em::AbstractErrorModel;r
         @info "round $i, logical x error: $logical_xerror, logical z error: $logical_zerror, logical error: $(logical_error)"
         @info "error model: $(em)"
     end
-    return SimulationResult(rounds,logical_xerror/rounds,logical_zerror/rounds,logical_error/rounds)
+    return QuantumSimulationResult(rounds,logical_xerror/rounds,logical_zerror/rounds,logical_error/rounds)
 end
 
 function single_round_qec(tanner::CSSTannerGraph, deocder::AbstractDecoder,em::AbstractQuantumErrorModel)
@@ -36,5 +44,30 @@ end
 
 function threshold_qec(tanner::CSSTannerGraph,decoder,error_model_vec::Vector;rounds = 100)
     return [multi_round_qec(tanner,decoder, em; rounds) for em in error_model_vec]
+end
+
+
+# classical error model
+function multi_round_qec(tanner::SimpleTannerGraph,decoder,em::AbstractClassicalErrorModel,tanner_check::SimpleTannerGraph;rounds = 100)
+    logical_xerror = 0
+    for i in 1:rounds
+        resx = single_round_qec(tanner,decoder,em,tanner_check)
+        resx || (logical_xerror += 1)
+        # @info "round $i, error model: $(em)"
+    end
+    return ClassicalSimulationResult(rounds,logical_xerror/rounds)
+end
+
+function single_round_qec(tanner::SimpleTannerGraph, deocder::AbstractDecoder,em::AbstractClassicalErrorModel,tanner_check::SimpleTannerGraph)
+    ex = random_error_qubits(nq(tanner), em)
+
+    sydz = sydrome_extraction(ex, tanner)
+    res = decode(deocder, tanner, em.p, sydz)
+    ex_app = res.error_qubits
+    return  check_logical_error(ex, ex_app, tanner_check.H)
+end
+
+function threshold_qec(tanner::SimpleTannerGraph,decoder,error_model_vec::Vector,tanner_check::SimpleTannerGraph;rounds = 100)
+    return [multi_round_qec(tanner,decoder, em,tanner_check; rounds) for em in error_model_vec]
 end
 

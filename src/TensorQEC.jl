@@ -55,7 +55,7 @@ export coherent_error_unitary, error_quantum_circuit,toput, error_pairs,fidelity
 
 # ldpc
 export SimpleTannerGraph,sydrome_extraction,product_graph,CSSTannerGraph,plot_graph,dual_graph,get_graph,belief_propagation,random_ldpc,check_decode, check_linear_indepent,ldpc2tensor
-export tensor_infer,osd,mod2matrix_inverse,bp_osd,tensor_osd
+export tensor_infer,osd,mod2matrix_inverse,bp_osd,tensor_osd,check_logical_error
 
 # tableaux
 export Tableau, new_tableau,tableau_simulate
@@ -63,6 +63,12 @@ export Tableau, new_tableau,tableau_simulate
 # error model
 export FlipError, DepolarizingError, random_error_qubits
 @const_gate CCZ::ComplexF64 = diagm([1, 1,1,1,1,1,1,-1])
+
+# bp
+export BPOSD,decode
+
+# threshold
+export multi_round_qec
 
 include("mod2.jl")
 include("paulistring.jl")
@@ -78,4 +84,6 @@ include("simulation.jl")
 include("error_model.jl")
 include("ldpc.jl")
 include("tableaux.jl")
+include("bp.jl")
+include("threshold.jl")
 end
