@@ -13,6 +13,8 @@ using Yao.YaoBlocks.Optimise
 using PrettyTables
 
 using Graphs
+using JuMP, HiGHS
+
 
 # pauli basis
 export pauli_basis, pauli_decomposition, pauli_mapping
@@ -84,4 +86,5 @@ include("ldpc.jl")
 include("tableaux.jl")
 include("bp.jl")
 include("threshold.jl")
+include("code_distance.jl")
 end

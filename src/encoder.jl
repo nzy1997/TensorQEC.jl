@@ -24,6 +24,14 @@ struct SimpleBimatrix <: Bimatrix
 	ordering::Vector{Int}
 end
 
+function SimpleBimatrix(matrix::Matrix{Bool}, ordering::Vector{Int})
+	return SimpleBimatrix(matrix, Matrix{Mod2}(I, size(matrix, 1), size(matrix, 1)), ordering)
+end
+
+function SimpleBimatrix(matrix::Matrix{Bool})
+	return SimpleBimatrix(matrix, collect(1:size(matrix, 2)))
+end
+
 Base.copy(b::CSSBimatrix) = CSSBimatrix(copy(b.matrix), copy(b.Q), copy(b.ordering), b.xcodenum)
 Yao.nqubits(b::CSSBimatrix) = size(b.matrix, 2) ÷ 2
 
