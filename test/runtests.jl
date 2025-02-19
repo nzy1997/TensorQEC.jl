@@ -51,3 +51,7 @@ end
 @testset "tableau" begin
     include("tableaux.jl")
 end
+
+@testset "error_model" begin
+    include("error_model.jl")
+end

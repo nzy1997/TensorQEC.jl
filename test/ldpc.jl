@@ -1,6 +1,5 @@
 using Test
 using TensorQEC
-using TensorQEC.LuxorGraphPlot.Luxor
 using TensorQEC.Graphs.Experimental: has_isomorph
 using Random
 using TensorQEC.LinearAlgebra
@@ -24,13 +23,6 @@ end
     @test dual.q2s == sts
 end
 
-@testset "plot_graph" begin
-    sts = [[1, 2,3,4],[2,3,4,5]]
-    nq = 5
-    tanner = SimpleTannerGraph(nq, sts)
-    @test plot_graph(tanner) isa Luxor.Drawing
-end
-
 @testset "sydrome_extraction" begin
     sts = [[1, 2,3,4],[2,3,4,5]]
     nq = 5
@@ -43,17 +35,14 @@ end
     sts1 = [[1, 2],[2,3],[3,1]]
     nq1 = 3
     tanner1 = SimpleTannerGraph(nq1, sts1)
-    plot_graph(tanner1)
     sts2 = [[1, 2],[2,3],[3,1]]
     nq2 = 3 
     tanner2 = SimpleTannerGraph(nq2, sts2)
     
     pgraph = product_graph(tanner1, tanner2)
-    plot_graph(pgraph)
 
     st_toric = stabilizers(ToricCode(3,3);linearly_independent = false)
     tanner_toric = CSSTannerGraph(st_toric)
-    plot_graph(tanner_toric)
 
     g1 = get_graph(pgraph)
     g2 = get_graph(tanner_toric)
@@ -63,7 +52,7 @@ end
 @testset "random_ldpc" begin
     Random.seed!(123)
     r34ldpc = random_ldpc(3,4,6)
-    @test plot_graph(r34ldpc) isa Luxor.Drawing
+
 end
 
 @testset "belief_propagation1" begin
@@ -80,7 +69,8 @@ end
     Random.seed!(245)
     r34ldpc = random_ldpc(4,3,120)
     # plot_graph(r34ldpc)
-    error_qubits = random_error_qubits(120,0.05)
+    em = FlipError(0.1)
+    error_qubits =  random_error_qubits(120, em)
     syd = sydrome_extraction(error_qubits, r34ldpc)
     bpres = belief_propagation(syd, r34ldpc, 0.05;max_iter=100)
 
@@ -91,7 +81,8 @@ end
 @testset "belief_propagation3" begin
     Random.seed!(245)
     r34ldpc = random_ldpc(4,3,120)
-    error_qubits = random_error_qubits(120,0.3)
+    em = FlipError(0.3)
+    error_qubits =  random_error_qubits(120, em)
     syd = sydrome_extraction(error_qubits, r34ldpc)
     bpres = belief_propagation(syd, r34ldpc, 0.3;max_iter=200)
     osd_error = osd(r34ldpc, bpres.error_perm,syd)
@@ -148,7 +139,8 @@ end
     Random.seed!(23456)
     r34ldpc = random_ldpc(4,3,32)
     # plot_graph(r34ldpc)
-    error_qubits = random_error_qubits(32,0.05)
+    em = FlipError(0.05)
+    error_qubits =  random_error_qubits(32, em)
     syd = sydrome_extraction(error_qubits, r34ldpc)
     error_probabillity = tensor_infer(r34ldpc, 0.05,syd)
     tn_res = tensor_osd(syd,r34ldpc, 0.05)
@@ -180,43 +172,19 @@ end
 @testset "bp_osd" begin
     Random.seed!(245)
     r34ldpc = random_ldpc(4,3,120)
-    error_qubits = random_error_qubits(120,0.05)
+    em = FlipError(0.05)
+    error_qubits =  random_error_qubits(120, em)
     syd = sydrome_extraction(error_qubits, r34ldpc)
     res = bp_osd(syd, r34ldpc, 0.05;max_iter=100)
 
     @test check_decode(res,syd,r34ldpc.H)
 
-    error_qubits = random_error_qubits(120,0.3)
+    em = FlipError(0.3)
+    error_qubits =  random_error_qubits(120, em)
     syd = sydrome_extraction(error_qubits, r34ldpc)
     res = bp_osd(syd, r34ldpc, 0.3;max_iter=100)
 
     @test check_decode(res,syd,r34ldpc.H)
-end
-
-@testset "multi_round_qec" begin
-    tanner = CSSTannerGraph(SurfaceCode(3, 3))
-    res = TensorQEC.multi_round_qec(tanner, DepolarizingError(0.05);rounds = 100)
-end
-
-@testset "threshold_qec" begin
-    st = stabilizers(SurfaceCode(3, 3))
-    tannerxz = CSSTannerGraph(st)
-    tannerz = tannerxz.stgz
-    tannerx = tannerxz.stgx
-    a3,b3 = TensorQEC.threshold_qec(tannerz,tannerx)
-
-    st = stabilizers(SurfaceCode(5, 5))
-    tannerxz = CSSTannerGraph(st)
-    tannerz = tannerxz.stgz
-    tannerx = tannerxz.stgx
-    a5,b5 = TensorQEC.threshold_qec(tannerz,tannerx)
-    
-    st = stabilizers(SurfaceCode(7, 7))
-    tannerxz = CSSTannerGraph(st)
-    tannerz = tannerxz.stgz
-    tannerx = tannerxz.stgx
-    a7,b7 = TensorQEC.threshold_qec(tannerz,tannerx)
-
 end
 
 @testset "check_logical_error" begin

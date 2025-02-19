@@ -44,23 +44,7 @@ function get_graph(ctg::CSSTannerGraph)
        [getproperty.(ctg.stgx.H,:x);  getproperty.(ctg.stgz.H,:x)] zeros(Bool,(ctg.stgz.ns+ctg.stgx.ns,ctg.stgz.ns+ctg.stgx.ns))])
     return sg
 end
-function plot_graph(stg::SimpleTannerGraph)
-    sg = get_graph(stg)
-    zlocs = [fill(1, stg.nq)..., fill(300, stg.ns)...]
-    return _plot_graph(sg, [[string("$i") for i=1:stg.nq]...,[string("s$i") for i=1:stg.ns]...], zlocs)
-end
 
-function plot_graph(ctg::CSSTannerGraph)
-    sg = get_graph(ctg)
-    zlocs = [fill(300, ctg.stgx.nq)..., fill(0, ctg.stgx.ns)..., fill(600, ctg.stgz.ns)...]
-    return _plot_graph(sg, [[string("$i") for i=1:ctg.stgx.nq]...,[string("x$i") for i=1:ctg.stgx.ns]...,[string("z$i") for i=1:ctg.stgz.ns]...], zlocs)
-end
-
-function _plot_graph(sg::SimpleGraph,texts,zlocs)
-    optimal_distance = 40.0
-    layout = Layouts.LayeredStressLayout(; zlocs, optimal_distance)
-    return show_graph(sg,Layouts.render_locs(sg, layout), texts=texts)
-end
 function CSSTannerGraph(nq::Int, stxs::Vector{Vector{Int}}, stzs::Vector{Vector{Int}})
     return CSSTannerGraph(SimpleTannerGraph(nq, stxs), SimpleTannerGraph(nq, stzs))
 end

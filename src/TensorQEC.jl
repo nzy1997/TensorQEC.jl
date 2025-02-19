@@ -13,8 +13,6 @@ using Yao.YaoBlocks.Optimise
 using PrettyTables
 
 using Graphs
-using LuxorGraphPlot.Layouts
-using LuxorGraphPlot
 
 # pauli basis
 export pauli_basis, pauli_decomposition, pauli_mapping
