@@ -50,25 +50,29 @@ end
     @test rank == 4
 end
 @testset "logical_oprator" begin
-    st = stabilizers(SurfaceCode(3, 3))
-    tannerxz = CSSTannerGraph(st)
+    tannerxz = CSSTannerGraph(SurfaceCode(3, 3))
     lx,lz = logical_oprator(tannerxz)
     @test lx == Bool[0 0 0 0 0 0 1 1 1]
     @test lz == Bool[1 0 0 0 1 0 0 0 1]
 end
 
 @testset "code_distance" begin
-    st = stabilizers(SurfaceCode(3, 3))
-    tannerxz = CSSTannerGraph(st)
+    tannerxz = CSSTannerGraph(SurfaceCode(3, 3))
     lx,lz = logical_oprator(tannerxz)
     @test code_distance(Int.(tannerxz.stgz.H),Int.(lz)) == 3
     @test code_distance(Int.(tannerxz.stgx.H),Int.(lx)) == 3
 
-    st = stabilizers(SurfaceCode(5, 5))
-    tannerxz = CSSTannerGraph(st)
+    tannerxz = CSSTannerGraph(SurfaceCode(5, 5))
     @test code_distance(tannerxz) == 5
 
-    st = stabilizers(Code422())
-    tannerxz = CSSTannerGraph(st)
+    tannerxz = CSSTannerGraph(Code422())
     @test code_distance(tannerxz) == 2
+end
+
+@testset "random_ldpc" begin
+    Random.seed!(678)
+    r34ldpc1= random_ldpc(3,4,12)
+    r34ldpc2= random_ldpc(3,4,12)
+    pgraph = product_graph(r34ldpc1, r34ldpc2)
+    @show code_distance(pgraph)
 end

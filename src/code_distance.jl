@@ -87,8 +87,6 @@ function code_distance(Hz::Matrix{Int},lz::Matrix{Int}; verbose = false)
     for i in 1:m
         @constraint(model, sum(z[j] for j in 1:n if Hz[i,j] == 1) == 2 * k[i])
     end
-    @constraint(model, sum(z[j] for j in 1:n) >= 1)
-
 
     for i in 1:num_lz
         @constraint(model, sum(z[j] for j in 1:n if lz[i,j] == 1) == 2*l[i] + r[i])
