@@ -70,14 +70,25 @@ end
 function gaussian_elimination!(bimat::Bimatrix, rows::UnitRange, col_offset::Int, qubit_offset::Int;allow_col_operation = true)
 	start_col = col_offset + qubit_offset + 1
 	zero_row = 0
+	zero_col = 0
 	for i in rows
-		offset = i - rows.start -zero_row
 		if allow_col_operation
+			offset = i - rows.start -zero_row
 			j = findfirst(!iszero, bimat.matrix[i, start_col:end])
 			j === nothing && (zero_row += 1; continue)
 			switch_qubits!(bimat, qubit_offset + offset + 1, j + qubit_offset)
-		else 
-			j = findfirst(!iszero, bimat.matrix[i:end,i])
+		else
+			if i + zero_col > size(bimat.matrix, 2)
+				return bimat
+			end
+			j = findfirst(!iszero, bimat.matrix[i:end,i + zero_col])
+			while (j === nothing)
+				zero_col += 1
+				if i + zero_col > size(bimat.matrix, 2)
+					return bimat
+				end
+				j = findfirst(!iszero, bimat.matrix[i:end,i + zero_col])
+			end
 			j = i+j-1
 			if j != i
 				Q = Matrix{Mod2}(I, length(rows), length(rows))
@@ -88,6 +99,7 @@ function gaussian_elimination!(bimat::Bimatrix, rows::UnitRange, col_offset::Int
 				bimat.Q[rows, :] .= Q * bimat.Q[rows, :]
 				bimat.matrix[ [i, j],:] = bimat.matrix[ [j, i],:]
 			end
+			offset = i - rows.start + zero_col
 		end
 		Q = Matrix{Mod2}(I, length(rows), length(rows))
 		for k in rows
