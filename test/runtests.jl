@@ -55,3 +55,7 @@ end
 @testset "error_model" begin
     include("error_model.jl")
 end
+
+@testset "code_distance" begin
+    include("code_distance.jl")
+end

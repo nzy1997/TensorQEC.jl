@@ -22,3 +22,9 @@ end
 function code_distance(H::AbstractMatrix; verbose = false)
     return code_distance(Matrix{Int}(H); verbose = verbose)
 end
+
+function row_echelon_form(H::Matrix{Bool})
+    bimat = SimpleBimatrix(H)
+    gaussian_elimination!(bimat,1:size(H, 1), 0, 0;allow_col_operation = false)
+    return bimat.matrix
+end
