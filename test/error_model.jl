@@ -8,6 +8,9 @@ using Random
 end
 
 @testset "DepolarizingError" begin
+    em = DepolarizingError(0.05)
+    @test em.px == 0.05
+
     em = DepolarizingError(0.05, 0.06, 0.1)
     qubit_num = 100000
     ex,ez = random_error_qubits(qubit_num, em)

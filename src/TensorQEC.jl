@@ -64,11 +64,11 @@ export Tableau, new_tableau,tableau_simulate
 export FlipError, DepolarizingError, random_error_qubits
 @const_gate CCZ::ComplexF64 = diagm([1, 1,1,1,1,1,1,-1])
 
-# bp
+# decoder
 export BPOSD,decode
 
 # threshold
-export multi_round_qec
+export multi_round_qec,threshold_qec
 
 include("mod2.jl")
 include("paulistring.jl")
@@ -84,7 +84,7 @@ include("simulation.jl")
 include("error_model.jl")
 include("ldpc.jl")
 include("tableaux.jl")
-include("bp.jl")
+include("decoder.jl")
 include("threshold.jl")
 include("code_distance.jl")
 end
