@@ -209,15 +209,39 @@ function correct_circuit(tb::TruthTable, st_pos::AbstractVector{Int}, total_qubi
 	return qc
 end
 
-# function code_distance(bimat::CSSBimatrix; max_distance::Int = 5)
-# 	for k in 1:max_distance
-# 		qubit_num = size(bimat.matrix, 2) ÷ 2
-# 		all_combinations = combinations(1:qubit_num, k)
-# 		for combo in all_combinations
-# 			println(combo)
-# 			if iszero(rank(bimat.matrix[combo, :]))
-# 				return k
-# 			end
-# 		end
-# 	end
-# end
+function code_distance(h::Matrix{Mod2}, xgroup::Vector,max_distance) 
+	N = size(h, 2)
+	st_num = size(h, 1)
+	for k in 1:max_distance
+		for combo in combinations(1:N, k)
+			eq = zeros(Bool, N)
+			eq[combo] .= true
+			if sydrome_extraction(Mod2.(eq), h) == zeros(Mod2, st_num)
+				if eq ∉ xgroup
+					return k
+				end
+			end
+		end
+	end
+	return 0
+end
+
+function code_distance(sts::Vector{PauliString{N}}; max_distance = 5) where N
+	bimat = stabilizers2bimatrix(sts)
+	qubit_num = size(bimat.matrix, 2) ÷ 2
+	xgroup = generate_xgroup(sts[1:bimat.xcodenum])
+	zgroup = generate_xgroup(sts[bimat.xcodenum+1:end])
+
+	kx = code_distance(Mod2.(bimat.matrix[1:bimat.xcodenum, 1:qubit_num]),zgroup, max_distance)
+	kz = code_distance(Mod2.(bimat.matrix[bimat.xcodenum+1:end, qubit_num+1:end]),xgroup, max_distance)
+	return min(kx, kz)
+end
+
+function generate_xgroup_ps(st::Vector{PauliString{N}}) where N
+	return [pg.ps for pg in generate_group([PauliGroup(0,p) for p in st])]
+end
+
+function generate_xgroup(st::Vector{PauliString{N}}) where N
+	sts = generate_xgroup_ps(st)
+	return [collect(ps.ids .!= 1) for ps in sts]
+end

@@ -11,3 +11,4 @@ Base.show(io::IO, x::Mod2) = print(io, x.x ? "1₂" : "0₂")
 Base.show(io::IO, ::MIME"text/plain", x::Mod2) = show(io, x)
 Base.iszero(x::Mod2) = !x.x
 Base.conj(x::Mod2) = x
+Base.Int64(x::Mod2) = x.x ? 1 : 0

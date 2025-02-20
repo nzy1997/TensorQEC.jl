@@ -1,5 +1,5 @@
 using Test, TensorQEC, TensorQEC.Yao
-
+using TensorQEC: stabilizers2bimatrix
 
 @testset "make table" begin
     st =stabilizers(SurfaceCode(3,3))

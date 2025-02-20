@@ -1,9 +1,11 @@
+abstract type QuantumCode end
+abstract type CSSQuantumCode <: QuantumCode end
 """
 	ToricCode(m::Int, n::Int)
 
 Construct a Toric code with `m` rows and `n` columns. 
 """
-struct ToricCode
+struct ToricCode <: CSSQuantumCode
 	m::Int
 	n::Int
 end
@@ -65,7 +67,7 @@ end
 
 Construct a surface code with `m` rows and `n` columns. 
 """
-struct SurfaceCode	
+struct SurfaceCode <: CSSQuantumCode
     m::Int
 	n::Int
 end
@@ -119,7 +121,7 @@ end
 
 Construct a Shor code instance.
 """
-struct ShorCode end
+struct ShorCode  <: CSSQuantumCode end
 
 function stabilizers(::ShorCode; linearly_independent::Bool = true)
 	nq = 9
@@ -144,7 +146,7 @@ end
 
 Construct a Steane code instance.
 """
-struct SteaneCode end
+struct SteaneCode   <: CSSQuantumCode end
 
 function stabilizers(::SteaneCode)
 	nq = 7
@@ -163,7 +165,7 @@ end
 
 Construct a [[8,3,2]] CSS code instance.
 """
-struct Code832 end
+struct Code832  <: CSSQuantumCode end
 
 function stabilizers(::Code832)
 	nq = 8
@@ -181,12 +183,50 @@ end
 
 Construct a [[4,2,2]] CSS code instance.
 """
-struct Code422 end
+struct Code422  <: CSSQuantumCode end
 
 function stabilizers(::Code422)
 	nq = 4
 	pauli_string = PauliString{nq}[]
 	push!(pauli_string, PauliString(fill(2, 4)...))
 	push!(pauli_string, PauliString(fill(4, 4)...))
+	return pauli_string
+end
+
+"""
+	Code1573
+
+Construct a [[15,7,3]] CSS code instance.
+"""
+struct Code1573  <: CSSQuantumCode end
+
+function stabilizers(::Code1573)
+	nq = 15
+	pauli_string = PauliString{nq}[]
+	push!(pauli_string, paulistring(nq, 2, 8:15))
+	push!(pauli_string, paulistring(nq, 2, (4:7) ∪ (12:15)))
+	push!(pauli_string, paulistring(nq, 2, (2,3,6,7,10,11,14,15)))
+	push!(pauli_string, paulistring(nq, 2, 1:2:15))
+	push!(pauli_string, paulistring(nq, 4, 8:15))
+	push!(pauli_string, paulistring(nq, 4, (4:7) ∪ (12:15)))
+	push!(pauli_string, paulistring(nq, 4, (2,3,6,7,10,11,14,15)))
+	push!(pauli_string, paulistring(nq, 4, 1:2:15))
+	return pauli_string
+end
+
+"""
+	Code513
+
+Construct a [[5,1,3]] code instance.
+"""	
+struct Code513  <: QuantumCode end
+
+function stabilizers(::Code513)
+	nq = 5
+	pauli_string = PauliString{nq}[]
+	push!(pauli_string, PauliString((2,4,4,2,1)))
+	push!(pauli_string, PauliString((1,2,4,4,2)))
+	push!(pauli_string, PauliString((2,1,2,4,4)))
+	push!(pauli_string, PauliString((4,2,1,2,4)))
 	return pauli_string
 end
