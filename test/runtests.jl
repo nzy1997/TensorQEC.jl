@@ -59,3 +59,7 @@ end
 @testset "code_distance" begin
     include("code_distance.jl")
 end
+
+@testset "threshold" begin
+    include("threshold.jl")
+end
