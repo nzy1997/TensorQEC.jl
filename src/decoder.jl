@@ -11,6 +11,29 @@ struct DecodingResult
     success_tag::Bool
     error_qubits::Vector{Mod2}
 end
+struct IPDecoder <: AbstractDecoder end
+
+function decode(decoder::IPDecoder, tanner::SimpleTannerGraph, p::Float64, sydrome::Vector{Mod2})
+    return decode(decoder,tanner,sydrome)
+end
+function decode(decoder::IPDecoder, tanner::SimpleTannerGraph, sydrome::Vector{Mod2};verbose = false)
+    H = [a.x for a in tanner.H]
+    m,n = size(H)
+    model = Model(HiGHS.Optimizer)
+    !verbose && set_silent(model)
+
+    @variable(model, 0 <= z[i = 1:n] <= 1, Int)
+    @variable(model, 0 <= k[i = 1:m], Int)
+    
+    for i in 1:m
+        @constraint(model, sum(z[j] for j in 1:n if H[i,j] == 1) == 2 * k[i] + (sydrome[i].x ? 1 : 0))
+    end
+
+    @objective(model, Min, sum(z[j] for j in 1:n))
+    optimize!(model)
+    @assert is_solved_and_feasible(model) "The problem is infeasible!"
+    return DecodingResult(true, Mod2.(value.(z) .> 0.5))
+end
 
 struct BPResult
     success_tag::Bool
@@ -19,13 +42,13 @@ struct BPResult
     error_perm::Vector{Int}
 end
 
-function decode(deocder::BPDecoder, tanner::SimpleTannerGraph, p::Float64, sydrome::Vector{Mod2})
-    res = belief_propagation(sydrome, tanner, p;max_iter=deocder.bp_max_iter)
+function decode(decoder::BPDecoder, tanner::SimpleTannerGraph, p::Float64, sydrome::Vector{Mod2})
+    res = belief_propagation(sydrome, tanner, p;max_iter=decoder.bp_max_iter)
     return DecodingResult(res.success_tag, res.error_qubits)
 end
 
-function decode(deocder::BPOSD, tanner::SimpleTannerGraph, p::Float64, sydrome::Vector{Mod2})
-    eqs = bp_osd(sydrome, tanner, p;max_iter=deocder.bp_max_iter)
+function decode(decoder::BPOSD, tanner::SimpleTannerGraph, p::Float64, sydrome::Vector{Mod2})
+    eqs = bp_osd(sydrome, tanner, p;max_iter=decoder.bp_max_iter)
     return DecodingResult(true, eqs)
 end
 

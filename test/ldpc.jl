@@ -52,7 +52,6 @@ end
 @testset "random_ldpc" begin
     Random.seed!(123)
     r34ldpc = random_ldpc(3,4,6)
-
 end
 
 @testset "belief_propagation1" begin

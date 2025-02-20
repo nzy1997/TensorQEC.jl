@@ -1,6 +1,4 @@
 function code_distance(H::Matrix{Int}; verbose = false)
-    # H : m x n
-
     m,n = size(H)
     model = Model(HiGHS.Optimizer)
     !verbose && set_silent(model)
@@ -72,8 +70,6 @@ function logical_oprator(tanner::CSSTannerGraph)
 end
 
 function code_distance(Hz::Matrix{Int},lz::Matrix{Int}; verbose = false)
-    # H : m x n
-
     m,n = size(Hz)
     num_lz = size(lz, 1)
     model = Model(HiGHS.Optimizer)

@@ -65,7 +65,7 @@ export FlipError, DepolarizingError, random_error_qubits
 @const_gate CCZ::ComplexF64 = diagm([1, 1,1,1,1,1,1,-1])
 
 # decoder
-export BPOSD,decode
+export BPOSD,decode,BPDecoder,IPDecoder
 
 # threshold
 export multi_round_qec,threshold_qec
