@@ -44,7 +44,7 @@ export CSSBimatrix,syndrome_transform, encode_stabilizers,place_qubits
 export measure_circuit_fault_tol,  measure_circuit_steane,measure_circuit, measure_circuit_steane_single_type
 
 # tablemake
-export make_table, save_table, load_table,correct_circuit,show_table,TruthTable,table_inference,code_distance
+export make_table, save_table, load_table,correct_circuit,show_table,TruthTable,table_inference
 
 # clifford group
 export pauli_group, clifford_group, clifford_simulate,to_perm_matrix,perm_of_paulistring,paulistring_annotate,annotate_history,annotate_circuit_pics,perm_of_pauligroup,generate_group
@@ -69,6 +69,9 @@ export BPOSD,decode,BPDecoder,IPDecoder
 
 # threshold
 export multi_round_qec,threshold_qec
+
+# code distance
+export code_distance
 
 include("mod2.jl")
 include("paulistring.jl")
