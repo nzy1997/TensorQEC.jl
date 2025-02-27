@@ -17,6 +17,11 @@ function random_error_qubits(qubit_number::Int, em::FlipError)
     return Mod2.([rand() < em.p for _ in 1:qubit_number])
 end
 
+struct CSSErrorPattern
+    xerror::Vector{Mod2}
+    zerror::Vector{Mod2}
+end
+
 function random_error_qubits(qubit_number::Int, em::DepolarizingError)
     xerror =  Mod2[]
     zerror =  Mod2[]
@@ -37,5 +42,5 @@ function random_error_qubits(qubit_number::Int, em::DepolarizingError)
             push!(zerror, Mod2(false))
         end
     end
-    return xerror, zerror
+    return CSSErrorPattern(xerror, zerror)
 end

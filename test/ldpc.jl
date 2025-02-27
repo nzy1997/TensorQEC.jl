@@ -23,12 +23,20 @@ end
     @test dual.q2s == sts
 end
 
-@testset "sydrome_extraction" begin
+@testset "syndrome_extraction" begin
     sts = [[1, 2,3,4],[2,3,4,5]]
     nq = 5
     tanner = SimpleTannerGraph(nq, sts)
     error_qubits = Mod2[1,0,1,1,0]
-    @test sydrome_extraction(error_qubits, tanner) == Mod2[1,0]
+    @test syndrome_extraction(error_qubits, tanner) == Mod2[1,0]
+
+    Random.seed!(123)
+    tanner = CSSTannerGraph(SurfaceCode(3, 3))
+    em = DepolarizingError(0.05, 0.06, 0.1)
+    ep = random_error_qubits(9, em)
+    syn = syndrome_extraction(ep,tanner)
+    @test syn.sx == Mod2[1,0,0,0]
+    @test syn.sz == Mod2[0,1,0,0]
 end
 
 @testset "product_graph" begin
@@ -52,7 +60,6 @@ end
 @testset "random_ldpc" begin
     Random.seed!(123)
     r34ldpc = random_ldpc(3,4,6)
-
 end
 
 @testset "belief_propagation1" begin
@@ -60,7 +67,7 @@ end
     nq = 7
     tanner = SimpleTannerGraph(nq, sts)
     error_qubits = Mod2[1,0,0,0,0,0,0]
-    syd = sydrome_extraction(error_qubits, tanner)
+    syd = syndrome_extraction(error_qubits, tanner)
     bpres = belief_propagation(syd, tanner, 0.05;max_iter=100)
     @test bpres.error_qubits == error_qubits
 end
@@ -71,11 +78,10 @@ end
     # plot_graph(r34ldpc)
     em = FlipError(0.1)
     error_qubits =  random_error_qubits(120, em)
-    syd = sydrome_extraction(error_qubits, r34ldpc)
+    syd = syndrome_extraction(error_qubits, r34ldpc)
     bpres = belief_propagation(syd, r34ldpc, 0.05;max_iter=100)
 
-    @test syd == sydrome_extraction(bpres.error_qubits, r34ldpc)
-    # @test check_decode(error_qubits,bp_error,r34ldpc)
+    @test syd == syndrome_extraction(bpres.error_qubits, r34ldpc)
 end 
 
 @testset "belief_propagation3" begin
@@ -83,14 +89,11 @@ end
     r34ldpc = random_ldpc(4,3,120)
     em = FlipError(0.3)
     error_qubits =  random_error_qubits(120, em)
-    syd = sydrome_extraction(error_qubits, r34ldpc)
+    syd = syndrome_extraction(error_qubits, r34ldpc)
     bpres = belief_propagation(syd, r34ldpc, 0.3;max_iter=200)
     osd_error = osd(r34ldpc, bpres.error_perm,syd)
     
     @test check_decode(error_qubits,syd,r34ldpc.H)
-    # @test check_decode(error_qubits,osd_error,r34ldpc)
-    # @test syd == sydrome_extraction(bp_error, r34ldpc)
-    # @show check_decode(error_qubits,bp_error,r34ldpc)
 end
 
 @testset "message_list" begin
@@ -107,11 +110,11 @@ end
     nq = 7
     tanner = SimpleTannerGraph(nq, sts)
     error_qubits1 = Mod2[1,0,0,0,0,0,0]
-    syd1 = sydrome_extraction(error_qubits1, tanner)
+    syd1 = syndrome_extraction(error_qubits1, tanner)
     error_qubits2 = Mod2[0,1,1,1,0,0,0]
-    syd2 = sydrome_extraction(error_qubits2, tanner)
+    syd2 = syndrome_extraction(error_qubits2, tanner)
     error_qubits3 = Mod2[0,0,0,1,0,1,0]
-    syd3 = sydrome_extraction(error_qubits3, tanner)
+    syd3 = syndrome_extraction(error_qubits3, tanner)
     @test check_decode(error_qubits1,syd2,tanner.H) == true
     @test check_decode(error_qubits1,syd3,tanner.H) == true
 end
@@ -132,7 +135,7 @@ end
     nq = 7
     tanner = SimpleTannerGraph(nq, sts)
     error_qubits = Mod2[0,0,0,1,0,0,0]
-    syd = sydrome_extraction(error_qubits, tanner)
+    syd = syndrome_extraction(error_qubits, tanner)
     tn_res = tensor_osd(syd,tanner, 0.05)
     @test check_decode(tn_res,syd,tanner)
 
@@ -141,7 +144,7 @@ end
     # plot_graph(r34ldpc)
     em = FlipError(0.05)
     error_qubits =  random_error_qubits(32, em)
-    syd = sydrome_extraction(error_qubits, r34ldpc)
+    syd = syndrome_extraction(error_qubits, r34ldpc)
     error_probabillity = tensor_infer(r34ldpc, 0.05,syd)
     tn_res = tensor_osd(syd,r34ldpc, 0.05)
     @test check_decode(tn_res,syd,r34ldpc)
@@ -153,7 +156,7 @@ end
     tanner = SimpleTannerGraph(nq, sts)
 
     error_qubits = Mod2[0,0,0,1,0,0,0]
-    syd = sydrome_extraction(error_qubits, tanner)
+    syd = syndrome_extraction(error_qubits, tanner)
     order = [1, 2, 3, 4, 5, 6, 7]
     osd_error = osd(tanner, order,syd)
     @test check_decode(error_qubits,syd,tanner)
@@ -174,14 +177,14 @@ end
     r34ldpc = random_ldpc(4,3,120)
     em = FlipError(0.05)
     error_qubits =  random_error_qubits(120, em)
-    syd = sydrome_extraction(error_qubits, r34ldpc)
+    syd = syndrome_extraction(error_qubits, r34ldpc)
     res = bp_osd(syd, r34ldpc, 0.05;max_iter=100)
 
     @test check_decode(res,syd,r34ldpc.H)
 
     em = FlipError(0.3)
     error_qubits =  random_error_qubits(120, em)
-    syd = sydrome_extraction(error_qubits, r34ldpc)
+    syd = syndrome_extraction(error_qubits, r34ldpc)
     res = bp_osd(syd, r34ldpc, 0.3;max_iter=100)
 
     @test check_decode(res,syd,r34ldpc.H)

@@ -12,6 +12,7 @@ using TensorQEC: QuantumSimulationResult,ClassicalSimulationResult
     @test res[1] isa QuantumSimulationResult
     @test res[2] isa QuantumSimulationResult
 
+    decoder = BPDecoder(100)
     error_model_vec= [FlipError(0.01),FlipError(0.02)]
     res = threshold_qec(tanner.stgx,decoder,error_model_vec,tanner.stgz)
     @test length(res) == 2
