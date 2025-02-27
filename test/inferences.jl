@@ -105,7 +105,7 @@ end
     apply!(reg, put(qubit_num, 4=>X))
 
     measure_outcome=measure_syndrome!(reg, st)
-    syn_dict= transformed_sydrome_dict(measure_outcome, code)
+    syn_dict= transformed_syndrome_dict(measure_outcome, code)
 
     cl = clifford_network(qc)
     p = fill([0.85,0.05,0.05,0.05],qubit_num)

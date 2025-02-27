@@ -32,7 +32,7 @@ export densitymatrix2sumofpaulis, SumOfPaulis
 export PauliString, PauliGroup, isanticommute,paulistring
 
 # inference
-export syndrome_inference, measure_syndrome!,correction_pauli_string, generate_syndrome_dict,pauli_string_map_iter, inference, transformed_sydrome_dict
+export syndrome_inference, measure_syndrome!,correction_pauli_string, generate_syndrome_dict,pauli_string_map_iter, inference, transformed_syndrome_dict
 
 # codes 
 export toric_code, stabilizers,ToricCode, SurfaceCode, ShorCode,SteaneCode,Code832, Code422, Code1573, Code513
@@ -54,7 +54,7 @@ export ComplexConj, SymbolRecorder,IdentityRecorder, ein_circ, QCInfo, qc2enisum
 export coherent_error_unitary, error_quantum_circuit,toput, error_pairs,fidelity_tensornetwork, simulation_tensornetwork,error_quantum_circuit_pair_replace
 
 # ldpc
-export SimpleTannerGraph,sydrome_extraction,product_graph,CSSTannerGraph,plot_graph,dual_graph,get_graph,belief_propagation,random_ldpc,check_decode, check_linear_indepent,ldpc2tensor
+export SimpleTannerGraph,syndrome_extraction,product_graph,CSSTannerGraph,plot_graph,dual_graph,get_graph,belief_propagation,random_ldpc,check_decode, check_linear_indepent,ldpc2tensor
 export tensor_infer,osd,mod2matrix_inverse,bp_osd,tensor_osd,check_logical_error
 
 # tableaux

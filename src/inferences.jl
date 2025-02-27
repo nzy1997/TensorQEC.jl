@@ -25,7 +25,7 @@ function generate_syndrome_dict(bimat::CSSBimatrix, syn::Vector{Mod2})
 end
 
 """
-	transformed_sydrome_dict(measure_outcome::Vector{Int}, code::CSSBimatrix)
+	transformed_syndrome_dict(measure_outcome::Vector{Int}, code::CSSBimatrix)
 
 Generate the syndrome dictionary on the transformed stabilizers from the measurement outcome. 
 
@@ -36,7 +36,7 @@ Generate the syndrome dictionary on the transformed stabilizers from the measure
 ### Returns
 - `syn_dict`: The syndrome dictionary on the transformed stabilizers. 1 is transformed to 0, -1 is transformed to 1. 
 """
-function transformed_sydrome_dict(measure_outcome::Vector{Int}, code::CSSBimatrix)
+function transformed_syndrome_dict(measure_outcome::Vector{Int}, code::CSSBimatrix)
 	return generate_syndrome_dict(code, syndrome_transform(code, measure_outcome))
 end
 

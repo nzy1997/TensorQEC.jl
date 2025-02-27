@@ -64,7 +64,7 @@ function show_table(io::IO, table::Dict{Int, Int}, num_qubits::Int, num_st::Int,
 		push!(es, error_qubits(k, num_st))
         push!(eq, sti)
 	end
-	header = ["Sydrome", "Error"]
+	header = ["syndrome", "Error"]
 	pt = pretty_table(io, hcat(es, eq); header)
 	return pt
 end
@@ -101,14 +101,14 @@ function make_table(st::Vector{PauliString{N}}, d::Int64;error_type="all") where
 		for combo in all_combinations
 			bivec = combo2bivec(combo, N)
 
-			# sydrome = 0(false) means the measure outcome is 1
-			# sydrome = 1(true) means the measure outcome is -1
-			sydrome = 0
+			# syndrome = 0(false) means the measure outcome is 1
+			# syndrome = 1(true) means the measure outcome is -1
+			syndrome = 0
 
 			for j in 1:num_st
-				reduce(xor, bivec[findall(mat[j, :])]) && (sydrome |= 1 << (j - 1))
+				reduce(xor, bivec[findall(mat[j, :])]) && (syndrome |= 1 << (j - 1))
 			end
-			table[sydrome] = Yao.BitBasis.bit_literal(Int.(bivec)...).buf
+			table[syndrome] = Yao.BitBasis.bit_literal(Int.(bivec)...).buf
 		end
 	end
 	return TruthTable(table, N, num_st, d)
