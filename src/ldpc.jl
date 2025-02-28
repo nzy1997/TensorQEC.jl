@@ -61,11 +61,19 @@ function CSSTannerGraph(cqc::CSSQuantumCode)
     return CSSTannerGraph(stabilizers(cqc))
 end
 
-function sydrome_extraction(errored_qubits::Vector{Mod2}, H::Matrix{Mod2})
+function syndrome_extraction(errored_qubits::Vector{Mod2}, H::Matrix{Mod2})
     return H * errored_qubits
 end
-function sydrome_extraction(errored_qubits::Vector{Mod2}, tanner::SimpleTannerGraph)
-    return sydrome_extraction(errored_qubits, tanner.H)
+function syndrome_extraction(errored_qubits::Vector{Mod2}, tanner::SimpleTannerGraph)
+    return syndrome_extraction(errored_qubits, tanner.H)
+end
+struct CSSSyndrome 
+    sx::Vector{Mod2}
+    sz::Vector{Mod2}
+end
+
+function syndrome_extraction(error_patterns::CSSErrorPattern, tanner::CSSTannerGraph)
+    return CSSSyndrome(syndrome_extraction(error_patterns.zerror, tanner.stgx), syndrome_extraction(error_patterns.xerror, tanner.stgz))
 end
 
 function coordinate_transform(i::Int, j::Int, nq2::Int)
@@ -102,7 +110,7 @@ function random_ldpc(n1::Int,n2::Int,nq::Int)
 end
 
 function check_decode(error_qubits::Vector{Mod2}, syd::Vector{Mod2}, H::Matrix{Mod2})
-    return syd == sydrome_extraction(error_qubits, H)
+    return syd == syndrome_extraction(error_qubits, H)
 end
 
 function check_decode(error_qubits::Vector{Mod2}, syd::Vector{Mod2}, tanner::SimpleTannerGraph)

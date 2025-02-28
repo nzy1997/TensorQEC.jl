@@ -31,8 +31,8 @@ apply!(logic_state, put(9, 3 => X))
 # We first measure the stabilizers to get the error syndrome by [`measure_syndrome!`](@ref). 1 means the stabilizer is not violated, and -1 means the stabilizer is violated. Though the stabilizers are not the same as the initial stabilizers, we can't directly measure the current stabilizers to get the syndrome. The reason is that there may be some long range term in the current stabilizers, which can' be measrued physically. So we still measure the initial stabilizers to get the syndrome.
 measure_outcome = measure_syndrome!(logic_state, surface_stabilizers)
 
-# Then we transform the syndrome in the current stabilizers by [`transformed_sydrome_dict`](@ref). The syndrome is transformed to 0 if the measurement outcome is 1, and 1 if the measurement outcome is -1.
-syn_dict = transformed_sydrome_dict(measure_outcome, bimatrix)
+# Then we transform the syndrome in the current stabilizers by [`transformed_syndrome_dict`](@ref). The syndrome is transformed to 0 if the measurement outcome is 1, and 1 if the measurement outcome is -1.
+syn_dict = transformed_syndrome_dict(measure_outcome, bimatrix)
 
 # Now we generate the tensor network for syndrome inference by [`clifford_network`](@ref).
 tensor_network = clifford_network(encoder)

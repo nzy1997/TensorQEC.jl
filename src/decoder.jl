@@ -12,6 +12,67 @@ struct DecodingResult
     error_qubits::Vector{Mod2}
 end
 
+struct CSSDecodingResult
+    success_tag::Bool
+    xerror_qubits::Vector{Mod2}
+    zerror_qubits::Vector{Mod2}
+end
+
+struct IPDecoder <: AbstractDecoder end
+
+function decode(decoder::IPDecoder, tanner::SimpleTannerGraph, p::Float64, syndrome::Vector{Mod2})
+    return decode(decoder,tanner,syndrome)
+end
+function decode(decoder::IPDecoder, tanner::SimpleTannerGraph, syndrome::Vector{Mod2};verbose = false)
+    H = [a.x for a in tanner.H]
+    m,n = size(H)
+    model = Model(HiGHS.Optimizer)
+    !verbose && set_silent(model)
+
+    @variable(model, 0 <= z[i = 1:n] <= 1, Int)
+    @variable(model, 0 <= k[i = 1:m], Int)
+    
+    for i in 1:m
+        @constraint(model, sum(z[j] for j in 1:n if H[i,j] == 1) == 2 * k[i] + (syndrome[i].x ? 1 : 0))
+    end
+
+    @objective(model, Min, sum(z[j] for j in 1:n))
+    optimize!(model)
+    @assert is_solved_and_feasible(model) "The problem is infeasible!"
+    return DecodingResult(true, Mod2.(value.(z) .> 0.5))
+end
+
+function decode(decoder::IPDecoder, tanner::CSSTannerGraph, syndrome::CSSSyndrome;verbose = false)
+    Hx = [a.x for a in tanner.stgx.H]
+    Hz = [a.x for a in tanner.stgz.H]
+    mx,n = size(Hx)
+    mz = size(Hz, 1)
+
+    model = Model(HiGHS.Optimizer)
+    !verbose && set_silent(model)
+
+    @variable(model, 0 <= x[i = 1:n] <= 1, Int)
+    @variable(model, 0 <= y[i = 1:n] <= 1, Int)
+    @variable(model, 0 <= z[i = 1:n] <= 1, Int)
+    @variable(model, 0 <= k[i = 1:mx], Int)
+    @variable(model, 0 <= l[i = 1:mz], Int)
+    
+    for i in 1:mx
+        @constraint(model, sum(z[j]+y[j] for j in 1:n if Hx[i,j] == 1) == 2 * k[i] + (syndrome.sx[i].x ? 1 : 0))
+    end
+    for i in 1:mz
+        @constraint(model, sum(x[j]+y[j] for j in 1:n if Hz[i,j] == 1) == 2 * l[i] + (syndrome.sz[i].x ? 1 : 0))
+    end
+
+    for i in 1:n
+        @constraint(model, x[i] + y[i] +z[i] <= 1)
+    end
+    @objective(model, Min, sum(x[j] + y[j] + z[j] for j in 1:n))
+    optimize!(model)
+    @assert is_solved_and_feasible(model) "The problem is infeasible!"
+    return CSSDecodingResult(true, Mod2.(value.(x) .> 0.5) .+ Mod2.(value.(y) .> 0.5), Mod2.(value.(z) .> 0.5) .+ Mod2.(value.(y) .> 0.5))
+end
+
 struct BPResult
     success_tag::Bool
     error_qubits::Vector{Mod2}
@@ -19,21 +80,21 @@ struct BPResult
     error_perm::Vector{Int}
 end
 
-function decode(deocder::BPDecoder, tanner::SimpleTannerGraph, p::Float64, sydrome::Vector{Mod2})
-    res = belief_propagation(sydrome, tanner, p;max_iter=deocder.bp_max_iter)
+function decode(decoder::BPDecoder, tanner::SimpleTannerGraph, p::Float64, syndrome::Vector{Mod2})
+    res = belief_propagation(syndrome, tanner, p;max_iter=decoder.bp_max_iter)
     return DecodingResult(res.success_tag, res.error_qubits)
 end
 
-function decode(deocder::BPOSD, tanner::SimpleTannerGraph, p::Float64, sydrome::Vector{Mod2})
-    eqs = bp_osd(sydrome, tanner, p;max_iter=deocder.bp_max_iter)
+function decode(decoder::BPOSD, tanner::SimpleTannerGraph, p::Float64, syndrome::Vector{Mod2})
+    eqs = bp_osd(syndrome, tanner, p;max_iter=decoder.bp_max_iter)
     return DecodingResult(true, eqs)
 end
 
-function belief_propagation(sydrome::Vector{Mod2}, tanner::SimpleTannerGraph, p::Float64;max_iter=100)
-    return belief_propagation(sydrome, tanner, fill(p, tanner.nq);max_iter=max_iter)
+function belief_propagation(syndrome::Vector{Mod2}, tanner::SimpleTannerGraph, p::Float64;max_iter=100)
+    return belief_propagation(syndrome, tanner, fill(p, tanner.nq);max_iter=max_iter)
 end
 
-function belief_propagation(sydrome::Vector{Mod2}, tanner::SimpleTannerGraph, p::Vector{Float64};max_iter=100)
+function belief_propagation(syndrome::Vector{Mod2}, tanner::SimpleTannerGraph, p::Vector{Float64};max_iter=100)
     mu = [log((1-p[i])/p[i]) for i in 1:tanner.nq]
     mq2s =[[mu[i] for _ in 1:length(tanner.q2s[i])] for i in 1:tanner.nq]
     ms2q = [[0.0 for _ in 1:length(tanner.s2q[s])] for s in 1:tanner.ns]
@@ -42,10 +103,10 @@ function belief_propagation(sydrome::Vector{Mod2}, tanner::SimpleTannerGraph, p:
     success_tag = false
     iter = 0
     for iter in 1:max_iter
-        ms2q = [[messages2q(message_list(mq2s,s,tanner.q2s,tanner.s2q;exampt_qubit = q),sydrome[s]) for q in tanner.s2q[s]] for s in 1:tanner.ns]
+        ms2q = [[messages2q(message_list(mq2s,s,tanner.q2s,tanner.s2q;exampt_qubit = q),syndrome[s]) for q in tanner.s2q[s]] for s in 1:tanner.ns]
         mq2s = [[messageq2s(message_list(ms2q,qubit,tanner.s2q,tanner.q2s;exampt_qubit = s),mu[qubit]) for s in tanner.q2s[qubit]] for qubit in 1:tanner.nq]
         errored_qubits = error_qubits(ms2q,tanner,mu)
-        if sydrome_extraction(errored_qubits, tanner) == sydrome
+        if syndrome_extraction(errored_qubits, tanner) == syndrome
             success_tag = true
             break
         end
@@ -65,12 +126,12 @@ function error_qubits(ms2q,tanner,mu)
     Mod2.(messageq(ms2q,tanner,mu) .< 0 )
 end
 
-function messages2q(mlist,sydrome)
+function messages2q(mlist,syndrome)
     pro = 1.0
     for m in mlist
         pro *= tanh(m)
     end
-    return (-1)^sydrome.x*atanh(pro)
+    return (-1)^syndrome.x*atanh(pro)
 end
 
 function messageq2s(mlist,muq)
@@ -148,16 +209,16 @@ function tensor_infer(tanner::SimpleTannerGraph, p::Float64, syndrome::Vector{Mo
     return [ mp[[k]][2] for k in 1:tanner.nq]
 end
 
-function bp_osd(sydrome::Vector{Mod2}, tanner::SimpleTannerGraph, p::Float64;max_iter=100)
-    bp_res = belief_propagation(sydrome, tanner, p;max_iter=max_iter)
+function bp_osd(syndrome::Vector{Mod2}, tanner::SimpleTannerGraph, p::Float64;max_iter=100)
+    bp_res = belief_propagation(syndrome, tanner, p;max_iter=max_iter)
     if bp_res.success_tag
         return bp_res.error_qubits
     else
-        return osd(tanner, bp_res.error_perm, sydrome)
+        return osd(tanner, bp_res.error_perm, syndrome)
     end
 end
 
-function tensor_osd(sydrome::Vector{Mod2}, tanner::SimpleTannerGraph, p::Float64)
-    error_p = tensor_infer(tanner, p, sydrome)
-    return osd(tanner, sortperm(-error_p), sydrome)
+function tensor_osd(syndrome::Vector{Mod2}, tanner::SimpleTannerGraph, p::Float64)
+    error_p = tensor_infer(tanner, p, syndrome)
+    return osd(tanner, sortperm(-error_p), syndrome)
 end

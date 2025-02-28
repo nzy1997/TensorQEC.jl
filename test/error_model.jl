@@ -13,7 +13,9 @@ end
 
     em = DepolarizingError(0.05, 0.06, 0.1)
     qubit_num = 100000
-    ex,ez = random_error_qubits(qubit_num, em)
+    ep = random_error_qubits(qubit_num, em)
+    ex = ep.xerror
+    ez = ep.zerror
     @test ex isa Vector{Mod2}
     @test ez isa Vector{Mod2}
     @test count(v->v.x,ex)/qubit_num ≈ 0.11 atol=0.05

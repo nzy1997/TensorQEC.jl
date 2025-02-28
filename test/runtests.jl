@@ -63,3 +63,7 @@ end
 @testset "threshold" begin
     include("threshold.jl")
 end
+
+@testset "decoder" begin
+    include("decoder.jl")
+end
