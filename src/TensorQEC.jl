@@ -90,4 +90,5 @@ include("tableaux.jl")
 include("decoder.jl")
 include("threshold.jl")
 include("code_distance.jl")
+include("error_learning.jl")
 end
