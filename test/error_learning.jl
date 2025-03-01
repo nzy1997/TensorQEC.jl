@@ -50,16 +50,25 @@ end
     state = [
         ComplexF64[1, 0, 0, 0], ComplexF64[0, 1, 0, 0],
         ComplexF64[0, 0, 1, 0], ComplexF64[0, 0, 0, 1],
-        ComplexF64[1/2, 1/2, 1/2, 1/2], ComplexF64[1/2, -1/2, 1/2, -1/2], ComplexF64[1/2, 1/2, -1/2, -1/2], ComplexF64[1/2, -1/2, -1/2, 1/2]]
+        ComplexF64[1/2, 1/2, 1/2, 1/2], ComplexF64[1/2, -1/2, 1/2, -1/2],
+        ComplexF64[1/2, 1/2, -1/2, -1/2], ComplexF64[1/2, -1/2, -1/2, 1/2],
+        ComplexF64[1/2, 0.5im, 0.5im, -1/2], ComplexF64[1/2, 0.5im, -0.5im, 1/2],
+        ComplexF64[1/2, -0.5im, 0.5im, 1/2], ComplexF64[1/2, -0.5im, -0.5im, -1/2]]
+
     td = TrainningData([probability_channel(qc, s) for s in state],state)
 
-    pvec0 = fill(1 / 16, 16)
-    alpha = 0.01
-    for i in 1:10000
+end
+
+function train(umat,td;num=10)
+    p2 = 0.05
+    pvec0 = [1 - 15 * p2, fill(p2, 15)...]
+   
+    for i in 1:num
         unitary_channel = depolarizing_channel(2, pvec0)
         qc_train = chain(put(2, (1, 2) => matblock(umat)), put(2, (1, 2) => unitary_channel))
 
         grad = get_grad(qc_train,td)[1]
+        alpha = norm(grad)
         pvec0 = pvec0 - alpha * grad
         pvec0 = max.(0, pvec0)
         pvec0 = pvec0 / sum(pvec0)

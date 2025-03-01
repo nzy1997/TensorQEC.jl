@@ -52,12 +52,14 @@ function YaoToEinsum.add_gate!(eb::YaoToEinsum.EinBuilder{T}, b::PutBlock{D,C,Co
     k = length(locs)
     nlabels = [YaoToEinsum.newlabel!(eb) for _=1:k]
 
-    ops,probs = channel2tensor(b.content.content.uc)
+    ops1,ops2,probs = channel2tensor(b.content.content.uc)
     plabel = YaoToEinsum.newlabel!(eb)
 
-    label_vec = [b.content.content.output_indices..., eb.slots[locs]...,b.content.content.input_indices...,nlabels...,plabel]
+    label_vec1 = [b.content.content.output_indices...,b.content.content.input_indices...,plabel]
+    label_vec2 = [eb.slots[locs]..., nlabels...,plabel]
 
-    YaoToEinsum.add_tensor!(eb, ops, label_vec)
+    YaoToEinsum.add_tensor!(eb, ops1, label_vec1)
+    YaoToEinsum.add_tensor!(eb, ops2, label_vec2)
     YaoToEinsum.add_tensor!(eb, probs, [plabel])
 
     b.content.content.tensor_pos = length(eb.tensors)
@@ -102,8 +104,8 @@ function channel2mat(uc::UnitaryChannel)
 end
 
 function channel2tensor(uc::UnitaryChannel)
-    k = 4*uc.n
-    return cat([reshape(mat(kron(x,x')),(fill(2,k)...,1)) for x in uc.operators]...;dims = k+1),ComplexF64.(uc.probs)
+    k = 2*uc.n
+    return cat([reshape(mat(x),(fill(2,k)...,1)) for x in uc.operators]...;dims = k+1),cat([reshape(mat(x'),(fill(2,k)...,1)) for x in uc.operators]...;dims = k+1),ComplexF64.(uc.probs)
 end
 
 struct TrainningData
