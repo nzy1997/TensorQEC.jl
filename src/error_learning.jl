@@ -21,10 +21,11 @@ mutable struct TrainingChannel{D} <: AbstractRecoder{D}
     uc::UnitaryChannel
     input_indices
     output_indices
+    tensor_pos
 end
 
 Yao.nqudits(x::TrainingChannel) = x.symbol
-TrainingChannel(qudit_num, uc; nlevel=2) = TrainingChannel{nlevel}(qudit_num,uc,nothing,nothing)
+TrainingChannel(qudit_num, uc; nlevel=2) = TrainingChannel{nlevel}(qudit_num,uc,nothing,nothing,nothing)
 
 function YaoPlots.draw!(c::YaoPlots.CircuitGrid, p::TrainingChannel, address, controls)
     @assert length(controls) == 0
@@ -59,10 +60,14 @@ function YaoToEinsum.add_gate!(eb::YaoToEinsum.EinBuilder{T}, b::PutBlock{D,C,Co
     YaoToEinsum.add_tensor!(eb, ops, label_vec)
     YaoToEinsum.add_tensor!(eb, probs, [plabel])
 
+    b.content.content.tensor_pos = length(eb.tensors)
     eb.slots[locs] .= nlabels
     return eb
 end
-
+function probability_channel(qc::ChainBlock, final_state::Vector{Complex{Float64}})
+    tn,_ = probability_tn_channel(qc,final_state)
+    return abs(einsum(tn.code,(tn.tensors...,))[1])
+end
 function probability_tn_channel(qc::ChainBlock, final_state::Vector{Complex{Float64}})
     qc = copy(qc)
     number_qubits = nqubits(qc)
@@ -86,7 +91,8 @@ function probability_tn_channel(qc::ChainBlock, final_state::Vector{Complex{Floa
     qce,srs = ein_circ(qc2,qc_info)
     # return qce
     tn,_,_ = qc2enisum(qce,srs,qc_info)
-    return abs(einsum(tn.code,(tn.tensors...,))[1])
+    return tn,getfield.(tc,:tensor_pos)
+ 
     # optnet = optimize_code(tn, TreeSA(), OMEinsum.MergeVectors())
     # return optnet
 end
@@ -98,4 +104,20 @@ end
 function channel2tensor(uc::UnitaryChannel)
     k = 4*uc.n
     return cat([reshape(mat(kron(x,x')),(fill(2,k)...,1)) for x in uc.operators]...;dims = k+1),ComplexF64.(uc.probs)
+end
+
+struct TrainningData
+    pvec::Vector{Float64}
+    states::Vector{Vector{ComplexF64}}
+end
+
+function get_grad(qc::ChainBlock, final_state::Vector{Complex{Float64}},p::Float64)
+    tn,tensor_pos = probability_tn_channel(qc,final_state)
+    optnet = optimize_code(tn, TreeSA(), OMEinsum.MergeVectors())
+    p_app,grad = OMEinsum.cost_and_gradient(optnet.code,(optnet.tensors...,))
+    return [2*(abs(p_app[1])-p).* abs.(grad[x]) for x in tensor_pos]
+end
+
+function get_grad(qc::ChainBlock, td::TrainningData)
+    return sum([get_grad(qc,td.states[x],td.pvec[x]) for x in 1:length(td.pvec)])
 end

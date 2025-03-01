@@ -73,6 +73,9 @@ export multi_round_qec,threshold_qec
 # code distance
 export code_distance
 
+# error_learning
+export TrainningData
+
 include("mod2.jl")
 include("paulistring.jl")
 include("cliffordgroup.jl")
