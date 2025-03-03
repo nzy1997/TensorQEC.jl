@@ -74,7 +74,7 @@ function decode(decoder::IPDecoder, tanner::CSSTannerGraph, syndrome::CSSSyndrom
     for i in 1:n
         @constraint(model, x[i] + y[i] +z[i] <= 1)
     end
-    @objective(model, Max, sum(log(p_vec[j].px) * x[j] +log(1- p_vec[j].px) * (1 - x[j]) + log(p_vec[j].py) * y[j] +log(1- p_vec[j].py) * (1 - y[j]) + log(p_vec[j].pz) * z[j] +log(1- p_vec[j].pz) * (1 - z[j]) for j in 1:n))
+    @objective(model, Max, sum(log(p_vec[j].px) * x[j] + log(p_vec[j].py) * y[j] + log(p_vec[j].pz) * z[j] +log(1- p_vec[j].px - p_vec[j].py - p_vec[j].pz) * (1 - x[j] - y[j] - z[j]) for j in 1:n))
     optimize!(model)
     @assert is_solved_and_feasible(model) "The problem is infeasible!"
     return CSSDecodingResult(true, Mod2.(value.(x) .> 0.5) .+ Mod2.(value.(y) .> 0.5), Mod2.(value.(z) .> 0.5) .+ Mod2.(value.(y) .> 0.5))

@@ -1,6 +1,6 @@
 function qc_probability(qc::ChainBlock, final_state::Vector{Complex{Float64}})
     optnet = probability_tn(qc, final_state)
-    return abs(Yao.contract(optnet)[1])
+    return abs(Yao.contract(optnet)[])
 end
 
 function probability_tn(qc::ChainBlock, final_state::Vector{Complex{Float64}})
@@ -67,8 +67,8 @@ function YaoToEinsum.add_gate!(eb::YaoToEinsum.EinBuilder{T}, b::PutBlock{D,C,Co
     return eb
 end
 function probability_channel(qc::ChainBlock, final_state::Vector{Complex{Float64}})
-    tn,_ = probability_tn_channel(qc,final_state)
-    return abs(einsum(tn.code,(tn.tensors...,))[1])
+    optnet,_ = probability_tn_channel(qc,final_state)
+    return real(Yao.contract(optnet)[])
 end
 function probability_tn_channel(qc::ChainBlock, final_state::Vector{Complex{Float64}})
     qc = copy(qc)
@@ -93,10 +93,10 @@ function probability_tn_channel(qc::ChainBlock, final_state::Vector{Complex{Floa
     qce,srs = ein_circ(qc2,qc_info)
     # return qce
     tn,_,_ = qc2enisum(qce,srs,qc_info)
-    return tn,getfield.(tc,:tensor_pos)
+    # return tn,getfield.(tc,:tensor_pos)
  
-    # optnet = optimize_code(tn, TreeSA(), OMEinsum.MergeVectors())
-    # return optnet
+    optnet = optimize_code(tn, TreeSA(), OMEinsum.MergeVectors())
+    return optnet,getfield.(tc,:tensor_pos)
 end
 
 function channel2mat(uc::UnitaryChannel)
@@ -113,13 +113,46 @@ struct TrainningData
     states::Vector{Vector{ComplexF64}}
 end
 
-function get_grad(qc::ChainBlock, final_state::Vector{Complex{Float64}},p::Float64)
-    tn,tensor_pos = probability_tn_channel(qc,final_state)
-    optnet = optimize_code(tn, TreeSA(), OMEinsum.MergeVectors())
-    p_app,grad = OMEinsum.cost_and_gradient(optnet.code,(optnet.tensors...,))
-    return [2*(abs(p_app[1])-p).* abs.(grad[x]) for x in tensor_pos]
+function generate_new_tensor(old_tensors::Vector{AbstractArray{ComplexF64}},p_pos::Vector{Int},final_state::Vector{Complex{Float64}},pvec::Vector{Vector{Float64}})
+    new_t = copy(old_tensors)
+    n = length(old_tensors)
+    channel_num = length(p_pos)
+    new_t[p_pos] = pvec
+    qubit_num = Int(log2(length(final_state)))
+    state_tensor = reshape(final_state*final_state',(fill(2,2*qubit_num)...,))
+    new_t[end] = conj.(state_tensor)
+    new_t[(n-2*qubit_num-3*channel_num) ÷ 2 + 2*qubit_num] = state_tensor
+    return new_t
 end
 
-function get_grad(qc::ChainBlock, td::TrainningData)
-    return sum([get_grad(qc,td.states[x],td.pvec[x]) for x in 1:length(td.pvec)])
+function get_grad(code::SlicedEinsum, p::Float64,tensors::Vector{AbstractArray{ComplexF64}},p_pos::Vector{Int})
+    p_app,grad = OMEinsum.cost_and_gradient(code,(tensors...,))
+    return [2*(real(p_app[])-p).* (grad[x]) for x in p_pos] #,(real(p_app[])-p)^2
+end
+
+function get_grad(code::SlicedEinsum,tensors::Vector{AbstractArray{ComplexF64}},p_pos::Vector{Int}, td::TrainningData,pvec::Vector{Vector{Float64}})
+    pvec_input = [[1 - sum(x), x...] for x in pvec]
+    temp = sum([get_grad(code,td.pvec[x],generate_new_tensor(tensors,p_pos,td.states[x],pvec_input),p_pos) for x in 1:length(td.pvec)])
+    return [x[2:end] .- x[1] for x in temp]
+end
+
+function loss_function(code::SlicedEinsum,tensors::Vector{AbstractArray{ComplexF64}},p_pos::Vector{Int}, td::TrainningData,pvec::Vector{Vector{Float64}})
+    pvec_input = [[1 - sum(x), x...] for x in pvec]
+    return sum([(real(code(generate_new_tensor(tensors,p_pos,td.states[x],pvec_input)...)[])-td.pvec[x])^2 for x in 1:length(td.pvec)])
+end
+
+function error_learning(model,td::TrainningData,optnet,p_pos::Vector{Int};iter=10)
+    model = copy(model)
+    train_state = Optimisers.setup(Optimisers.Adam(), model)
+    for i in 1:iter
+        grad = real.(get_grad(optnet.code,optnet.tensors,p_pos,td, model))
+        if norm(grad) < 1e-8
+            break
+        end
+        train_state, model = Optimisers.update(train_state, model,grad)
+        @show loss_function(optnet.code,optnet.tensors,p_pos,td,model)
+        @show i
+        @show norm(grad)
+    end
+    return model
 end
