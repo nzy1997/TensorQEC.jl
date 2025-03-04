@@ -150,9 +150,11 @@ function error_learning(model,td::TrainningData,optnet,p_pos::Vector{Int};iter=1
             break
         end
         train_state, model = Optimisers.update(train_state, model,grad)
-        @show loss_function(optnet.code,optnet.tensors,p_pos,td,model)
-        @show i
-        @show norm(grad)
+        if i % 20 == 0
+            @info "iter: $i"
+            @info "loss function: $(loss_function(optnet.code,optnet.tensors,p_pos,td,model))"
+            @info "norm of grad: $(norm(grad))"
+        end
     end
     return model
 end

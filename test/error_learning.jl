@@ -99,20 +99,25 @@ end
     res = error_learning(model,td,optnet,p_pos;iter = 10000)
 end
 
-function train(optnet,p_pos,td;num=10)
-    pvec0 = fill(1/16,16)
-    for i in 1:num
-        grad =  get_grad(optnet.code,optnet.tensors,p_pos,td,[pvec0[2:end]])[1]
-        alpha = norm(grad)
-        pvec0 = pvec0 - alpha * grad
-        pvec0 = max.(0, pvec0)
-        pvec0 = pvec0 / sum(pvec0)
+@testset "error_learning" begin
+    p2 = fill(0.1,3)
+    unitary_channel1 = depolarizing_channel(1, [1 - sum(p2), p2...])
 
-        @show i
-        @show pvec0
-        @show norm(grad)
-        if norm(grad) < 1e-2
-            break
-        end
-    end
+    Random.seed!(1234)
+    umat = rand_unitary(4)
+    qc = chain(put(2, (1, 2) => matblock(umat)), put(2, (1) => unitary_channel1), put(2, (2) => unitary_channel1))
+
+    state = [
+        ComplexF64[1, 0, 0, 0], ComplexF64[0, 1, 0, 0],
+        ComplexF64[0, 0, 1, 0], ComplexF64[0, 0, 0, 1],
+        ComplexF64[1/2, 1/2, 1/2, 1/2], ComplexF64[1/2, -1/2, 1/2, -1/2],
+        ComplexF64[1/2, 1/2, -1/2, -1/2], ComplexF64[1/2, -1/2, -1/2, 1/2],
+        ComplexF64[1/2, 0.5im, 0.5im, -1/2], ComplexF64[1/2, 0.5im, -0.5im, 1/2],
+        ComplexF64[1/2, -0.5im, 0.5im, 1/2], ComplexF64[1/2, -0.5im, -0.5im, -1/2]]
+    td = TrainningData([probability_channel(qc, s) for s in state],state)
+
+    optnet,p_pos = probability_tn_channel(qc, ComplexF64[1, 0, 0, 0])
+    model= [fill(0.01,3),fill(0.01,3)]
+    res = error_learning(model,td,optnet,p_pos;iter = 10000)
+    @show res
 end

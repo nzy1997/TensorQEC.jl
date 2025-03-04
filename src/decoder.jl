@@ -18,8 +18,27 @@ struct CSSDecodingResult
     zerror_qubits::Vector{Mod2}
 end
 
+Base.show(io::IO, ::MIME"text/plain", cdr::CSSDecodingResult) = show(io, cdr)
+function Base.show(io::IO, cdr::CSSDecodingResult)
+    println(io, cdr.success_tag ? "Success" : "Failure")
+    if cdr.success_tag
+        println(io, "X error:", findall(v->v.x, cdr.xerror_qubits))
+        println(io, "Z error:", findall(v->v.x,cdr.zerror_qubits))
+    end
+end
+
+"""
+    IPDecoder <: AbstractDecoder
+
+An integer programming decoder.
+"""
 struct IPDecoder <: AbstractDecoder end
 
+"""
+    decode(decoder::AbstractDecoder, tanner::AbstractTannerGraph, syndrome::AbstractSyndrome)
+    decode(decoder::AbstractDecoder, tanner::AbstractTannerGraph, syndrome::AbstractSyndrome,p_vec::Vector{AbstractErrorModel})
+Decode the syndrome with a given decoder.  `p_vec` is the error model vector.
+"""
 function decode(decoder::IPDecoder, tanner::SimpleTannerGraph, syndrome::Vector{Mod2})
     return decode(decoder, tanner, syndrome, fill(0.05, tanner.nq))
 end

@@ -1,12 +1,17 @@
+abstract type AbstractTannerGraph end
+abstract type AbstractSyndrome end
 """
-    SimpleTannerGraph(nq::Int, sts::Vector{Vector{Int}})
+    SimpleTannerGraph(nq::Int, ns::Int, q2s::Vector{Vector{Int}}, s2q::Vector{Vector{Int}}, H::Matrix{Mod2})
 
-Construct a simple tanner graph from a list of stabilizers.
-Input:
+Tanner graph for a classical linear code.
+Fields:
     nq: number of qubits
-    sts: a list of stabilizers, each stabilizer is a list of qubits
+    ns: number of stabilizers
+    q2s: a list of lists, q2s[i] is the list of stabilizers that contain qubit i
+    s2q: a list of lists, s2q[i] is the list of qubits that stabilizer i contains
+    H: the parity check matrix
 """
-struct SimpleTannerGraph
+struct SimpleTannerGraph <: AbstractTannerGraph
     nq::Int
     ns::Int
     q2s::Vector{Vector{Int}}
@@ -14,6 +19,14 @@ struct SimpleTannerGraph
     H::Matrix{Mod2}
 end
 
+"""
+    SimpleTannerGraph(nq::Int, sts::Vector{Vector{Int}})
+
+Construct a Tanner graph from a list of stabilizers.
+Input:
+    nq: number of qubits
+    sts: a list of parity checks, each parity check is a list of bits.
+"""
 function SimpleTannerGraph(nq::Int, sts::Vector{Vector{Int}})
     ns = length(sts)
     q2s = [findall(x-> i ∈ x , sts) for i in 1:nq]
@@ -24,7 +37,18 @@ function SimpleTannerGraph(nq::Int, sts::Vector{Vector{Int}})
     return SimpleTannerGraph(nq, ns, q2s, sts, H)
 end
 
-struct CSSTannerGraph
+"""
+    CSSCSSTannerGraph(stgx::SimpleTannerGraph, stgz::SimpleTannerGraph)
+    CSSTannerGraph(nq::Int, stxs::Vector{Vector{Int}}, stzs::Vector{Vector{Int}})
+    CSSTannerGraph(sts::Vector{PauliString{N}}) where N
+    CSSTannerGraph(cqc::CSSQuantumCode)
+
+Two tanner graph for a CSS code, one for X stabilizers and one for Z stabilizers.
+Fields:
+    stgx: Tanner graph for X stabilizers
+    stgz: Tanner graph for Z stabilizers
+"""
+struct CSSTannerGraph <: AbstractTannerGraph
     stgx::SimpleTannerGraph
     stgz::SimpleTannerGraph
 end
@@ -34,6 +58,12 @@ function dual_graph(tanner::SimpleTannerGraph)
     return SimpleTannerGraph( tanner.ns,  tanner.nq, tanner.s2q, tanner.q2s, transpose(tanner.H))
 end
 
+"""
+    get_graph(tanner::SimpleTannerGraph)
+    get_graph(ctg::CSSTannerGraph)
+
+Get the simple graph of a simple tanner graph or a CSS tanner graph.
+"""
 function get_graph(stg::SimpleTannerGraph)
     sg = SimpleGraph([zeros(Bool,(stg.nq,stg.nq)) getproperty.(stg.H,:x)';
        getproperty.(stg.H,:x) zeros(Bool,(stg.ns,stg.ns))])
@@ -61,13 +91,20 @@ function CSSTannerGraph(cqc::CSSQuantumCode)
     return CSSTannerGraph(stabilizers(cqc))
 end
 
+"""
+    syndrome_extraction(errored_qubits::Vector{Mod2}, H::Matrix{Mod2})
+    syndrome_extraction(errored_qubits::Vector{Mod2}, tanner::SimpleTannerGraph)
+    syndrome_extraction(error_patterns::CSSErrorPattern, tanner::CSSTannerGraph)
+
+Extract the syndrome from the error pattern.
+"""
 function syndrome_extraction(errored_qubits::Vector{Mod2}, H::Matrix{Mod2})
     return H * errored_qubits
 end
 function syndrome_extraction(errored_qubits::Vector{Mod2}, tanner::SimpleTannerGraph)
     return syndrome_extraction(errored_qubits, tanner.H)
 end
-struct CSSSyndrome 
+struct CSSSyndrome <: AbstractSyndrome
     sx::Vector{Mod2}
     sz::Vector{Mod2}
 end
