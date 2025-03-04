@@ -127,7 +127,8 @@ end
 
 function get_grad(code::SlicedEinsum, p::Float64,tensors::Vector{AbstractArray{ComplexF64}},p_pos::Vector{Int})
     p_app,grad = OMEinsum.cost_and_gradient(code,(tensors...,))
-    return [2*(real(p_app[])-p).* (grad[x]) for x in p_pos] #,(real(p_app[])-p)^2
+    # return [2*(real(p_app[])-p).* (grad[x]) for x in p_pos] #,(real(p_app[])-p)^2
+    return [-p*1 ./ (real(p_app[])) .* (grad[x]) for x in p_pos]
 end
 
 function get_grad(code::SlicedEinsum,tensors::Vector{AbstractArray{ComplexF64}},p_pos::Vector{Int}, td::TrainningData,pvec::Vector{Vector{Float64}})
