@@ -11,6 +11,7 @@ using DelimitedFiles
 using OMEinsum
 using Yao.YaoBlocks.Optimise
 using PrettyTables
+using Optimisers
 
 using Graphs
 using JuMP, HiGHS
@@ -73,6 +74,9 @@ export multi_round_qec,threshold_qec
 # code distance
 export code_distance
 
+# error_learning
+export TrainningData,error_learning
+
 include("mod2.jl")
 include("paulistring.jl")
 include("cliffordgroup.jl")
@@ -90,4 +94,5 @@ include("tableaux.jl")
 include("decoder.jl")
 include("threshold.jl")
 include("code_distance.jl")
+include("error_learning.jl")
 end

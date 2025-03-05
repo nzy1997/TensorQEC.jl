@@ -32,11 +32,11 @@ function single_round_qec(tanner::CSSTannerGraph, deocder::AbstractDecoder,em::A
     ep = random_error_qubits(nq(tanner), em)
     ex,ez = ep.xerror,ep.zerror
     sydz = syndrome_extraction(ex, tanner.stgz)
-    res = decode(deocder, tanner.stgz, em.px, sydz)
+    res = decode(deocder, tanner.stgz, sydz, em.px)
     ex_app = res.error_qubits
 
     sydx = syndrome_extraction(ez, tanner.stgx)
-    res = decode(deocder, tanner.stgx, em.pz, sydx)
+    res = decode(deocder, tanner.stgx, sydx, em.pz)
     ez_app = res.error_qubits
 
     return  check_logical_error(ex, ex_app, tanner.stgx.H), check_logical_error(ez, ez_app, tanner.stgz.H)
@@ -62,7 +62,7 @@ function single_round_qec(tanner::SimpleTannerGraph, deocder::AbstractDecoder,em
     ex = random_error_qubits(nq(tanner), em)
 
     sydz = syndrome_extraction(ex, tanner)
-    res = decode(deocder, tanner, em.p, sydz)
+    res = decode(deocder, tanner, sydz, em.p)
     ex_app = res.error_qubits
     return  check_logical_error(ex, ex_app, tanner_check.H)
 end

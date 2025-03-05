@@ -18,13 +18,54 @@ struct CSSDecodingResult
     zerror_qubits::Vector{Mod2}
 end
 
+Base.show(io::IO, ::MIME"text/plain", cdr::CSSDecodingResult) = show(io, cdr)
+function Base.show(io::IO, cdr::CSSDecodingResult)
+    println(io, cdr.success_tag ? "Success" : "Failure")
+    if cdr.success_tag
+        println(io, "X error:", findall(v->v.x, cdr.xerror_qubits))
+        println(io, "Z error:", findall(v->v.x,cdr.zerror_qubits))
+    end
+end
+
+"""
+    IPDecoder <: AbstractDecoder
+
+An integer programming decoder.
+"""
 struct IPDecoder <: AbstractDecoder end
 
-function decode(decoder::IPDecoder, tanner::SimpleTannerGraph, p::Float64, syndrome::Vector{Mod2})
-    return decode(decoder,tanner,syndrome)
+"""
+    decode(decoder::AbstractDecoder, tanner::AbstractTannerGraph, syndrome::AbstractSyndrome)
+    decode(decoder::AbstractDecoder, tanner::AbstractTannerGraph, syndrome::AbstractSyndrome,p_vec::Vector{AbstractErrorModel})
+Decode the syndrome with a given decoder.  `p_vec` is the error model vector.
+"""
+function decode(decoder::IPDecoder, tanner::SimpleTannerGraph, syndrome::Vector{Mod2})
+    return decode(decoder, tanner, syndrome, fill(0.05, tanner.nq))
 end
-function decode(decoder::IPDecoder, tanner::SimpleTannerGraph, syndrome::Vector{Mod2};verbose = false)
+function decode(decoder::IPDecoder, tanner::SimpleTannerGraph, syndrome::Vector{Mod2}, p::Float64)
+    return decode(decoder, tanner, syndrome, fill(p, tanner.nq))
+end
+function decode(decoder::IPDecoder, tanner::SimpleTannerGraph, syndrome::Vector{Mod2},p_vec::Vector{Float64};verbose = false)
     H = [a.x for a in tanner.H]
+    # @show typeof(H)
+    # m,n = size(H)
+    # model = Model(HiGHS.Optimizer)
+    # !verbose && set_silent(model)
+
+    # @variable(model, 0 <= z[i = 1:n] <= 1, Int)
+    # @variable(model, 0 <= k[i = 1:m], Int)
+    
+    # for i in 1:m
+    #     @constraint(model, sum(z[j] for j in 1:n if H[i,j] == 1) == 2 * k[i] + (syndrome[i].x ? 1 : 0))
+    # end
+
+    # @objective(model, Max, sum(log(p_vec[j])*z[j] for j in 1:n)+sum(log(1-p_vec[j])*(1-z[j]) for j in 1:n))
+    # optimize!(model)
+    # @assert is_solved_and_feasible(model) "The problem is infeasible!"
+    return DecodingResult(true,_mixed_integer_programming(H, [s.x for s in syndrome], p_vec;verbose))
+end
+
+function _mixed_integer_programming(H::Matrix{Bool}, syndrome::Vector{Bool}, p_vec::Vector{Float64};verbose = false)
     m,n = size(H)
     model = Model(HiGHS.Optimizer)
     !verbose && set_silent(model)
@@ -33,16 +74,20 @@ function decode(decoder::IPDecoder, tanner::SimpleTannerGraph, syndrome::Vector{
     @variable(model, 0 <= k[i = 1:m], Int)
     
     for i in 1:m
-        @constraint(model, sum(z[j] for j in 1:n if H[i,j] == 1) == 2 * k[i] + (syndrome[i].x ? 1 : 0))
+        @constraint(model, sum(z[j] for j in 1:n if H[i,j] == 1) == 2 * k[i] + (syndrome[i] ? 1 : 0))
     end
 
-    @objective(model, Min, sum(z[j] for j in 1:n))
+    @objective(model, Max, sum(log(p_vec[j])*z[j] for j in 1:n)+sum(log(1-p_vec[j])*(1-z[j]) for j in 1:n))
     optimize!(model)
     @assert is_solved_and_feasible(model) "The problem is infeasible!"
-    return DecodingResult(true, Mod2.(value.(z) .> 0.5))
+    return Mod2.(value.(z) .> 0.5)
 end
 
-function decode(decoder::IPDecoder, tanner::CSSTannerGraph, syndrome::CSSSyndrome;verbose = false)
+function decode(decoder::IPDecoder, tanner::CSSTannerGraph, syndrome::CSSSyndrome)
+    return decode(decoder, tanner, syndrome, fill(DepolarizingError(0.05, 0.05, 0.05), nq(tanner)))
+end
+
+function decode(decoder::IPDecoder, tanner::CSSTannerGraph, syndrome::CSSSyndrome,p_vec::Vector{DepolarizingError};verbose = false)
     Hx = [a.x for a in tanner.stgx.H]
     Hz = [a.x for a in tanner.stgz.H]
     mx,n = size(Hx)
@@ -67,7 +112,7 @@ function decode(decoder::IPDecoder, tanner::CSSTannerGraph, syndrome::CSSSyndrom
     for i in 1:n
         @constraint(model, x[i] + y[i] +z[i] <= 1)
     end
-    @objective(model, Min, sum(x[j] + y[j] + z[j] for j in 1:n))
+    @objective(model, Max, sum(log(p_vec[j].px) * x[j] + log(p_vec[j].py) * y[j] + log(p_vec[j].pz) * z[j] +log(1- p_vec[j].px - p_vec[j].py - p_vec[j].pz) * (1 - x[j] - y[j] - z[j]) for j in 1:n))
     optimize!(model)
     @assert is_solved_and_feasible(model) "The problem is infeasible!"
     return CSSDecodingResult(true, Mod2.(value.(x) .> 0.5) .+ Mod2.(value.(y) .> 0.5), Mod2.(value.(z) .> 0.5) .+ Mod2.(value.(y) .> 0.5))
@@ -80,12 +125,12 @@ struct BPResult
     error_perm::Vector{Int}
 end
 
-function decode(decoder::BPDecoder, tanner::SimpleTannerGraph, p::Float64, syndrome::Vector{Mod2})
+function decode(decoder::BPDecoder, tanner::SimpleTannerGraph, syndrome::Vector{Mod2}, p::Float64)
     res = belief_propagation(syndrome, tanner, p;max_iter=decoder.bp_max_iter)
     return DecodingResult(res.success_tag, res.error_qubits)
 end
 
-function decode(decoder::BPOSD, tanner::SimpleTannerGraph, p::Float64, syndrome::Vector{Mod2})
+function decode(decoder::BPOSD, tanner::SimpleTannerGraph, syndrome::Vector{Mod2}, p::Float64)
     eqs = bp_osd(syndrome, tanner, p;max_iter=decoder.bp_max_iter)
     return DecodingResult(true, eqs)
 end

@@ -5,11 +5,22 @@ using Random
 @testset "IPDecoder" begin
     tanner = CSSTannerGraph(SurfaceCode(3,3))
     decoder = IPDecoder()
-    error_qubits = Mod2[1,0,0,0,0,0,0,0,0]
+    error_qubits = Mod2[0,0,0,1,0,0,0,0,0]
     syd = syndrome_extraction(error_qubits, tanner.stgz)
 
     res = decode(decoder,tanner.stgz,syd)
     @test syd == syndrome_extraction(res.error_qubits, tanner.stgz)
+
+    res = decode(decoder,tanner.stgz,syd,0.05)
+    @test syd == syndrome_extraction(res.error_qubits, tanner.stgz)
+
+    res = decode(decoder,tanner.stgz,syd,0.02*collect(1:9))
+    @test syd == syndrome_extraction(res.error_qubits, tanner.stgz)
+    @test res.error_qubits == Mod2[0,0,0,0,0,0,1,0,0]
+
+    res = decode(decoder,tanner.stgz,syd,0.02*collect(9:-1:1))
+    @test syd == syndrome_extraction(res.error_qubits, tanner.stgz)
+    @test res.error_qubits == Mod2[0,0,0,1,0,0,0,0,0]
 end
 
 @testset "IPDecoder" begin
@@ -32,6 +43,10 @@ end
     syn = syndrome_extraction(ep,tanner)
 
     res = decode(IPDecoder(),tanner,syn)
+    @test syn.sx == syndrome_extraction(res.zerror_qubits, tanner.stgx)
+    @test syn.sz == syndrome_extraction(res.xerror_qubits, tanner.stgz)
+
+    res = decode(IPDecoder(),tanner,syn,fill(em,9))
     @test syn.sx == syndrome_extraction(res.zerror_qubits, tanner.stgx)
     @test syn.sz == syndrome_extraction(res.xerror_qubits, tanner.stgz)
 end

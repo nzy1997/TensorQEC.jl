@@ -16,7 +16,7 @@ Base.conj(x::PutBlock) = PutBlock(nqudits(x), conj(content(x)), x.locs)
 
 Base.conj(blk::ControlBlock) =
     ControlBlock(blk.n, blk.ctrl_locs, blk.ctrl_config, conj(blk.content), blk.locs)
-
+Base.conj(blk::GeneralMatrixBlock)= matblock(conj(blk.mat))
 function YaoBlocks.map_address(blk::ComplexConj, info::AddressInfo)
     ComplexConj(YaoBlocks.map_address(content(blk), info))
 end
@@ -124,8 +124,12 @@ end
 
 function qc2enisum(qc::ChainBlock, srs::Vector{SymbolRecorder{D}}, qc_info::QCInfo) where D
     ein_code = yao2einsum(qc;initial_state=Dict(x=>0 for x in qc_info.ancilla_qubits ∪ (qc_info.ancilla_qubits.+qc_info.nq)), optimizer=nothing)
-    replace_dict = [srs[4*length(qc_info.data_qubits)+2*i-1].symbol => srs[4*length(qc_info.data_qubits)+2*i].symbol for i in 1:length(qc_info.ancilla_qubits)]
-    jointcode = replace(ein_code.code, replace_dict...)
+    if iszero(length(qc_info.ancilla_qubits))
+        jointcode = ein_code.code
+    else
+        replace_dict = [srs[4*length(qc_info.data_qubits)+2*i-1].symbol => srs[4*length(qc_info.data_qubits)+2*i].symbol for i in 1:length(qc_info.ancilla_qubits)]
+        jointcode = replace(ein_code.code, replace_dict...)
+    end
     empty!(jointcode.iy)
     input_indices = [[srs[2*i-1].symbol  for i in 1:length(qc_info.data_qubits)]..., [srs[2*i].symbol  for i in 1:length(qc_info.data_qubits)]...]
     output_indices = [[srs[2*length(qc_info.data_qubits)+2*i-1].symbol  for i in 1:length(qc_info.data_qubits)]..., [srs[2*length(qc_info.data_qubits)+2*i].symbol  for i in 1:length(qc_info.data_qubits)]...]

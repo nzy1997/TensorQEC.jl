@@ -32,6 +32,7 @@ makedocs(;
             "Inference with Truth Table" => "generated/table.md",
             "Coherent Error Simulation" => "generated/coherent.md",
             "Measurement-Free QEC" => "generated/simulation.md",
+            "Mixed-Integer Programming Decoder" => "generated/ipdecoder.md",
         ],
         "Manual" => "man.md",
     ],
