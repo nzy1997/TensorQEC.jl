@@ -47,6 +47,25 @@ function decode(decoder::IPDecoder, tanner::SimpleTannerGraph, syndrome::Vector{
 end
 function decode(decoder::IPDecoder, tanner::SimpleTannerGraph, syndrome::Vector{Mod2},p_vec::Vector{Float64};verbose = false)
     H = [a.x for a in tanner.H]
+    # @show typeof(H)
+    # m,n = size(H)
+    # model = Model(HiGHS.Optimizer)
+    # !verbose && set_silent(model)
+
+    # @variable(model, 0 <= z[i = 1:n] <= 1, Int)
+    # @variable(model, 0 <= k[i = 1:m], Int)
+    
+    # for i in 1:m
+    #     @constraint(model, sum(z[j] for j in 1:n if H[i,j] == 1) == 2 * k[i] + (syndrome[i].x ? 1 : 0))
+    # end
+
+    # @objective(model, Max, sum(log(p_vec[j])*z[j] for j in 1:n)+sum(log(1-p_vec[j])*(1-z[j]) for j in 1:n))
+    # optimize!(model)
+    # @assert is_solved_and_feasible(model) "The problem is infeasible!"
+    return DecodingResult(true,_mixed_integer_programming(H, [s.x for s in syndrome], p_vec;verbose))
+end
+
+function _mixed_integer_programming(H::Matrix{Bool}, syndrome::Vector{Bool}, p_vec::Vector{Float64};verbose = false)
     m,n = size(H)
     model = Model(HiGHS.Optimizer)
     !verbose && set_silent(model)
@@ -55,13 +74,13 @@ function decode(decoder::IPDecoder, tanner::SimpleTannerGraph, syndrome::Vector{
     @variable(model, 0 <= k[i = 1:m], Int)
     
     for i in 1:m
-        @constraint(model, sum(z[j] for j in 1:n if H[i,j] == 1) == 2 * k[i] + (syndrome[i].x ? 1 : 0))
+        @constraint(model, sum(z[j] for j in 1:n if H[i,j] == 1) == 2 * k[i] + (syndrome[i] ? 1 : 0))
     end
 
     @objective(model, Max, sum(log(p_vec[j])*z[j] for j in 1:n)+sum(log(1-p_vec[j])*(1-z[j]) for j in 1:n))
     optimize!(model)
     @assert is_solved_and_feasible(model) "The problem is infeasible!"
-    return DecodingResult(true, Mod2.(value.(z) .> 0.5))
+    return Mod2.(value.(z) .> 0.5)
 end
 
 function decode(decoder::IPDecoder, tanner::CSSTannerGraph, syndrome::CSSSyndrome)
