@@ -52,7 +52,7 @@ end
 
 function _mixed_integer_programming(H::Matrix{Bool}, syndrome::Vector{Bool}, p_vec::Vector{Float64};verbose = false)
     m,n = size(H)
-    model = Model(HiGHS.Optimizer)
+    model = Model(SCIP.Optimizer)
     !verbose && set_silent(model)
 
     @variable(model, 0 <= z[i = 1:n] <= 1, Int)

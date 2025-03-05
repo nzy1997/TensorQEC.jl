@@ -15,7 +15,7 @@ using Optimisers
 
 using Graphs
 using JuMP, HiGHS
-
+using SCIP
 
 # pauli basis
 export pauli_basis, pauli_decomposition, pauli_mapping
