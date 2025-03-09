@@ -30,16 +30,10 @@ end
 
 function single_round_qec(tanner::CSSTannerGraph, deocder::AbstractDecoder,em::AbstractQuantumErrorModel)
     ep = random_error_qubits(nq(tanner), em)
-    ex,ez = ep.xerror,ep.zerror
-    sydz = syndrome_extraction(ex, tanner.stgz)
-    res = decode(deocder, tanner.stgz, sydz, em.px)
-    ex_app = res.error_qubits
+    synd = syndrome_extraction(ep, tanner)
+    res = decode(deocder, tanner, synd)
 
-    sydx = syndrome_extraction(ez, tanner.stgx)
-    res = decode(deocder, tanner.stgx, sydx, em.pz)
-    ez_app = res.error_qubits
-
-    return  check_logical_error(ex, ex_app, tanner.stgx.H), check_logical_error(ez, ez_app, tanner.stgz.H)
+    return check_logical_error(ep.xerror, res.xerror_qubits, tanner.stgx.H), check_logical_error(ep.zerror, res.zerror_qubits, tanner.stgz.H)
 end
 
 function threshold_qec(tanner::CSSTannerGraph,decoder,error_model_vec::Vector;rounds = 100)

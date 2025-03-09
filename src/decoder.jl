@@ -252,3 +252,16 @@ function tensor_osd(syndrome::Vector{Mod2}, tanner::SimpleTannerGraph, p::Float6
     error_p = tensor_infer(tanner, p, syndrome)
     return osd(tanner, sortperm(-error_p), syndrome)
 end
+
+function css2simple(tanner::CSSTannerGraph)
+    num_qubits = nq(tanner)
+    return SimpleTannerGraph(3*num_qubits,[[vcat(x.+ num_qubits,x .+ 2* num_qubits) for x in tanner.stgx.s2q]..., [vcat(x,x .+  num_qubits) for x in tanner.stgz.s2q]...])
+end
+
+struct GeneralDecodingProblem
+    tanner::SimpleTannerGraph
+    syndrome::Vector{Mod2}
+    # probability distribution?
+    # information?
+    # mutable?
+end
