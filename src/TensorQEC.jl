@@ -14,7 +14,7 @@ using PrettyTables
 using Optimisers
 
 using Graphs
-using JuMP, HiGHS
+using JuMP
 using SCIP
 
 # pauli basis
@@ -76,6 +76,9 @@ export code_distance
 
 # error_learning
 export TrainningData,error_learning
+
+# multiprocessing
+export multiprocess_run
 
 include("mod2.jl")
 include("paulistring.jl")
