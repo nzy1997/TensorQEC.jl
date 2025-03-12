@@ -97,7 +97,7 @@ end
     optnet,p_pos = probability_tn_channel(qc, ComplexF64[1, 0, 0, 0])
     model= [fill(0.01,15)]
     res = error_learning(model,td,optnet,p_pos;iter = 10000)
-    @show res
+    @test isapprox(res[1] , p2;atol = 0.01)
 end
 
 @testset "error_learning" begin
@@ -120,7 +120,7 @@ end
     optnet,p_pos = probability_tn_channel(qc, ComplexF64[1, 0, 0, 0])
     model= [fill(0.01,3),fill(0.01,3)]
     res = error_learning(model,td,optnet,p_pos;iter = 10000)
-    @show res
+    @test isapprox(res[1], p2;atol = 0.01)
 end
 
 @testset "error_learning" begin
