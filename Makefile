@@ -29,7 +29,7 @@ servedocs:
 	$(JL) -e 'using Pkg; Pkg.activate("docs"); using LiveServer; servedocs(; skip_dirs=["docs/src/assets", "docs/src/generated"], literate_dir="examples")'
 
 threshold:
-	$(JL) -e 'include(joinpath("extemp", "correlated.jl")); run_and_save(; rounds=$(rounds), d=$(d), folder="data", pmax=0.7, pstep=0.02, pmin=0.5)'
+	$(JL) -e 'include(joinpath("extemp", "correlated.jl")); run_and_save(; rounds=$(rounds), d=$(d), folder="data", pmax=0.4, pstep=0.01, pmin=0.25)'
 
 clean:
 	rm -rf docs/build

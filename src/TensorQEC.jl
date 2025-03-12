@@ -95,4 +95,5 @@ include("decoder.jl")
 include("threshold.jl")
 include("code_distance.jl")
 include("error_learning.jl")
+include("multiprocessing.jl")
 end

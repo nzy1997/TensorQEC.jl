@@ -32,7 +32,9 @@ end
 
 An integer programming decoder.
 """
-struct IPDecoder <: AbstractDecoder end
+Base.@kwdef struct IPDecoder <: AbstractDecoder 
+    optimizer = SCIP.Optimizer
+end
 
 """
     decode(decoder::AbstractDecoder, tanner::AbstractTannerGraph, syndrome::AbstractSyndrome)
@@ -47,12 +49,12 @@ function decode(decoder::IPDecoder, tanner::SimpleTannerGraph, syndrome::Vector{
 end
 function decode(decoder::IPDecoder, tanner::SimpleTannerGraph, syndrome::Vector{Mod2},p_vec::Vector{Float64};verbose = false)
     H = [a.x for a in tanner.H]
-    return DecodingResult(true,_mixed_integer_programming(H, [s.x for s in syndrome], p_vec;verbose))
+    return DecodingResult(true,_mixed_integer_programming(decoder, H, [s.x for s in syndrome], p_vec;verbose))
 end
 
-function _mixed_integer_programming(H::Matrix{Bool}, syndrome::Vector{Bool}, p_vec::Vector{Float64};verbose = false)
+function _mixed_integer_programming(decoder::IPDecoder, H::Matrix{Bool}, syndrome::Vector{Bool}, p_vec::Vector{Float64};verbose = false)
     m,n = size(H)
-    model = Model(SCIP.Optimizer)
+    model = Model(decoder.optimizer)
     !verbose && set_silent(model)
 
     @variable(model, 0 <= z[i = 1:n] <= 1, Int)
@@ -85,8 +87,17 @@ function decode(decoder::IPDecoder, tanner::CSSTannerGraph, syndrome::CSSSyndrom
     mx,n = size(Hx)
     mz = size(Hz, 1)
 
-    model = Model(HiGHS.Optimizer)
+    model = Model(decoder.optimizer)
     !verbose && set_silent(model)
+    # set_attribute(model, "lp/threads", 1)
+    # set_attribute(model, "parallel/maxnthreads", 1)
+    # set_attribute(model, "parallel/mode", 0)
+
+
+    # Highs_resetGlobalScheduler(1)
+    # set_attribute(model, "parallel", "off")
+    # set_attribute(model, MOI.NumberOfThreads(), 1)
+
 
     @variable(model, 0 <= x[i = 1:n] <= 1, Int)
     @variable(model, 0 <= y[i = 1:n] <= 1, Int)
@@ -333,11 +344,11 @@ end
 function general_syndrome(syn::CSSSyndrome)
     return vcat(syn.sx,syn.sz)
 end
-
-function _mixed_integer_programming(fdp::FlatDecodingProblem, syndrome::Vector{Mod2};verbose = false)
+_mixed_integer_programming(fdp::FlatDecodingProblem, syndrome::Vector{Mod2};verbose = false) = _mixed_integer_programming(IPDecoder(), fdp, syndrome;verbose = verbose)
+function _mixed_integer_programming(decoder::IPDecoder, fdp::FlatDecodingProblem, syndrome::Vector{Mod2};verbose = false)
     H = [a.x for a in fdp.tanner.H]
     m,n = size(H)
-    model = Model(SCIP.Optimizer)
+    model = Model(decoder.optimizer)
     !verbose && set_silent(model)
 
     @variable(model, 0 <= z[i = 1:n] <= 1, Int)
@@ -429,5 +440,5 @@ end
 
 function decode(decoder::IPDecoder, gdp::GeneralDecodingProblem, syndrome::Vector{Mod2})
     gdp2fdp = flattengdp(gdp)
-    return extract_decoding(gdp2fdp,_mixed_integer_programming(gdp2fdp.fdp, syndrome))
+    return extract_decoding(gdp2fdp,_mixed_integer_programming(decoder,gdp2fdp.fdp, syndrome))
 end
