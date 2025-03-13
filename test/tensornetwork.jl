@@ -77,6 +77,5 @@ end
     dm2 = DensityMatrix(Matrix{ComplexF64}(ps2))
     dm2f = apply(dm2, qc)
     res2 = Yao.expect(ps1, dm2f)
-    @show res1, res2
     @test res1 ≈ res2
 end

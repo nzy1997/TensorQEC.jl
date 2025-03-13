@@ -67,3 +67,11 @@ end
 @testset "decoder" begin
     include("decoder.jl")
 end
+
+@testset "multiprocessing" begin
+    include("multiprocessing.jl")
+end
+
+@testset "error_learning" begin
+    include("error_learning.jl")
+end

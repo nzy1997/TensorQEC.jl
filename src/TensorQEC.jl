@@ -14,8 +14,8 @@ using PrettyTables
 using Optimisers
 
 using Graphs
-using JuMP, HiGHS
-
+using JuMP
+using SCIP
 
 # pauli basis
 export pauli_basis, pauli_decomposition, pauli_mapping
@@ -66,7 +66,7 @@ export FlipError, DepolarizingError, random_error_qubits
 @const_gate CCZ::ComplexF64 = diagm([1, 1,1,1,1,1,1,-1])
 
 # decoder
-export BPOSD,decode,BPDecoder,IPDecoder
+export BPOSD,decode,BPDecoder,IPDecoder,reduce2general,extract_decoding,general_syndrome
 
 # threshold
 export multi_round_qec,threshold_qec
@@ -76,6 +76,9 @@ export code_distance
 
 # error_learning
 export TrainningData,error_learning
+
+# multiprocessing
+export multiprocess_run
 
 include("mod2.jl")
 include("paulistring.jl")
@@ -95,4 +98,5 @@ include("decoder.jl")
 include("threshold.jl")
 include("code_distance.jl")
 include("error_learning.jl")
+include("multiprocessing.jl")
 end
