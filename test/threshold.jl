@@ -5,7 +5,7 @@ using TensorQEC: QuantumSimulationResult,ClassicalSimulationResult
 
 @testset "threshold_qec" begin
     tanner = CSSTannerGraph(SurfaceCode(3,3))
-    decoder = BPOSD(100)
+    decoder = IPDecoder()
     error_model_vec = [DepolarizingError(0.01),DepolarizingError(0.02)]
     res = threshold_qec(tanner,decoder,error_model_vec)
     @test length(res) == 2

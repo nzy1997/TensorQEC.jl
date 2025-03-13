@@ -1,6 +1,6 @@
-function code_distance(H::Matrix{Int}; verbose = false)
+function code_distance(H::Matrix{Int}; verbose = false,ipsolver = SCIP.Optimizer)
     m,n = size(H)
-    model = Model(HiGHS.Optimizer)
+    model = Model(ipsolver)
     !verbose && set_silent(model)
 
     @variable(model, 0 <= z[i = 1:n] <= 1, Int)
@@ -69,10 +69,10 @@ function logical_oprator(tanner::CSSTannerGraph)
     return lx, lz
 end
 
-function code_distance(Hz::Matrix{Int},lz::Matrix{Int}; verbose = false)
+function code_distance(Hz::Matrix{Int},lz::Matrix{Int}; verbose = false,ipsolver = SCIP.Optimizer)
     m,n = size(Hz)
     num_lz = size(lz, 1)
-    model = Model(HiGHS.Optimizer)
+    model = Model(ipsolver)
     !verbose && set_silent(model)
 
     @variable(model, 0 <= z[i = 1:n] <= 1, Int)
