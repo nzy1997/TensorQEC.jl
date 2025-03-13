@@ -101,3 +101,24 @@ end
     res = error_learning(model,td,optnet,p_pos;iter = 10000)
     @test isapprox(res[1], p2;atol = 0.01)
 end
+
+@testset "get_grad" begin
+    p2 = 0.02
+    unitary_channel2 = depolarizing_channel(2, [1 - 15 * p2, fill(p2, 15)...])
+
+    Random.seed!(1234)
+    umat = rand_unitary(4)
+    qc = chain(put(2, (1, 2) => matblock(umat)), put(2, (1, 2) => unitary_channel2))
+    optnet,p_pos = probability_tn_channel(qc, ComplexF64[1, 0, 0, 0])
+    td = TrainningData([0.25],[ComplexF64[0, 1, 0, 0]])
+
+    p = fill(0.01,15)
+    Δ = 1e-6
+    new_t1 = generate_new_tensor(optnet.tensors,p_pos,ComplexF64[0, 1, 0, 0],[[1 - sum(p), p...]])
+    fx = -0.25*log(optnet.code(new_t1...)[])
+    p2 = copy(p)
+    p2[5] += Δ
+    new_t2 = generate_new_tensor(optnet.tensors,p_pos,ComplexF64[0, 1, 0, 0],[[1 - sum(p2), p2...]])
+    fxpΔx = -0.25*log(optnet.code(new_t2...)[])
+    @test (fxpΔx-fx) / Δ ≈ get_grad(optnet.code,optnet.tensors,p_pos,td,[p])[1][5] atol=1e-8
+end

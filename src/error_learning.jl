@@ -139,7 +139,8 @@ end
 
 function loss_function(code::SlicedEinsum,tensors::Vector{AbstractArray{ComplexF64}},p_pos::Vector{Int}, td::TrainningData,pvec::Vector{Vector{Float64}})
     pvec_input = [[1 - sum(x), x...] for x in pvec]
-    return sum([(real(code(generate_new_tensor(tensors,p_pos,td.states[x],pvec_input)...)[])-td.pvec[x])^2 for x in 1:length(td.pvec)])
+    # return sum([(real(code(generate_new_tensor(tensors,p_pos,td.states[x],pvec_input)...)[])-td.pvec[x])^2 for x in 1:length(td.pvec)])
+    return sum([-td.pvec[x] * log(real(code(generate_new_tensor(tensors,p_pos,td.states[x],pvec_input)...)[])) for x in 1:length(td.pvec)])
 end
 
 function error_learning(model,td::TrainningData,optnet,p_pos::Vector{Int};iter=10)
