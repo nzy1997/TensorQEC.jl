@@ -2,70 +2,71 @@ using TensorQEC
 using Test
 
 @testset "mod2" begin
-    include("mod2.jl")
+    include("codes/mod2.jl")
 end
 
 @testset "paulistring" begin
-    include("paulistring.jl")
+    include("paulibasis/paulistring.jl")
 end
 
 @testset "clifford" begin
-    include("cliffordgroup.jl")
+    include("paulibasis/cliffordgroup.jl")
 end
+
 @testset "pauli basis" begin
-    include("paulibasis.jl")
+    include("paulibasis/paulibasis.jl")
 end
 
 @testset "tensor network" begin
-    include("tensornetwork.jl")
+    include("tensornetwork/tensornetwork.jl")
 end
 
 @testset "inferences" begin
-    include("inferences.jl")
+    include("tensornetwork/inferences.jl")
 end
 
 @testset "codes" begin
-    include("codes.jl")
+    include("codes/codes.jl")
 end
 
 @testset "encoder" begin
-    include("encoder.jl")
+    include("codes/encoder.jl")
 end
 
 @testset "measurement" begin
-    include("measurement.jl")
+    include("codes/measurement.jl")
 end
 
 @testset "table make" begin
-    include("tablemake.jl")
+    include("codes/tablemake.jl")
 end
 
 @testset "simulation" begin
-    include("simulation.jl") 
+    include("tensornetwork/simulation.jl") 
 end
 
 @testset "ldpc" begin
-    include("ldpc.jl")
+    include("codes/ldpc.jl")
 end
 
 @testset "tableau" begin
-    include("tableaux.jl")
+    include("paulibasis/tableaux.jl")
 end
 
 @testset "error_model" begin
-    include("error_model.jl")
+    include("decoding/error_model.jl")
 end
 
 @testset "code_distance" begin
-    include("code_distance.jl")
+    include("codes/code_distance.jl")
 end
 
 @testset "threshold" begin
-    include("threshold.jl")
+    include("decoding/threshold.jl")
 end
 
 @testset "decoder" begin
-    include("decoder.jl")
+    include("decoding/decoder.jl")
 end
 
 @testset "multiprocessing" begin
@@ -73,5 +74,5 @@ end
 end
 
 @testset "error_learning" begin
-    include("error_learning.jl")
+    include("decoding/error_learning.jl")
 end
