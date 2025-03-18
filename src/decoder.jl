@@ -89,15 +89,6 @@ function decode(decoder::IPDecoder, tanner::CSSTannerGraph, syndrome::CSSSyndrom
 
     model = Model(decoder.optimizer)
     !verbose && set_silent(model)
-    # set_attribute(model, "lp/threads", 1)
-    # set_attribute(model, "parallel/maxnthreads", 1)
-    # set_attribute(model, "parallel/mode", 0)
-
-
-    # Highs_resetGlobalScheduler(1)
-    # set_attribute(model, "parallel", "off")
-    # set_attribute(model, MOI.NumberOfThreads(), 1)
-
 
     @variable(model, 0 <= x[i = 1:n] <= 1, Int)
     @variable(model, 0 <= y[i = 1:n] <= 1, Int)
