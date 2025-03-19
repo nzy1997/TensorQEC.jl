@@ -126,16 +126,6 @@ function simple_circuit2tensornetworks(qc::ChainBlock, ps::AbstractVector{Vector
 	)
 end
 
-# rho.state is the density matrix.
-function Yao.expect(operator::SumOfPaulis, cl::CliffordNetwork, rho::SumOfPaulis)
-	# step 2: use the pauli decomposition as the input at the physical qubits
-	for (c, p) in rho.items
-		for (d, q) in operator.items
-			result += c * d * expect(PauliString(q), cl, PauliString(p))
-		end
-	end
-end
-
 function Yao.expect(operator::PauliString, cl::CliffordNetwork{T}, rho::PauliString) where T
 	n = nqubits(cl)
 	# construct the tensor network

@@ -63,7 +63,6 @@ end
 	end
 end
 
-
 @testset "expect" begin
     # target circuit
     qc = chain(cnot(3, 1, 2), put(3, 1=>X), cnot(3, 3, 2))
