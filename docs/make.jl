@@ -33,6 +33,7 @@ makedocs(;
             "Coherent Error Simulation" => "generated/coherent.md",
             "Measurement-Free QEC" => "generated/simulation.md",
             "Mixed-Integer Programming Decoder" => "generated/ipdecoder.md",
+            "Performance Tips" => "performancetips.md",
         ],
         "Manual" => "man.md",
     ],

@@ -14,8 +14,8 @@ using PrettyTables
 using Optimisers
 
 using Graphs
-using JuMP, HiGHS
-
+using JuMP
+using SCIP
 
 # pauli basis
 export pauli_basis, pauli_decomposition, pauli_mapping
@@ -66,7 +66,7 @@ export FlipError, DepolarizingError, random_error_qubits
 @const_gate CCZ::ComplexF64 = diagm([1, 1,1,1,1,1,1,-1])
 
 # decoder
-export BPOSD,decode,BPDecoder,IPDecoder
+export BPOSD,decode,BPDecoder,IPDecoder,reduce2general,extract_decoding,general_syndrome
 
 # threshold
 export multi_round_qec,threshold_qec
@@ -77,22 +77,26 @@ export code_distance
 # error_learning
 export TrainningData,error_learning
 
-include("mod2.jl")
-include("paulistring.jl")
-include("cliffordgroup.jl")
-include("paulibasis.jl")
-include("tensornetwork.jl")
-include("codes.jl")
-include("encoder.jl")
-include("inferences.jl")
-include("measurement.jl")
-include("tablemake.jl")
-include("simulation.jl")
-include("error_model.jl")
-include("ldpc.jl")
-include("tableaux.jl")
-include("decoder.jl")
-include("threshold.jl")
-include("code_distance.jl")
-include("error_learning.jl")
+# multiprocessing
+export multiprocess_run
+
+include("codes/mod2.jl")
+include("paulibasis/paulistring.jl")
+include("paulibasis/cliffordgroup.jl")
+include("paulibasis/paulibasis.jl")
+include("tensornetwork/tensornetwork.jl")
+include("codes/codes.jl")
+include("codes/encoder.jl")
+include("tensornetwork/inferences.jl")
+include("codes/measurement.jl")
+include("codes/tablemake.jl")
+include("tensornetwork/simulation.jl")
+include("decoding/error_model.jl")
+include("codes/ldpc.jl")
+include("paulibasis/tableaux.jl")
+include("decoding/decoder.jl")
+include("decoding/threshold.jl")
+include("codes/code_distance.jl")
+include("decoding/error_learning.jl")
+include("multiprocessing.jl")
 end

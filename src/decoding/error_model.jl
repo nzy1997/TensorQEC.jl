@@ -56,12 +56,15 @@ function Base.show(io::IO, cep::CSSErrorPattern)
     println(io, "X error:", findall(v->v.x, cep.xerror))
     println(io, "Z error:", findall(v->v.x,cep.zerror))
 end
-
 function random_error_qubits(qubit_number::Int, em::DepolarizingError)
+    return random_error_qubits(fill(em, qubit_number))
+end
+
+function random_error_qubits(ems::Vector{DepolarizingError})
     xerror =  Mod2[]
     zerror =  Mod2[]
 
-    for i in 1:qubit_number
+    for em in ems
         randnum = rand()
         if randnum < em.py
             push!(xerror, Mod2(true))

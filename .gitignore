@@ -12,3 +12,4 @@ Manifest.toml
 .DS_Store
 /extemp/
 /figures/
+/data/
