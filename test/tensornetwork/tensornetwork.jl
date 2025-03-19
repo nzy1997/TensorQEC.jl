@@ -1,7 +1,6 @@
 using Test, TensorQEC
 using TensorQEC.Yao, TensorQEC.TensorInference
 using TensorQEC.TensorInference.OMEinsum
-using Random
 
 @testset "matrix2factor" begin
 	g = cnot(2, 1, 2)
