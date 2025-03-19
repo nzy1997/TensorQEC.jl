@@ -178,11 +178,6 @@ function tensor2sumofpaulis(t::AbstractArray)
 end
 densitymatrix2sumofpaulis(dm::DensityMatrix) = tensor2sumofpaulis(real.(pauli_decomposition(dm.state)))
 arrayreg2sumofpaulis(reg::ArrayReg) = densitymatrix2sumofpaulis(density_matrix(reg))
-# inputs:
-# - n is the size of the toric code
-# - k is the Pauli operator, 1 for I, 2 for X, 3 for Y, 4 for Z
-# - ids is a vector of qubit ids
-# output: a PauliString object
 
 """
     paulistring(n::Int, k::Int, ids::Vector{Int}) -> PauliString
@@ -193,4 +188,3 @@ Create a Pauli string with `n` qubits, where the `i`-th qubit is `k` if `i` is i
 paulistring(n::Int, k, ids) = PauliString((i ∈ ids ? k : _I(k) for i in 1:n)...)
 _I(::Int) = 1
 _I(::YaoBlocks.PauliGate) = I2
-
