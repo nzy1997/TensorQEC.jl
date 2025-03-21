@@ -95,3 +95,7 @@ end
     @test syn.sx == syndrome_extraction(res.zerror_qubits, tanner.stgx)
     @test syn.sz == syndrome_extraction(res.xerror_qubits, tanner.stgz)
 end
+
+@testset "MinimumWeightEmbeddedMatching" begin
+    
+end

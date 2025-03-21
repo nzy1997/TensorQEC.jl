@@ -80,23 +80,23 @@ export TrainningData,error_learning
 # multiprocessing
 export multiprocess_run
 
-include("codes/mod2.jl")
+include("mod2.jl")
 include("paulibasis/paulistring.jl")
 include("paulibasis/cliffordgroup.jl")
 include("paulibasis/paulibasis.jl")
 include("tensornetwork/tensornetwork.jl")
 include("codes/codes.jl")
-include("codes/encoder.jl")
+include("encoding/encoder.jl")
 include("tensornetwork/inferences.jl")
-include("codes/measurement.jl")
-include("codes/tablemake.jl")
+include("decoding/measurement.jl")
+include("decoding/tablemake.jl")
 include("tensornetwork/simulation.jl")
 include("decoding/error_model.jl")
 include("codes/ldpc.jl")
 include("paulibasis/tableaux.jl")
 include("decoding/decoder.jl")
 include("decoding/threshold.jl")
-include("codes/code_distance.jl")
+include("code_distance.jl")
 include("decoding/error_learning.jl")
 include("multiprocessing.jl")
 end

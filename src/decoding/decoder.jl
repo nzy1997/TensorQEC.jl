@@ -434,3 +434,20 @@ function decode(decoder::IPDecoder, gdp::GeneralDecodingProblem, syndrome::Vecto
     gdp2fdp = flattengdp(gdp)
     return extract_decoding(gdp2fdp,_mixed_integer_programming(decoder,gdp2fdp.fdp, syndrome))
 end
+
+struct MatchingDecoder <: AbstractDecoder end
+
+struct MinimumWeightEmbeddedMatching{T, WT<:AbstractVector{T}}
+    q2s::Vector{Vector{Int}}
+    syndrome_vertex::Vector{Int}
+    weights::WT
+    function MinimumWeightEmbeddedMatching(q2s::Vector{Vector{Int}}, syndrome_vertex::Vector{Int}, weights::AbstractVector{T}=UnitWeight(ne(graph))) where {T}
+        @assert length(weights) == length(q2s)
+        new{T, typeof(weights)}(q2s, syndrome_vertex, weights)
+    end
+end
+
+function MinimumWeightEmbeddedMatching(tanner::SimpleTannerGraph, syndrome::Vector{Mod2}, p::Vector{Float64})
+    @assert maximum(length.(tanner.q2s)) <= 2 "Each error causes either one or two syndromes"
+    MinimumWeightEmbeddedMatching(tanner.q2s, findall(v->v.x,syndrome), log.(1- p) ./ p)
+end
