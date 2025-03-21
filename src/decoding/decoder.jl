@@ -34,6 +34,7 @@ An integer programming decoder.
 """
 Base.@kwdef struct IPDecoder <: AbstractDecoder 
     optimizer = SCIP.Optimizer
+    verbose::Bool = false
 end
 
 """
@@ -47,15 +48,15 @@ end
 function decode(decoder::IPDecoder, tanner::SimpleTannerGraph, syndrome::Vector{Mod2}, p::Float64)
     return decode(decoder, tanner, syndrome, fill(p, tanner.nq))
 end
-function decode(decoder::IPDecoder, tanner::SimpleTannerGraph, syndrome::Vector{Mod2},p_vec::Vector{Float64};verbose = false)
+function decode(decoder::IPDecoder, tanner::SimpleTannerGraph, syndrome::Vector{Mod2},p_vec::Vector{Float64})
     H = [a.x for a in tanner.H]
-    return DecodingResult(true,_mixed_integer_programming(decoder, H, [s.x for s in syndrome], p_vec;verbose))
+    return DecodingResult(true,_mixed_integer_programming(decoder, H, [s.x for s in syndrome], p_vec))
 end
 
-function _mixed_integer_programming(decoder::IPDecoder, H::Matrix{Bool}, syndrome::Vector{Bool}, p_vec::Vector{Float64};verbose = false)
+function _mixed_integer_programming(decoder::IPDecoder, H::Matrix{Bool}, syndrome::Vector{Bool}, p_vec::Vector{Float64})
     m,n = size(H)
     model = Model(decoder.optimizer)
-    !verbose && set_silent(model)
+    !decoder.verbose && set_silent(model)
 
     @variable(model, 0 <= z[i = 1:n] <= 1, Int)
     @variable(model, 0 <= k[i = 1:m], Int)
@@ -81,14 +82,14 @@ function decode(decoder::IPDecoder, tanner::CSSTannerGraph, syndrome::CSSSyndrom
     return decode(decoder, tanner, syndrome, fill(DepolarizingError(0.05, 0.05, 0.05), nq(tanner)))
 end
 
-function decode(decoder::IPDecoder, tanner::CSSTannerGraph, syndrome::CSSSyndrome,p_vec::Vector{DepolarizingError};verbose = false)
+function decode(decoder::IPDecoder, tanner::CSSTannerGraph, syndrome::CSSSyndrome,p_vec::Vector{DepolarizingError})
     Hx = [a.x for a in tanner.stgx.H]
     Hz = [a.x for a in tanner.stgz.H]
     mx,n = size(Hx)
     mz = size(Hz, 1)
 
     model = Model(decoder.optimizer)
-    !verbose && set_silent(model)
+    !decoder.verbose && set_silent(model)
 
     @variable(model, 0 <= x[i = 1:n] <= 1, Int)
     @variable(model, 0 <= y[i = 1:n] <= 1, Int)
