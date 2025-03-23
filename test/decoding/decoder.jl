@@ -97,5 +97,20 @@ end
 end
 
 @testset "MinimumWeightEmbeddedMatching" begin
-    
+    Random.seed!(123)
+    tanner = CSSTannerGraph(SurfaceCode(7, 7)).stgx
+    em = FlipError(0.1)
+    error_qubits =  random_error_qubits(49, em)
+    syn = syndrome_extraction(error_qubits,tanner)
+
+    # T Random.seed!(123)
+    tanner = CSSTannerGraph(SurfaceCode(7, 7)).stgx
+    em = FlipError(0.1)
+    error_qubits =  random_error_qubits(49, em)
+    syn = syndrome_extraction(error_qubits,tanner)
+
+    fwg = TensorQEC.FWSWeightedGraph(tanner)
+
+    # a = floyd_warshall_shortest_paths(g)
+    mwb = TensorQEC.MatchingWithBoundary(mwem)
 end

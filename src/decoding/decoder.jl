@@ -437,17 +437,96 @@ end
 
 struct MatchingDecoder <: AbstractDecoder end
 
-struct MinimumWeightEmbeddedMatching{T, WT<:AbstractVector{T}}
-    q2s::Vector{Vector{Int}}
-    syndrome_vertex::Vector{Int}
-    weights::WT
-    function MinimumWeightEmbeddedMatching(q2s::Vector{Vector{Int}}, syndrome_vertex::Vector{Int}, weights::AbstractVector{T}=UnitWeight(ne(graph))) where {T}
-        @assert length(weights) == length(q2s)
-        new{T, typeof(weights)}(q2s, syndrome_vertex, weights)
-    end
+# The last element is boundary
+struct FWSWeightedGraph{T}
+    edges::Vector{SimpleWeightedEdge{Int,T}}
+    v2e::Vector{Vector{Int}}
+    fws::Graphs.FloydWarshallState{T,Int}
 end
 
-function MinimumWeightEmbeddedMatching(tanner::SimpleTannerGraph, syndrome::Vector{Mod2}, p::Vector{Float64})
-    @assert maximum(length.(tanner.q2s)) <= 2 "Each error causes either one or two syndromes"
-    MinimumWeightEmbeddedMatching(tanner.q2s, findall(v->v.x,syndrome), log.(1- p) ./ p)
+function  FWSWeightedGraph(tanner::SimpleTannerGraph)
+    return FWSWeightedGraph(tanner,fill(0.1,tanner.nq))
 end
+
+function FWSWeightedGraph(tanner::SimpleTannerGraph, p::Vector{Float64})
+    @assert maximum(length.(tanner.q2s)) <= 2 "Each error causes either one or two syndromes"
+    g = SimpleWeightedGraph(tanner.ns + 1)
+    for (i,q2s_vec) in enumerate(tanner.q2s)
+       if length(q2s_vec) == 1
+           add_edge!(g, q2s_vec[1], tanner.ns + 1, log((1-p[i])/p[i]))
+       else
+           add_edge!(g, q2s_vec[1], q2s_vec[2],  log((1-p[i])/p[i]))
+       end
+    end
+    fws = floyd_warshall_shortest_paths(g)
+    edge_vec = collect(edges(g))
+    v2e = [Vector{Int}() for _ in 1:nv(g)]
+    for (i,e) in enumerate(edge_vec)
+        push!(v2e[e.src], i)
+        push!(v2e[e.dst], i)
+    end
+    return FWSWeightedGraph(edge_vec,v2e , fws)
+end
+
+# The last element is boundary
+struct MatchingWithBoundary{T}
+    graph::SimpleWeightedGraph{Int,T}
+end
+
+struct MWEMtoMWB{T}
+    mwb::MatchingWithBoundary{T}
+    syndrome_vertex::Vector{Int}
+end
+
+function MWEMtoMWB(mwem::MinimumWeightEmbeddedMatching)
+    boundry_large = nv(mwem.graph)
+    boundary_small = length(mwem.syndrome_vertex) + 1
+    fws = floyd_warshall_shortest_paths(mwem.graph)
+    g = SimpleWeightedGraph(boundary_small)
+    for i in 1:length(mwem.syndrome_vertex)
+        add_edge!(g, i, boundary_small, fws.dists[mwem.syndrome_vertex[i], boundry_large])
+        for j in (i+1):length(mwem.syndrome_vertex)
+            add_edge!(g, i, j, fws.dists[mwem.syndrome_vertex[i], mwem.syndrome_vertex[j]])
+        end
+    end
+    return MWEMtoMWB(MatchingWithBoundary(g), mwem.syndrome_vertex)
+end
+
+# function _mixed_integer_programming(mwb::MatchingWithBoundary)
+#     model = Model(SCIP.Optimizer)
+#     set_silent(model)
+
+#     @variable(model, 0 <= z[i = 1:ne(mwb.graph)] <= 1, Int)
+    
+#     obj = 0.0
+#     edge_label_vec = [Vector{Int}() for _ in 1:nv(mwb.graph)]
+#     edge_vec = collect(edges(mwb.graph))
+#     for (i,edge) in enumerate(edge_vec)
+#         obj += z[i] * edge.weight
+#         push!(edge_label_vec[edge.src], i)
+#         push!(edge_label_vec[edge.dst], i)
+#     end
+
+#     display(edge_label_vec)
+#     for i in 1:(nv(mwb.graph)-1)
+#         @constraint(model, sum(z[j] for j in edge_label_vec[i]) == 1)
+#     end
+#     @objective(model, Min, obj)
+#     optimize!(model)
+#     @assert is_solved_and_feasible(model) "The problem is infeasible!"
+#     return edge_vec[value.(z).> 0.5]
+# end
+
+# function extract_decoding(mwb2mwb::MWEMtoMWB, edge_vec::Vector{SimpleWeightedEdge{Int}})
+#     edge_vec = sort(edge_vec, by = x->x.src)
+#     parents = mwb2mwb.parents
+#     ans = Vector{Int}(undef, length(mwb2mwb.syndrome_vertex))
+#     for (i,edge) in enumerate(edge_vec)
+#         if edge.dst == length(mwb2mwb.syndrome_vertex) + 1
+#             ans[edge.src] = 0
+#         else
+#             ans[edge.src] = mwb2mwb.syndrome_vertex[edge.dst]
+#         end
+#     end
+#     return ans
+# end
