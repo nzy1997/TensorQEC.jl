@@ -441,8 +441,13 @@ struct MatchingDecoder <: AbstractDecoder end
 struct FWSWeightedGraph{T}
     edges::Vector{SimpleWeightedEdge{Int,T}}
     v2e::Vector{Vector{Int}}
-    fws::Graphs.FloydWarshallState{T,Int}
+    # fws::Graphs.FloydWarshallState{T,Int}
+    dists::Matrix{T}
+    parent_path:: Matrix{Int64}
+    qubit_vec::Vector{Int}
 end
+Graphs.nv(fwg::FWSWeightedGraph) = length(fwg.v2e)
+Graphs.ne(fwg::FWSWeightedGraph) = length(fwg.edges)
 
 function  FWSWeightedGraph(tanner::SimpleTannerGraph)
     return FWSWeightedGraph(tanner,fill(0.1,tanner.nq))
@@ -453,19 +458,44 @@ function FWSWeightedGraph(tanner::SimpleTannerGraph, p::Vector{Float64})
     g = SimpleWeightedGraph(tanner.ns + 1)
     for (i,q2s_vec) in enumerate(tanner.q2s)
        if length(q2s_vec) == 1
-           add_edge!(g, q2s_vec[1], tanner.ns + 1, log((1-p[i])/p[i]))
+           min_add_edge!(g, q2s_vec[1], tanner.ns + 1, log((1-p[i])/p[i]))
        else
-           add_edge!(g, q2s_vec[1], q2s_vec[2],  log((1-p[i])/p[i]))
+            min_add_edge!(g, q2s_vec[1], q2s_vec[2],  log((1-p[i])/p[i]))
        end
     end
     fws = floyd_warshall_shortest_paths(g)
     edge_vec = collect(edges(g))
     v2e = [Vector{Int}() for _ in 1:nv(g)]
+    qubit_vec = Int[]
     for (i,e) in enumerate(edge_vec)
         push!(v2e[e.src], i)
         push!(v2e[e.dst], i)
+
+        if e.src == tanner.ns + 1
+            push!(qubit_vec,tanner.s2q[e.dst][ findfirst(x -> length(tanner.q2s[x]) == 1 ,tanner.s2q[e.dst])])
+        elseif e.dst == tanner.ns + 1
+            push!(qubit_vec,tanner.s2q[e.src][ findfirst(x -> length(tanner.q2s[x]) == 1 ,tanner.s2q[e.src])])
+        else
+            push!(qubit_vec, (tanner.s2q[e.src] ∩ tanner.s2q[e.dst])[1])
+        end
     end
-    return FWSWeightedGraph(edge_vec,v2e , fws)
+    parent_path = copy(fws.parents)
+
+    for i in 1:(tanner.ns + 1)
+        for j in 1:(tanner.ns + 1)
+            (i == j) && continue
+            pos = findfirst(k -> (edge_vec[k].dst == fws.parents[i,j]) || (edge_vec[k].src == fws.parents[i,j]),v2e[j])
+            parent_path[i,j] = v2e[j][pos]
+            # parent_path[i,j] records the edge adjacent to j in the shortest path from i to j
+        end
+    end
+    return FWSWeightedGraph(edge_vec,v2e , fws.dists,parent_path,qubit_vec)
+end
+
+function min_add_edge!(g, s, d, w)
+    if iszero(g.weights[s,d]) || g.weights[s,d] > w
+        add_edge!(g,s,d,w)
+    end
 end
 
 # The last element is boundary
@@ -473,60 +503,61 @@ struct MatchingWithBoundary{T}
     graph::SimpleWeightedGraph{Int,T}
 end
 
-struct MWEMtoMWB{T}
+struct FWSWGtoMWB{T}
     mwb::MatchingWithBoundary{T}
     syndrome_vertex::Vector{Int}
 end
 
-function MWEMtoMWB(mwem::MinimumWeightEmbeddedMatching)
-    boundry_large = nv(mwem.graph)
-    boundary_small = length(mwem.syndrome_vertex) + 1
-    fws = floyd_warshall_shortest_paths(mwem.graph)
+function FWSWGtoMWB(fwg::FWSWeightedGraph,syndrome::Vector{Mod2})
+    boundry_large = nv(fwg)
+    syndrome_vertex = findall(v->v.x,syndrome)
+    boundary_small = length(syndrome_vertex) + 1
+
     g = SimpleWeightedGraph(boundary_small)
-    for i in 1:length(mwem.syndrome_vertex)
-        add_edge!(g, i, boundary_small, fws.dists[mwem.syndrome_vertex[i], boundry_large])
-        for j in (i+1):length(mwem.syndrome_vertex)
-            add_edge!(g, i, j, fws.dists[mwem.syndrome_vertex[i], mwem.syndrome_vertex[j]])
+    for i in 1:length(syndrome_vertex)
+        add_edge!(g, i, boundary_small, fwg.dists[syndrome_vertex[i], boundry_large])
+        for j in (i+1):length(syndrome_vertex)
+            add_edge!(g, i, j, fwg.dists[syndrome_vertex[i], syndrome_vertex[j]])
         end
     end
-    return MWEMtoMWB(MatchingWithBoundary(g), mwem.syndrome_vertex)
+    push!(syndrome_vertex,boundry_large)
+    return FWSWGtoMWB(MatchingWithBoundary(g),syndrome_vertex)
 end
 
-# function _mixed_integer_programming(mwb::MatchingWithBoundary)
-#     model = Model(SCIP.Optimizer)
-#     set_silent(model)
+function _mixed_integer_programming(mwb::MatchingWithBoundary)
+    model = Model(SCIP.Optimizer)
+    set_silent(model)
 
-#     @variable(model, 0 <= z[i = 1:ne(mwb.graph)] <= 1, Int)
+    @variable(model, 0 <= z[i = 1:ne(mwb.graph)] <= 1, Int)
     
-#     obj = 0.0
-#     edge_label_vec = [Vector{Int}() for _ in 1:nv(mwb.graph)]
-#     edge_vec = collect(edges(mwb.graph))
-#     for (i,edge) in enumerate(edge_vec)
-#         obj += z[i] * edge.weight
-#         push!(edge_label_vec[edge.src], i)
-#         push!(edge_label_vec[edge.dst], i)
-#     end
+    obj = 0.0
+    edge_label_vec = [Vector{Int}() for _ in 1:nv(mwb.graph)]
+    edge_vec = collect(edges(mwb.graph))
+    for (i,edge) in enumerate(edge_vec)
+        obj += z[i] * edge.weight
+        push!(edge_label_vec[edge.src], i)
+        push!(edge_label_vec[edge.dst], i)
+    end
 
-#     display(edge_label_vec)
-#     for i in 1:(nv(mwb.graph)-1)
-#         @constraint(model, sum(z[j] for j in edge_label_vec[i]) == 1)
-#     end
-#     @objective(model, Min, obj)
-#     optimize!(model)
-#     @assert is_solved_and_feasible(model) "The problem is infeasible!"
-#     return edge_vec[value.(z).> 0.5]
-# end
+    for i in 1:(nv(mwb.graph)-1)
+        @constraint(model, sum(z[j] for j in edge_label_vec[i]) == 1)
+    end
+    @objective(model, Min, obj)
+    optimize!(model)
+    @assert is_solved_and_feasible(model) "The problem is infeasible!"
+    return edge_vec[value.(z).> 0.5]
+end
 
-# function extract_decoding(mwb2mwb::MWEMtoMWB, edge_vec::Vector{SimpleWeightedEdge{Int}})
-#     edge_vec = sort(edge_vec, by = x->x.src)
-#     parents = mwb2mwb.parents
-#     ans = Vector{Int}(undef, length(mwb2mwb.syndrome_vertex))
-#     for (i,edge) in enumerate(edge_vec)
-#         if edge.dst == length(mwb2mwb.syndrome_vertex) + 1
-#             ans[edge.src] = 0
-#         else
-#             ans[edge.src] = mwb2mwb.syndrome_vertex[edge.dst]
-#         end
-#     end
-#     return ans
-# end
+function extract_decoding(fwg::FWSWeightedGraph{T}, f2m::FWSWGtoMWB{T}, edge_vec::Vector{SimpleWeightedEdge{Int,T}}) where T
+    edge_vec_long = fill(0, ne(fwg))
+    for edge in edge_vec
+        s = f2m.syndrome_vertex[edge.src]
+        d = f2m.syndrome_vertex[edge.dst]
+        while d != s
+            e = fwg.parent_path[d,s]
+            edge_vec_long[e] = 1 - edge_vec_long[e]
+            d = fwg.edges[e].src == d ? fwg.edges[e].dst : fwg.edges[e].src
+        end
+    end
+    return edge_vec_long
+end
