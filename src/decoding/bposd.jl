@@ -101,8 +101,3 @@ function bp_osd(syndrome::Vector{Mod2}, tanner::SimpleTannerGraph, p::Float64;ma
         return osd(tanner, bp_res.error_perm, syndrome)
     end
 end
-
-function tensor_osd(syndrome::Vector{Mod2}, tanner::SimpleTannerGraph, p::Float64)
-    error_p = tensor_infer(tanner, p, syndrome)
-    return osd(tanner, sortperm(-error_p), syndrome)
-end

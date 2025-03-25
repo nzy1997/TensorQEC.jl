@@ -76,3 +76,7 @@ end
 @testset "error_learning" begin
     include("decoding/error_learning.jl")
 end
+
+@testset "matching" begin
+    include("decoding/matching.jl")
+end
