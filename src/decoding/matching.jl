@@ -1,7 +1,24 @@
 abstract type MatchingSolver end
+
+"""
+    MatchingDecoder{T<:MatchingSolver} <: AbstractDecoder
+
+A decoder that uses matching algorithm.
+Fields:
+- `solver::T`: the matching solver
+- `error_vec::Vector{Float64}`: the error probability for each qubit
+"""
 struct MatchingDecoder{T<:MatchingSolver} <: AbstractDecoder 
     solver::T
+    error_vec::Vector{Float64}
+    function MatchingDecoder(solver::T, n::Int) where T
+        new{T}(solver, fill(0.1,n))
+    end
+    function MatchingDecoder(solver::T, error_vec::Vector{Float64}) where T
+        new{T}(solver, error_vec)
+    end
 end
+struct IPMatchingSolver <: MatchingSolver end
 
 # The last element is boundary
 struct FWSWeightedGraph{T}
@@ -13,9 +30,6 @@ end
 Graphs.nv(fwg::FWSWeightedGraph) = length(fwg.v2e)
 Graphs.ne(fwg::FWSWeightedGraph) = length(fwg.edges)
 
-function  tanner2fwswg(tanner::SimpleTannerGraph)
-    return tanner2fwswg(tanner,fill(0.1,tanner.nq))
-end
 
 function fws_edges(tanner::SimpleTannerGraph, p::Vector{Float64})
     g = SimpleWeightedGraph(tanner.ns + 1)
@@ -29,6 +43,10 @@ function fws_edges(tanner::SimpleTannerGraph, p::Vector{Float64})
     end
     fws = floyd_warshall_shortest_paths(g)
     return fws, collect(edges(g)),edge_mat
+end
+
+function  tanner2fwswg(tanner::SimpleTannerGraph)
+    return tanner2fwswg(tanner,fill(0.1,tanner.nq))
 end
 
 function tanner2fwswg(tanner::SimpleTannerGraph, p::Vector{Float64})
@@ -84,7 +102,23 @@ function FWSWGtoMWB(fwg::FWSWeightedGraph,syndrome::Vector{Mod2})
     return MatchingWithBoundary(view(fwg.dists,syndrome_vertex,syndrome_vertex))
 end
 
-function _mixed_integer_programming(mwb::MatchingWithBoundary)
+function extract_decoding(fwg::FWSWeightedGraph{T},  edge_vec::Vector{Vector{Int}},qubit_num::Int) where T
+    edge_vec_long = fill(Mod2(0), qubit_num)
+    for edge in edge_vec
+        vec = fwg.error_path[edge[1],edge[2]]
+        edge_vec_long[vec] .= edge_vec_long[vec] .+ Mod2(1)
+    end
+    return edge_vec_long
+end
+
+function decode(decoder::MatchingDecoder, tanner::SimpleTannerGraph, syndrome::Vector{Mod2})
+    fwg = tanner2fwswg(tanner,decoder.error_vec)
+    mwb = FWSWGtoMWB(fwg,syndrome)
+    ev = solve_matching(mwb,decoder.solver)
+    return extract_decoding(fwg,ev,tanner.nq)
+end
+
+function solve_matching(mwb::MatchingWithBoundary, matching_solver::IPMatchingSolver)
     num_vertices = size(mwb.adj_mat,1)
 
     model = Model(SCIP.Optimizer)
@@ -112,15 +146,19 @@ function _mixed_integer_programming(mwb::MatchingWithBoundary)
     return [sydrome_vec[collect(pair)] for pair in getfield.(ans_pairs[findall(x -> x.second, ans_pairs)],:first)]
 end
 
-function extract_decoding(fwg::FWSWeightedGraph{T},  edge_vec::Vector{Vector{Int}},qubit_num::Int) where T
-    edge_vec_long = fill(Mod2(0), qubit_num)
-    for edge in edge_vec
-        vec = fwg.error_path[edge[1],edge[2]]
-        edge_vec_long[vec] .= edge_vec_long[vec] .+ Mod2(1)
-    end
-    return edge_vec_long
-end
+struct GreedyMatchingSolver <: MatchingSolver end
 
-function decode(decoder::MatchingDecoder, tanner::SimpleTannerGraph, syndrome::Vector{Mod2})
-    return decode(decoder, tanner, syndrome, fill(0.05, tanner.nq))
+function solve_matching(mwb::MatchingWithBoundary, matching_solver::GreedyMatchingSolver)
+    view_mat = mwb.adj_mat
+    indices_vec = mwb.adj_mat.indices[1]
+    boundary_ind = indices_vec[end]
+    ans_vec = Vector{Vector{Int}}()
+    while length(indices_vec) > 1
+        _,ind = findmax(view_mat)
+        inds = indices_vec[collect(ind.I)]
+        push!(ans_vec,inds)
+        setdiff!(indices_vec,setdiff(inds, boundary_ind))
+        view_mat = view(mwb.adj_mat.parent,indices_vec,indices_vec)
+    end
+    return ans_vec
 end
