@@ -1,32 +1,3 @@
-abstract type AbstractDecoder end
-struct BPDecoder <: AbstractDecoder
-    bp_max_iter::Int
-end
-
-struct BPOSD <: AbstractDecoder
-    bp_max_iter::Int
-end
-
-struct DecodingResult
-    success_tag::Bool
-    error_qubits::Vector{Mod2}
-end
-
-struct CSSDecodingResult
-    success_tag::Bool
-    xerror_qubits::Vector{Mod2}
-    zerror_qubits::Vector{Mod2}
-end
-
-Base.show(io::IO, ::MIME"text/plain", cdr::CSSDecodingResult) = show(io, cdr)
-function Base.show(io::IO, cdr::CSSDecodingResult)
-    println(io, cdr.success_tag ? "Success" : "Failure")
-    if cdr.success_tag
-        println(io, "X error:", findall(v->v.x, cdr.xerror_qubits))
-        println(io, "Z error:", findall(v->v.x,cdr.zerror_qubits))
-    end
-end
-
 """
     IPDecoder <: AbstractDecoder
 
@@ -37,11 +8,6 @@ Base.@kwdef struct IPDecoder <: AbstractDecoder
     verbose::Bool = false
 end
 
-"""
-    decode(decoder::AbstractDecoder, tanner::AbstractTannerGraph, syndrome::AbstractSyndrome)
-    decode(decoder::AbstractDecoder, tanner::AbstractTannerGraph, syndrome::AbstractSyndrome,p_vec::Vector{AbstractErrorModel})
-Decode the syndrome with a given decoder.  `p_vec` is the error model vector.
-"""
 function decode(decoder::IPDecoder, tanner::SimpleTannerGraph, syndrome::Vector{Mod2})
     return decode(decoder, tanner, syndrome, fill(0.05, tanner.nq))
 end
@@ -133,92 +99,6 @@ function decode(decoder::IPDecoder, tanner::CSSTannerGraph, syndrome::CSSSyndrom
     return CSSDecodingResult(true, Mod2.(value.(x) .> 0.5) .+ Mod2.(value.(y) .> 0.5), Mod2.(value.(z) .> 0.5) .+ Mod2.(value.(y) .> 0.5))
 end
 
-struct BPResult
-    success_tag::Bool
-    error_qubits::Vector{Mod2}
-    iter::Int
-    error_perm::Vector{Int}
-end
-
-function decode(decoder::BPDecoder, tanner::SimpleTannerGraph, syndrome::Vector{Mod2}, p::Float64)
-    res = belief_propagation(syndrome, tanner, p;max_iter=decoder.bp_max_iter)
-    return DecodingResult(res.success_tag, res.error_qubits)
-end
-
-function decode(decoder::BPOSD, tanner::SimpleTannerGraph, syndrome::Vector{Mod2}, p::Float64)
-    eqs = bp_osd(syndrome, tanner, p;max_iter=decoder.bp_max_iter)
-    return DecodingResult(true, eqs)
-end
-
-function belief_propagation(syndrome::Vector{Mod2}, tanner::SimpleTannerGraph, p::Float64;max_iter=100)
-    return belief_propagation(syndrome, tanner, fill(p, tanner.nq);max_iter=max_iter)
-end
-
-function belief_propagation(syndrome::Vector{Mod2}, tanner::SimpleTannerGraph, p::Vector{Float64};max_iter=100)
-    mu = [log((1-p[i])/p[i]) for i in 1:tanner.nq]
-    mq2s =[[mu[i] for _ in 1:length(tanner.q2s[i])] for i in 1:tanner.nq]
-    ms2q = [[0.0 for _ in 1:length(tanner.s2q[s])] for s in 1:tanner.ns]
-    # mq2s =[[rand() for _ in v] for v in tanner.q2s]
-    errored_qubits = Mod2[]
-    success_tag = false
-    iter = 0
-    for iter in 1:max_iter
-        ms2q = [[messages2q(message_list(mq2s,s,tanner.q2s,tanner.s2q;exampt_qubit = q),syndrome[s]) for q in tanner.s2q[s]] for s in 1:tanner.ns]
-        mq2s = [[messageq2s(message_list(ms2q,qubit,tanner.s2q,tanner.q2s;exampt_qubit = s),mu[qubit]) for s in tanner.q2s[qubit]] for qubit in 1:tanner.nq]
-        errored_qubits = error_qubits(ms2q,tanner,mu)
-        if syndrome_extraction(errored_qubits, tanner) == syndrome
-            success_tag = true
-            break
-        end
-    end
-    return BPResult(success_tag, errored_qubits, iter, sortperm(messageq(ms2q,tanner,mu)))
-end
-
-function message_list(mq2s,s,tq2s,ts2q;exampt_qubit = 0)
-    return [mq2s[q][findfirst(==(s),tq2s[q])] for q in ts2q[s] if q != exampt_qubit]
-end
-
-function messageq(ms2q,tanner,mu)
-    [messageq2s(message_list(ms2q,qubit,tanner.s2q,tanner.q2s),mu[qubit])  for qubit in 1:tanner.nq]
-end
-
-function error_qubits(ms2q,tanner,mu)
-    Mod2.(messageq(ms2q,tanner,mu) .< 0 )
-end
-
-function messages2q(mlist,syndrome)
-    pro = 1.0
-    for m in mlist
-        pro *= tanh(m)
-    end
-    return (-1)^syndrome.x*atanh(pro)
-end
-
-function messageq2s(mlist,muq)
-    return max(min(sum(mlist) + muq,10),-10)
-end
-
-
-function osd(tanner::SimpleTannerGraph,order::Vector{Int},syndrome::Vector{Mod2})
-    H = tanner.H[:,order[1:1]]
-    hinv = 0
-    qubit_list = [order[1]]
-    for i in 1:length(order)
-        if check_linear_indepent(Matrix([H  tanner.H[:,order[i:i]]]'))
-            H = [H  tanner.H[:,order[i:i]]]
-            push!(qubit_list,order[i])
-        end
-        if size(H,2) == tanner.ns
-            break
-        end
-    end
-
-    hinv = mod2matrix_inverse(H)
-
-    error = hinv * syndrome
-    return [(i ∈ qubit_list) ? (error[findfirst(==(i),qubit_list)]) : Mod2(0)  for i in 1:tanner.nq]
-end
-
 function mod2matrix_inverse(H::Matrix{Bool})
     bm = SimpleBimatrix(copy(H),Matrix{Mod2}(I, size(H,1), size(H,1)),collect(1:size(H,2)))
     gaussian_elimination!(bm, 1:size(bm.matrix,1), 0, 0;allow_col_operation = false)
@@ -267,20 +147,6 @@ function tensor_infer(tanner::SimpleTannerGraph, p::Float64, syndrome::Vector{Mo
     tn = ldpc2tensor(tanner, p, syndrome)
     mp = marginals(tn)
     return [ mp[[k]][2] for k in 1:tanner.nq]
-end
-
-function bp_osd(syndrome::Vector{Mod2}, tanner::SimpleTannerGraph, p::Float64;max_iter=100)
-    bp_res = belief_propagation(syndrome, tanner, p;max_iter=max_iter)
-    if bp_res.success_tag
-        return bp_res.error_qubits
-    else
-        return osd(tanner, bp_res.error_perm, syndrome)
-    end
-end
-
-function tensor_osd(syndrome::Vector{Mod2}, tanner::SimpleTannerGraph, p::Float64)
-    error_p = tensor_infer(tanner, p, syndrome)
-    return osd(tanner, sortperm(-error_p), syndrome)
 end
 
 struct GeneralDecodingProblem
@@ -433,131 +299,4 @@ end
 function decode(decoder::IPDecoder, gdp::GeneralDecodingProblem, syndrome::Vector{Mod2})
     gdp2fdp = flattengdp(gdp)
     return extract_decoding(gdp2fdp,_mixed_integer_programming(decoder,gdp2fdp.fdp, syndrome))
-end
-
-struct MatchingDecoder <: AbstractDecoder end
-
-# The last element is boundary
-struct FWSWeightedGraph{T}
-    edges::Vector{SimpleWeightedEdge{Int,T}}
-    v2e::Vector{Vector{Int}}
-    # fws::Graphs.FloydWarshallState{T,Int}
-    dists::Matrix{T}
-    parent_path:: Matrix{Int64}
-    qubit_vec::Vector{Int}
-end
-Graphs.nv(fwg::FWSWeightedGraph) = length(fwg.v2e)
-Graphs.ne(fwg::FWSWeightedGraph) = length(fwg.edges)
-
-function  FWSWeightedGraph(tanner::SimpleTannerGraph)
-    return FWSWeightedGraph(tanner,fill(0.1,tanner.nq))
-end
-
-function FWSWeightedGraph(tanner::SimpleTannerGraph, p::Vector{Float64})
-    @assert maximum(length.(tanner.q2s)) <= 2 "Each error causes either one or two syndromes"
-    g = SimpleWeightedGraph(tanner.ns + 1)
-    for (i,q2s_vec) in enumerate(tanner.q2s)
-       if length(q2s_vec) == 1
-           min_add_edge!(g, q2s_vec[1], tanner.ns + 1, log((1-p[i])/p[i]))
-       else
-            min_add_edge!(g, q2s_vec[1], q2s_vec[2],  log((1-p[i])/p[i]))
-       end
-    end
-    fws = floyd_warshall_shortest_paths(g)
-    edge_vec = collect(edges(g))
-    v2e = [Vector{Int}() for _ in 1:nv(g)]
-    qubit_vec = Int[]
-    for (i,e) in enumerate(edge_vec)
-        push!(v2e[e.src], i)
-        push!(v2e[e.dst], i)
-
-        if e.src == tanner.ns + 1
-            push!(qubit_vec,tanner.s2q[e.dst][ findfirst(x -> length(tanner.q2s[x]) == 1 ,tanner.s2q[e.dst])])
-        elseif e.dst == tanner.ns + 1
-            push!(qubit_vec,tanner.s2q[e.src][ findfirst(x -> length(tanner.q2s[x]) == 1 ,tanner.s2q[e.src])])
-        else
-            push!(qubit_vec, (tanner.s2q[e.src] ∩ tanner.s2q[e.dst])[1])
-        end
-    end
-    parent_path = copy(fws.parents)
-
-    for i in 1:(tanner.ns + 1)
-        for j in 1:(tanner.ns + 1)
-            (i == j) && continue
-            pos = findfirst(k -> (edge_vec[k].dst == fws.parents[i,j]) || (edge_vec[k].src == fws.parents[i,j]),v2e[j])
-            parent_path[i,j] = v2e[j][pos]
-            # parent_path[i,j] records the edge adjacent to j in the shortest path from i to j
-        end
-    end
-    return FWSWeightedGraph(edge_vec,v2e , fws.dists,parent_path,qubit_vec)
-end
-
-function min_add_edge!(g, s, d, w)
-    if iszero(g.weights[s,d]) || g.weights[s,d] > w
-        add_edge!(g,s,d,w)
-    end
-end
-
-# The last element is boundary
-struct MatchingWithBoundary{T}
-    graph::SimpleWeightedGraph{Int,T}
-end
-
-struct FWSWGtoMWB{T}
-    mwb::MatchingWithBoundary{T}
-    syndrome_vertex::Vector{Int}
-end
-
-function FWSWGtoMWB(fwg::FWSWeightedGraph,syndrome::Vector{Mod2})
-    boundry_large = nv(fwg)
-    syndrome_vertex = findall(v->v.x,syndrome)
-    boundary_small = length(syndrome_vertex) + 1
-
-    g = SimpleWeightedGraph(boundary_small)
-    for i in 1:length(syndrome_vertex)
-        add_edge!(g, i, boundary_small, fwg.dists[syndrome_vertex[i], boundry_large])
-        for j in (i+1):length(syndrome_vertex)
-            add_edge!(g, i, j, fwg.dists[syndrome_vertex[i], syndrome_vertex[j]])
-        end
-    end
-    push!(syndrome_vertex,boundry_large)
-    return FWSWGtoMWB(MatchingWithBoundary(g),syndrome_vertex)
-end
-
-function _mixed_integer_programming(mwb::MatchingWithBoundary)
-    model = Model(SCIP.Optimizer)
-    set_silent(model)
-
-    @variable(model, 0 <= z[i = 1:ne(mwb.graph)] <= 1, Int)
-    
-    obj = 0.0
-    edge_label_vec = [Vector{Int}() for _ in 1:nv(mwb.graph)]
-    edge_vec = collect(edges(mwb.graph))
-    for (i,edge) in enumerate(edge_vec)
-        obj += z[i] * edge.weight
-        push!(edge_label_vec[edge.src], i)
-        push!(edge_label_vec[edge.dst], i)
-    end
-
-    for i in 1:(nv(mwb.graph)-1)
-        @constraint(model, sum(z[j] for j in edge_label_vec[i]) == 1)
-    end
-    @objective(model, Min, obj)
-    optimize!(model)
-    @assert is_solved_and_feasible(model) "The problem is infeasible!"
-    return edge_vec[value.(z).> 0.5]
-end
-
-function extract_decoding(fwg::FWSWeightedGraph{T}, f2m::FWSWGtoMWB{T}, edge_vec::Vector{SimpleWeightedEdge{Int,T}}) where T
-    edge_vec_long = fill(0, ne(fwg))
-    for edge in edge_vec
-        s = f2m.syndrome_vertex[edge.src]
-        d = f2m.syndrome_vertex[edge.dst]
-        while d != s
-            e = fwg.parent_path[d,s]
-            edge_vec_long[e] = 1 - edge_vec_long[e]
-            d = fwg.edges[e].src == d ? fwg.edges[e].dst : fwg.edges[e].src
-        end
-    end
-    return edge_vec_long
 end

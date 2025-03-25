@@ -83,6 +83,7 @@ export TrainningData,error_learning
 export multiprocess_run
 
 include("mod2.jl")
+include("interfaces.jl")
 include("paulibasis/paulistring.jl")
 include("paulibasis/cliffordgroup.jl")
 include("paulibasis/paulibasis.jl")
@@ -93,12 +94,15 @@ include("tensornetwork/inferences.jl")
 include("decoding/measurement.jl")
 include("decoding/tablemake.jl")
 include("tensornetwork/simulation.jl")
-include("decoding/error_model.jl")
 include("codes/ldpc.jl")
+
+include("decoding/error_model.jl")
 include("paulibasis/tableaux.jl")
 include("decoding/decoder.jl")
 include("decoding/threshold.jl")
 include("code_distance.jl")
 include("decoding/error_learning.jl")
 include("multiprocessing.jl")
+include("decoding/matching.jl")
+include("decoding/bposd.jl")
 end

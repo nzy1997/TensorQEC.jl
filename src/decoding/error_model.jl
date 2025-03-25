@@ -82,3 +82,25 @@ function random_error_qubits(ems::Vector{DepolarizingError})
     end
     return CSSErrorPattern(xerror, zerror)
 end
+
+"""
+    syndrome_extraction(errored_qubits::Vector{Mod2}, H::Matrix{Mod2})
+    syndrome_extraction(errored_qubits::Vector{Mod2}, tanner::SimpleTannerGraph)
+    syndrome_extraction(error_patterns::CSSErrorPattern, tanner::CSSTannerGraph)
+
+Extract the syndrome from the error pattern.
+"""
+function syndrome_extraction(errored_qubits::Vector{Mod2}, H::Matrix{Mod2})
+    return H * errored_qubits
+end
+function syndrome_extraction(errored_qubits::Vector{Mod2}, tanner::SimpleTannerGraph)
+    return syndrome_extraction(errored_qubits, tanner.H)
+end
+struct CSSSyndrome <: AbstractSyndrome
+    sx::Vector{Mod2}
+    sz::Vector{Mod2}
+end
+
+function syndrome_extraction(error_patterns::CSSErrorPattern, tanner::CSSTannerGraph)
+    return CSSSyndrome(syndrome_extraction(error_patterns.zerror, tanner.stgx), syndrome_extraction(error_patterns.xerror, tanner.stgz))
+end

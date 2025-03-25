@@ -95,27 +95,3 @@ end
     @test syn.sx == syndrome_extraction(res.zerror_qubits, tanner.stgx)
     @test syn.sz == syndrome_extraction(res.xerror_qubits, tanner.stgz)
 end
-
-@testset "MinimumWeightEmbeddedMatching" begin
-    Random.seed!(123)
-    tanner = CSSTannerGraph(SurfaceCode(3, 3)).stgx
-    em = FlipError(0.1)
-    error_qubits =  random_error_qubits(9, em)
-    syn = syndrome_extraction(error_qubits,tanner)
-
-    fwg = TensorQEC.FWSWeightedGraph(tanner)
-
-    # a = floyd_warshall_shortest_paths(g)
-    f2m = TensorQEC.FWSWGtoMWB(fwg,syn)
-
-    ev = TensorQEC._mixed_integer_programming(f2m.mwb)
-
-    ans = extract_decoding(fwg,f2m,ev)
-
-        
-    fwg.qubit_vec[ans .== 1]
-    error_qubits_a = fill(Mod2(0),9)
-    error_qubits_a[fwg.qubit_vec[ans .== 1]] .= Mod2(1)
-
-    @test syn == syndrome_extraction(error_qubits_a,tanner)
-end
