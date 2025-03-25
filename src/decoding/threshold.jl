@@ -56,7 +56,7 @@ function single_round_qec(tanner::SimpleTannerGraph, deocder::AbstractDecoder,em
     ex = random_error_qubits(nq(tanner), em)
 
     sydz = syndrome_extraction(ex, tanner)
-    res = decode(deocder, tanner, sydz, em.p)
+    res = decode(deocder, tanner, sydz)
     ex_app = res.error_qubits
     return  check_logical_error(ex, ex_app, tanner_check.H)
 end

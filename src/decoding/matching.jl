@@ -6,17 +6,9 @@ abstract type MatchingSolver end
 A decoder that uses matching algorithm.
 Fields:
 - `solver::T`: the matching solver
-- `error_vec::Vector{Float64}`: the error probability for each qubit
 """
 struct MatchingDecoder{T<:MatchingSolver} <: AbstractDecoder 
     solver::T
-    error_vec::Vector{Float64}
-    function MatchingDecoder(solver::T, n::Int) where T
-        new{T}(solver, fill(0.1,n))
-    end
-    function MatchingDecoder(solver::T, error_vec::Vector{Float64}) where T
-        new{T}(solver, error_vec)
-    end
 end
 struct IPMatchingSolver <: MatchingSolver end
 
@@ -111,11 +103,11 @@ function extract_decoding(fwg::FWSWeightedGraph{T},  edge_vec::Vector{Vector{Int
     return edge_vec_long
 end
 
-function decode(decoder::MatchingDecoder, tanner::SimpleTannerGraph, syndrome::Vector{Mod2})
-    fwg = tanner2fwswg(tanner,decoder.error_vec)
+function decode(decoder::MatchingDecoder, prob::SimpleDecodingProblem, syndrome::Vector{Mod2})
+    fwg = tanner2fwswg(prob.tanner,prob.pvec)
     mwb = FWSWGtoMWB(fwg,syndrome)
     ev = solve_matching(mwb,decoder.solver)
-    return extract_decoding(fwg,ev,tanner.nq)
+    return DecodingResult(true,extract_decoding(fwg,ev,prob.tanner.nq))
 end
 
 function solve_matching(mwb::MatchingWithBoundary, matching_solver::IPMatchingSolver)

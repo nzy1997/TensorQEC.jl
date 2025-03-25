@@ -8,15 +8,9 @@ Base.@kwdef struct IPDecoder <: AbstractDecoder
     verbose::Bool = false
 end
 
-function decode(decoder::IPDecoder, tanner::SimpleTannerGraph, syndrome::Vector{Mod2})
-    return decode(decoder, tanner, syndrome, fill(0.05, tanner.nq))
-end
-function decode(decoder::IPDecoder, tanner::SimpleTannerGraph, syndrome::Vector{Mod2}, p::Float64)
-    return decode(decoder, tanner, syndrome, fill(p, tanner.nq))
-end
-function decode(decoder::IPDecoder, tanner::SimpleTannerGraph, syndrome::Vector{Mod2},p_vec::Vector{Float64})
-    H = [a.x for a in tanner.H]
-    return DecodingResult(true,_mixed_integer_programming(decoder, H, [s.x for s in syndrome], p_vec))
+function decode(decoder::IPDecoder, prob::SimpleDecodingProblem, syndrome::Vector{Mod2})
+    H = [a.x for a in prob.tanner.H]
+    return DecodingResult(true,_mixed_integer_programming(decoder, H, [s.x for s in syndrome], prob.pvec))
 end
 
 function _mixed_integer_programming(decoder::IPDecoder, H::Matrix{Bool}, syndrome::Vector{Bool}, p_vec::Vector{Float64})
@@ -44,11 +38,9 @@ function _mixed_integer_programming(decoder::IPDecoder, H::Matrix{Bool}, syndrom
     return Mod2.(value.(z) .> 0.5)
 end
 
-function decode(decoder::IPDecoder, tanner::CSSTannerGraph, syndrome::CSSSyndrome)
-    return decode(decoder, tanner, syndrome, fill(DepolarizingError(0.05, 0.05, 0.05), nq(tanner)))
-end
-
-function decode(decoder::IPDecoder, tanner::CSSTannerGraph, syndrome::CSSSyndrome,p_vec::Vector{DepolarizingError})
+function decode(decoder::IPDecoder, prob::CSSDecodingProblem, syndrome::CSSSyndrome)
+    tanner = prob.tanner
+    p_vec = prob.pvec
     Hx = [a.x for a in tanner.stgx.H]
     Hz = [a.x for a in tanner.stgz.H]
     mx,n = size(Hx)

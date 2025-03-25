@@ -58,11 +58,23 @@ The abstract type for a decoder.
 abstract type AbstractDecoder end
 
 """
-    decode(decoder::AbstractDecoder, tanner::AbstractTannerGraph, syndrome::AbstractSyndrome)
+    decode(decoder::AbstractDecoder, problem::AbstractDecodingProblem, syndrome::AbstractSyndrome)
+    decode(decoder::AbstractDecoder, problem::AbstractDecodingProblem, syndrome::AbstractSyndrome, p::Float64)
 
 Decode the syndrome using the decoder.
 """
-function decode end
+function decode(decoder::AbstractDecoder, tanner::SimpleTannerGraph, syndrome::Vector{Mod2})
+    return decode(decoder, tanner, syndrome, fill(0.05, nq(tanner)))
+end
+function decode(decoder::AbstractDecoder, tanner::SimpleTannerGraph, syndrome::Vector{Mod2}, pvec::Vector{Float64})
+    return decode(decoder, SimpleDecodingProblem(tanner,pvec), syndrome)
+end
+function decode(decoder::AbstractDecoder, tanner::CSSTannerGraph, syndrome::CSSSyndrome,pvec::Vector{DepolarizingError})
+    return decode(decoder, CSSDecodingProblem(tanner,pvec), syndrome)
+end
+function decode(decoder::AbstractDecoder, tanner::CSSTannerGraph, syndrome::CSSSyndrome)
+    return decode(decoder, tanner, syndrome, fill(DepolarizingError(0.05, 0.05, 0.05), nq(tanner)))
+end
 
 struct DecodingResult
     success_tag::Bool
@@ -82,4 +94,10 @@ function Base.show(io::IO, cdr::CSSDecodingResult)
         println(io, "X error:", findall(v->v.x, cdr.xerror_qubits))
         println(io, "Z error:", findall(v->v.x,cdr.zerror_qubits))
     end
+end
+
+function decode(decoder::AbstractDecoder, problem::CSSDecodingProblem, syndrome::CSSSyndrome)
+    resz = decode(decoder,problem.tanner.stgx,syndrome.sx,[em.pz + em.py for em in problem.pvec])
+    resx = decode(decoder,problem.tanner.stgz,syndrome.sz,[em.px + em.py for em in problem.pvec])
+    return CSSDecodingResult(resx.success_tag && resz.success_tag,resx.error_qubits,resz.error_qubits)
 end

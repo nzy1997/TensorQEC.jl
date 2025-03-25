@@ -45,11 +45,11 @@ end
     em = FlipError(0.1)
     error_qubits =  random_error_qubits(d*d, em)
     syn = syndrome_extraction(error_qubits,tanner)
-    decoder = MatchingDecoder(IPMatchingSolver(),d*d)
+    decoder = MatchingDecoder(IPMatchingSolver())
     ans = decode(decoder,tanner,syn)
-    @test syn == syndrome_extraction(ans,tanner)
+    @test syn == syndrome_extraction(ans.error_qubits,tanner)
 
-    decoder = MatchingDecoder(TensorQEC.GreedyMatchingSolver(),d*d)
+    decoder = MatchingDecoder(TensorQEC.GreedyMatchingSolver())
     ans = decode(decoder,tanner,syn)
-    @test syn == syndrome_extraction(ans,tanner)
+    @test syn == syndrome_extraction(ans.error_qubits,tanner)
 end

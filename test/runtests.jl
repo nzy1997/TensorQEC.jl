@@ -80,3 +80,15 @@ end
 @testset "matching" begin
     include("decoding/matching.jl")
 end
+
+@testset "ipdecoder" begin
+    include("decoding/ipdecoder.jl")
+end
+
+@testset "bpdecoder" begin
+    include("decoding/bpdecoder.jl")
+end
+
+@testset "decoding interfaces" begin
+    include("decoding/interfaces.jl")
+end
