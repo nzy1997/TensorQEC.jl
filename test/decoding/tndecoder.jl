@@ -2,6 +2,7 @@ using Test
 using TensorQEC
 using TensorQEC.Yao
 using TensorQEC.OMEinsum
+using TensorQEC.TensorInference
 
 @testset "stg2tensornetwork" begin
     sts = [[1, 2,3,4],[2,3,4,5]]
@@ -14,4 +15,8 @@ using TensorQEC.OMEinsum
     ptn = TensorNetwork(code,tensors)
 
     tn = TensorQEC.stg2tensornetwork(tanner,ptn)
+
+    mmap = MMAPModel(tn, evidence=Dict(6=>0,7=>1), queryvars=[1,2,3,4,5])
+    most_probable_config(mmap)
+    tn = TensorNetworkModel(tn, evidence=Dict(6=>0,7=>1))
 end

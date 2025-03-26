@@ -6,15 +6,18 @@ function decode(decoder::TNOSD, tanner::SimpleTannerGraph, syndrome::Vector{Mod2
 end
 
 function stg2tensornetwork(tanner::SimpleTannerGraph, ptn::TensorNetwork)
-    tensors = Vector{Array{Float64}}()
-    ixs = copy(ptn.code.ixs)
+    nvars = tanner.nq + tanner.ns 
+    cards = fill(2, nvars)
 
-    [push!(tensors, ptn.tensors[i]) for i in 1:length(ptn.tensors)]
-    for s in 1:tanner.ns
-        push!(tensors, parity_check_matrix(length(tanner.s2q[s])))
-        push!(ixs, [s+tanner.nq,tanner.s2q[s]...])
-    end
-    return TensorNetwork( DynamicEinCode(ixs,Int[]),tensors)
+    factors = [Factor(((tanner.s2q[s] ∪ (s+tanner.nq))...,), parity_check_matrix(length(tanner.s2q[s]))) for s in 1:(tanner.ns)]
+    pfac = [Factor((c...,),t) for (c,t) in zip(ptn.code.ixs,ptn.tensors)]
+    return UAIModel(nvars, cards, factors ∪ pfac)
+     return TensorNetworkModel(
+		1:nvars,
+		cards,
+		factors ∪ pfac;
+		# openvars = tanner.nq+1:tanner.nq+tanner.ns
+	)
 end
 
 function syndrome_tn(tn, syndrome)
