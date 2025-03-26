@@ -37,7 +37,7 @@ end
 A general decoding problem.
 Fields:
 - `tanner::SimpleTannerGraph`: the Tanner graph
-- `ptn::TensorNetwork`: the probability distributions
+- `ptn::TensorNetwork`: the probability distributions, qubits are labeled as 1:qubit_num
 """
 struct GeneralDecodingProblem <: AbstractDecodingProblem
     tanner::SimpleTannerGraph

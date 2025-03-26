@@ -5,6 +5,26 @@ function decode(decoder::TNOSD, tanner::SimpleTannerGraph, syndrome::Vector{Mod2
     return DecodingResult(true, eqs)
 end
 
+function stg2tensornetwork(tanner::SimpleTannerGraph, ptn::TensorNetwork)
+    tensors = Vector{Array{Float64}}()
+    ixs = copy(ptn.code.ixs)
+
+    [push!(tensors, ptn.tensors[i]) for i in 1:length(ptn.tensors)]
+    for s in 1:tanner.ns
+        push!(tensors, parity_check_matrix(length(tanner.s2q[s])))
+        push!(ixs, [s+tanner.nq,tanner.s2q[s]...])
+    end
+    return TensorNetwork( DynamicEinCode(ixs,Int[]),tensors)
+end
+
+function syndrome_tn(tn, syndrome)
+    for i in 1:length(syndrome)
+        tn.tensors[tanner.nq+i] = syndrome[i].x ? [1.0, 0.0] : [0.0, 1.0]
+    end
+    return tn
+    
+end
+
 function ldpc2tensor(tanner::SimpleTannerGraph, p::Float64, syndrome::Vector{Mod2})
     nvars = tanner.nq + tanner.ns 
     cards = fill(2, nvars)
