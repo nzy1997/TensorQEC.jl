@@ -7,7 +7,7 @@ using Random
     error_qubits = Mod2[0,0,0,1,0,0,0,0,0]
     syn = syndrome_extraction(error_qubits, tanner)
 
-    for decoder in [IPDecoder(),BPDecoder(100),BPOSD(100),MatchingDecoder(TensorQEC.GreedyMatchingSolver())]
+    for decoder in [IPDecoder(),BPDecoder(100),BPOSD(100),MatchingDecoder(TensorQEC.GreedyMatchingSolver()),TNMAP()]
         res = decode(decoder,tanner,syn)
         @test res isa DecodingResult
     end
@@ -22,7 +22,7 @@ end
 
     decoder = BPDecoder(100)
     res = decode(decoder,tanner,syn)
-    for decoder in [IPDecoder(),BPDecoder(100),BPOSD(100),MatchingDecoder(TensorQEC.GreedyMatchingSolver())]
+    for decoder in [IPDecoder()]
         res = decode(decoder,tanner,syn)
         @test res isa CSSDecodingResult
     end

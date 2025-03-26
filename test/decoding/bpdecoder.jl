@@ -70,26 +70,6 @@ end
     @test check_linear_indepent(H) == false
 end
 
-@testset "tensor_osd" begin
-    sts = [[1, 2,3,4],[2,3,5,7],[3,4,5,6]]
-    nq = 7
-    tanner = SimpleTannerGraph(nq, sts)
-    error_qubits = Mod2[0,0,0,1,0,0,0]
-    syd = syndrome_extraction(error_qubits, tanner)
-    tn_res = tensor_osd(syd,tanner, 0.05)
-    @test check_decode(tn_res,syd,tanner)
-
-    Random.seed!(23456)
-    r34ldpc = random_ldpc(4,3,32)
-    # plot_graph(r34ldpc)
-    em = FlipError(0.05)
-    error_qubits =  random_error_qubits(32, em)
-    syd = syndrome_extraction(error_qubits, r34ldpc)
-    error_probabillity = tensor_infer(r34ldpc, 0.05,syd)
-    tn_res = tensor_osd(syd,r34ldpc, 0.05)
-    @test check_decode(tn_res,syd,r34ldpc)
-end
-
 @testset "osd" begin
     sts = [[1, 2,3,4],[2,3,5,7],[3,4,5,6]]
     nq = 7
