@@ -92,3 +92,7 @@ end
 @testset "decoding interfaces" begin
     include("decoding/interfaces.jl")
 end
+
+@testset "tndecoder" begin
+    include("decoding/tndecoder.jl")
+end
