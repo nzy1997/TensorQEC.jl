@@ -13,7 +13,6 @@ using Yao.YaoBlocks.Optimise
 using PrettyTables
 using Optimisers
 
-using ProblemReductions
 using Graphs
 using SimpleWeightedGraphs
 using JuMP
