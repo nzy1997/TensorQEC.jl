@@ -56,7 +56,7 @@ export ComplexConj, SymbolRecorder,IdentityRecorder, ein_circ, QCInfo, qc2enisum
 export coherent_error_unitary, error_quantum_circuit,toput, error_pairs,fidelity_tensornetwork, simulation_tensornetwork,error_quantum_circuit_pair_replace
 
 # ldpc
-export SimpleTannerGraph,syndrome_extraction,product_graph,CSSTannerGraph,plot_graph,dual_graph,get_graph,belief_propagation,random_ldpc,check_decode, check_linear_indepent
+export SimpleTannerGraph,syndrome_extraction,product_graph,CSSTannerGraph,plot_graph,dual_graph,get_graph,belief_propagation,random_ldpc, check_linear_indepent
 export tensor_infer,osd,mod2matrix_inverse,bp_osd,tensor_osd,check_logical_error
 
 # tableaux
@@ -104,9 +104,9 @@ include("decoding/tablemake.jl")
 include("tensornetwork/simulation.jl")
 
 include("paulibasis/tableaux.jl")
-include("decoding/threshold.jl")
+include("threshold.jl")
 include("code_distance.jl")
-include("decoding/error_learning.jl")
+include("tensornetwork/error_learning.jl")
 include("multiprocessing.jl")
 include("gaussian_elimination.jl")
 

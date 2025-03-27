@@ -124,14 +124,6 @@ function random_ldpc(n1::Int,n2::Int,nq::Int)
     return SimpleTannerGraph(nq, sts)
 end
 
-function check_decode(error_qubits::Vector{Mod2}, syd::Vector{Mod2}, H::Matrix{Mod2})
-    return syd == syndrome_extraction(error_qubits, H)
-end
-
-function check_decode(error_qubits::Vector{Mod2}, syd::Vector{Mod2}, tanner::SimpleTannerGraph)
-    return check_decode(error_qubits, syd, tanner.H)
-end
-
 function check_logical_error(errored_qubits1::Vector{Mod2}, errored_qubits2::Vector{Mod2}, H)
     return !check_linear_indepent([a.x for a in [H;transpose(errored_qubits1+errored_qubits2)]])
 end

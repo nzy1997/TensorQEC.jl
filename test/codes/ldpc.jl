@@ -3,6 +3,7 @@ using TensorQEC
 using TensorQEC.Graphs.Experimental: has_isomorph
 using Random
 using TensorQEC.LinearAlgebra
+
 @testset "SimpleTannerGraph" begin
     sts = [[1, 2,3,4],[2,3,4,5]]
     nq = 5
@@ -28,7 +29,7 @@ end
     nq = 5
     tanner = SimpleTannerGraph(nq, sts)
     error_qubits = Mod2[1,0,1,1,0]
-    @test syndrome_extraction(error_qubits, tanner) == Mod2[1,0]
+    @test syndrome_extraction(error_qubits, tanner).s == Mod2[1,0]
 
     Random.seed!(123)
     tanner = CSSTannerGraph(SurfaceCode(3, 3))

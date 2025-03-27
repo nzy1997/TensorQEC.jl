@@ -1,7 +1,6 @@
 struct BPResult
     success_tag::Bool
     error_qubits::Vector{Mod2}
-    iter::Int
     error_perm::Vector{Int}
 end
 
@@ -49,20 +48,17 @@ function belief_propagation(syndrome::Vector{Mod2}, tanner::SimpleTannerGraph, p
     mu = [log((1-p[i])/p[i]) for i in 1:tanner.nq]
     mq2s =[[mu[i] for _ in 1:length(tanner.q2s[i])] for i in 1:tanner.nq]
     ms2q = [[0.0 for _ in 1:length(tanner.s2q[s])] for s in 1:tanner.ns]
-    # mq2s =[[rand() for _ in v] for v in tanner.q2s]
     errored_qubits = Mod2[]
-    success_tag = false
-    iter = 0
     for iter in 1:max_iter
         ms2q = [[messages2q(message_list(mq2s,s,tanner.q2s,tanner.s2q;exampt_qubit = q),syndrome[s]) for q in tanner.s2q[s]] for s in 1:tanner.ns]
         mq2s = [[messageq2s(message_list(ms2q,qubit,tanner.s2q,tanner.q2s;exampt_qubit = s),mu[qubit]) for s in tanner.q2s[qubit]] for qubit in 1:tanner.nq]
         errored_qubits = error_qubits(ms2q,tanner,mu)
-        if syndrome_extraction(errored_qubits, tanner) == syndrome
-            success_tag = true
+        if syndrome_extraction(errored_qubits, tanner).s == syndrome
+            return BPResult(true, errored_qubits, sortperm(messageq(ms2q,tanner,mu)))
             break
         end
     end
-    return BPResult(success_tag, errored_qubits, iter, sortperm(messageq(ms2q,tanner,mu)))
+    return BPResult(false, fill(Mod2(0),tanner.nq), sortperm(messageq(ms2q,tanner,mu)))
 end
 
 function message_list(mq2s,s,tq2s,ts2q;exampt_qubit = 0)

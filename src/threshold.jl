@@ -60,8 +60,3 @@ function single_round_qec(tanner::SimpleTannerGraph, deocder::AbstractDecoder,em
     ex_app = res.error_qubits
     return  check_logical_error(ex, ex_app, tanner_check.H)
 end
-
-function threshold_qec(tanner::SimpleTannerGraph,decoder,error_model_vec::Vector,tanner_check::SimpleTannerGraph;rounds = 100)
-    return [multi_round_qec(tanner,decoder, em,tanner_check; rounds) for em in error_model_vec]
-end
-
