@@ -103,12 +103,6 @@ function extract_decoding(fwg::FWSWeightedGraph{T},  edge_vec::Vector{Vector{Int
     return edge_vec_long
 end
 
-function decode(decoder::MatchingDecoder, prob::SimpleDecodingProblem, syndrome::Vector{Mod2})
-    fwg = tanner2fwswg(prob.tanner,prob.pvec)
-    mwb = FWSWGtoMWB(fwg,syndrome)
-    ev = solve_matching(mwb,decoder.solver)
-    return DecodingResult(true,extract_decoding(fwg,ev,prob.tanner.nq))
-end
 
 function solve_matching(mwb::MatchingWithBoundary, matching_solver::IPMatchingSolver)
     num_vertices = size(mwb.adj_mat,1)
@@ -153,4 +147,21 @@ function solve_matching(mwb::MatchingWithBoundary, matching_solver::GreedyMatchi
         view_mat = view(mwb.adj_mat.parent,indices_vec,indices_vec)
     end
     return ans_vec
+end
+
+struct CompiledMatching{ET} <: CompiledDecoder
+    solver::ET
+    qubit_num::Int
+    fwg::FWSWeightedGraph
+end
+
+function compile(decoder::MatchingDecoder, prob::SimpleDecodingProblem)
+    fwg = tanner2fwswg(prob.tanner,prob.pvec)
+    return CompiledMatching(decoder.solver,prob.tanner.nq,fwg)
+end
+
+function decode(cm::CompiledMatching,syndrome::SimpleSyndrome)
+    mwb = FWSWGtoMWB(cm.fwg,syndrome.s)
+    ev = solve_matching(mwb,cm.solver)
+    return DecodingResult(true, extract_decoding(cm.fwg,ev,cm.qubit_num))
 end

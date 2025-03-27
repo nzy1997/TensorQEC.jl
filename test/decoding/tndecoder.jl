@@ -25,3 +25,18 @@ end
     res = decode(decoder,tanner.stgz,syn)
     @test syn == syndrome_extraction(res.error_qubits, tanner.stgz)
 end
+
+@testset "compile and decode" begin
+    d = 3
+    tanner = CSSTannerGraph(SurfaceCode(d, d))
+
+    ct = compile(TNMAP(),tanner.stgz)
+
+    Random.seed!(123)
+    em = FlipError(0.05)
+    ep = random_error_qubits(d*d, em)
+    syn = syndrome_extraction(ep,tanner.stgz)
+    
+    res = decode(ct,syn)
+    @test syn == syndrome_extraction(res.error_qubits, tanner.stgz)
+end

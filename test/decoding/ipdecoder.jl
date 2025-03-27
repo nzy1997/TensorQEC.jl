@@ -43,14 +43,9 @@ end
     syn = syndrome_extraction(ep,tanner)
 
     res = decode(IPDecoder(),tanner,syn)
-    @test syn.sx == syndrome_extraction(res.zerror_qubits, tanner.stgx)
-    @test syn.sz == syndrome_extraction(res.xerror_qubits, tanner.stgz)
+    @test syn == syndrome_extraction(res.error_qubits, tanner)
 
-    res = decode(IPDecoder(),tanner,syn,fill(em,9))
-    @test syn.sx == syndrome_extraction(res.zerror_qubits, tanner.stgx)
-    @test syn.sz == syndrome_extraction(res.xerror_qubits, tanner.stgz)
-
-    res = decode(IPDecoder(),tanner,syn,fill(DepolarizingError(0.05, 0.06, 0.0),9))
-    @test syn.sx == syndrome_extraction(res.zerror_qubits, tanner.stgx)
-    @test syn.sz == syndrome_extraction(res.xerror_qubits, tanner.stgz)
+    ct = compile(IPDecoder(), tanner)
+    res = decode(ct, syn)
+    @test syn == syndrome_extraction(res.error_qubits, tanner)
 end

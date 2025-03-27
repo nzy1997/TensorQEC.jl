@@ -11,6 +11,7 @@ struct FlipError <: AbstractClassicalErrorModel
     p::Float64
 end
 
+uniform_error_vector(p::Float64,tanner::SimpleTannerGraph) = fill(p,tanner.nq)
 """
     DepolarizingError <: AbstractQuantumErrorModel
     DepolarizingError(p::Float64)
@@ -28,7 +29,8 @@ struct DepolarizingError <: AbstractQuantumErrorModel
     pz::Float64
 end
 DepolarizingError(p::Float64) = DepolarizingError(p, p, p)
- 
+uniform_error_vector(p::Float64,tanner::CSSTannerGraph) = fill(DepolarizingError(p),nq(tanner))
+
 """
     random_error_qubits(qubit_number::Int, em::AbstractErrorModel)
 
@@ -83,6 +85,11 @@ function random_error_qubits(ems::Vector{DepolarizingError})
     return CSSErrorPattern(xerror, zerror)
 end
 
+struct SimpleSyndrome <: AbstractSyndrome
+    s::Vector{Mod2}
+end
+Base.:(==)(s1::SimpleSyndrome, s2::SimpleSyndrome) = s1.s == s2.s
+
 """
     syndrome_extraction(errored_qubits::Vector{Mod2}, H::Matrix{Mod2})
     syndrome_extraction(errored_qubits::Vector{Mod2}, tanner::SimpleTannerGraph)
@@ -91,16 +98,18 @@ end
 Extract the syndrome from the error pattern.
 """
 function syndrome_extraction(errored_qubits::Vector{Mod2}, H::Matrix{Mod2})
-    return H * errored_qubits
+    return SimpleSyndrome(H * errored_qubits)
 end
 function syndrome_extraction(errored_qubits::Vector{Mod2}, tanner::SimpleTannerGraph)
     return syndrome_extraction(errored_qubits, tanner.H)
 end
+
 struct CSSSyndrome <: AbstractSyndrome
     sx::Vector{Mod2}
     sz::Vector{Mod2}
 end
+Base.:(==)(s1::CSSSyndrome, s2::CSSSyndrome) = s1.sx == s2.sx && s1.sz == s2.sz
 
 function syndrome_extraction(error_patterns::CSSErrorPattern, tanner::CSSTannerGraph)
-    return CSSSyndrome(syndrome_extraction(error_patterns.zerror, tanner.stgx), syndrome_extraction(error_patterns.xerror, tanner.stgz))
+    return CSSSyndrome(syndrome_extraction(error_patterns.zerror, tanner.stgx).s, syndrome_extraction(error_patterns.xerror, tanner.stgz).s)
 end

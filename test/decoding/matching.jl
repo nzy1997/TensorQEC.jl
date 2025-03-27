@@ -19,25 +19,6 @@ using Random
     @test Set(fwg.error_path[3,4]) == Set([4,5,6])
 end
 
-@testset "IPMatchingSolver" begin
-    Random.seed!(123)
-    d = 7
-    tanner = CSSTannerGraph(SurfaceCode(d, d)).stgx
-    em = FlipError(0.1)
-    error_qubits =  random_error_qubits(d*d, em)
-    syn = syndrome_extraction(error_qubits,tanner)
-
-    fwg = TensorQEC.tanner2fwswg(tanner)
-    mwb = TensorQEC.FWSWGtoMWB(fwg,syn)
-
-    solver = TensorQEC.IPMatchingSolver()
-    ev = TensorQEC.solve_matching(mwb,solver)
-
-    ans = extract_decoding(fwg,ev,d*d)
-
-    @test syn == syndrome_extraction(ans,tanner)
-end
-
 @testset "decode" begin
     Random.seed!(3245)
     d = 7
@@ -52,4 +33,19 @@ end
     decoder = MatchingDecoder(TensorQEC.GreedyMatchingSolver())
     ans = decode(decoder,tanner,syn)
     @test syn == syndrome_extraction(ans.error_qubits,tanner)
+end
+
+@testset "compile and decode" begin
+    d = 3
+    tanner = CSSTannerGraph(SurfaceCode(d, d))
+
+    ct = compile(MatchingDecoder(IPMatchingSolver()),tanner.stgz)
+
+    Random.seed!(123)
+    em = FlipError(0.05)
+    ep = random_error_qubits(d*d, em)
+    syn = syndrome_extraction(ep,tanner.stgz)
+    
+    res = decode(ct,syn)
+    @test syn == syndrome_extraction(res.error_qubits, tanner.stgz)
 end

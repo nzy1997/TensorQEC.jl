@@ -11,24 +11,20 @@ using TensorQEC.Yao
     em = DepolarizingError(0.05, 0.06, 0.1)
     ep = random_error_qubits(9, em)
     syn = syndrome_extraction(ep,tanner)
-    gs = general_syndrome(syn)
+    gs = TensorQEC.SimpleSyndrome([syn.sx...,syn.sz...])
 
     rgdp = reduce2general(tanner,fill([0.10,0.0,0.1],9))
     res = extract_decoding(rgdp,decode(IPDecoder(),rgdp.gdp,gs))
-    @test syn.sx == syndrome_extraction(res.zerror_qubits, tanner.stgx)
-    @test syn.sz == syndrome_extraction(res.xerror_qubits, tanner.stgz)
-
+    @test syn == syndrome_extraction(res.error_qubits, tanner)
 
     rgdp = reduce2general(tanner,fill([0.10,0.0,0.1],9))
     res = extract_decoding(rgdp,decode(IPDecoder(),rgdp.gdp,gs))
-    @test syn.sx == syndrome_extraction(res.zerror_qubits, tanner.stgx)
-    @test syn.sz == syndrome_extraction(res.xerror_qubits, tanner.stgz)
+    @test syn == syndrome_extraction(res.error_qubits, tanner)
 
 
     rgdp = reduce2general(tanner,fill([0.10,0.0,0.1],9))
     res = extract_decoding(rgdp,decode(IPDecoder(),rgdp.gdp,gs))
-    @test syn.sx == syndrome_extraction(res.zerror_qubits, tanner.stgx)
-    @test syn.sz == syndrome_extraction(res.xerror_qubits, tanner.stgz)
+    @test syn == syndrome_extraction(res.error_qubits, tanner)
 
     num_qubits = 9
     code = DynamicEinCode([[[i,i+num_qubits,i+2*num_qubits] for i in [1,2,3,5,6,8,9]]...,vcat([[i,i+num_qubits,i+2*num_qubits] for i in [4,7]]...)],Int[])
@@ -39,6 +35,5 @@ using TensorQEC.Yao
     tn = TensorNetwork(code,tensors)
     rgdp = reduce2general(tanner,tn)
     res = extract_decoding(rgdp,decode(IPDecoder(),rgdp.gdp,gs))
-    @test syn.sx == syndrome_extraction(res.zerror_qubits, tanner.stgx)
-    @test syn.sz == syndrome_extraction(res.xerror_qubits, tanner.stgz)
+    @test syn == syndrome_extraction(res.error_qubits, tanner)
 end

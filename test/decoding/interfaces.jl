@@ -20,8 +20,6 @@ end
     ep = random_error_qubits(9, em)
     syn = syndrome_extraction(ep,tanner)
 
-    decoder = BPDecoder(100)
-    res = decode(decoder,tanner,syn)
     for decoder in [IPDecoder()]
         res = decode(decoder,tanner,syn)
         @test res isa CSSDecodingResult

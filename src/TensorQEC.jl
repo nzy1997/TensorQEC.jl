@@ -70,7 +70,7 @@ export FlipError, DepolarizingError, random_error_qubits
 export BPOSD,BPDecoder,IPDecoder,MatchingDecoder,IPMatchingSolver,TNMAP
 
 # decoding
-export decode,reduce2general,extract_decoding,general_syndrome,DecodingResult,CSSDecodingResult
+export decode,reduce2general,extract_decoding,general_syndrome,DecodingResult,CSSDecodingResult,compile
 
 # threshold
 export multi_round_qec,threshold_qec
@@ -111,10 +111,10 @@ include("multiprocessing.jl")
 include("gaussian_elimination.jl")
 
 # decoders
+include("decoding/general_decoding.jl")
 include("decoding/bposd.jl")
 include("decoding/tndecoder.jl")
 include("decoding/ipdecoder.jl")
 include("decoding/matching.jl")
 
-include("decoding/general_decoding.jl")
 end
