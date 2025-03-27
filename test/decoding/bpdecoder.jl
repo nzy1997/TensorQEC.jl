@@ -19,7 +19,7 @@ end
     em = FlipError(0.1)
     error_qubits =  random_error_qubits(120, em)
     syd = syndrome_extraction(error_qubits, r34ldpc)
-    bpres = belief_propagation(syd, r34ldpc, 0.05;max_iter=100)
+    bpres = belief_propagation(syd.s, r34ldpc, 0.05;max_iter=100)
 
     @test syd == syndrome_extraction(bpres.error_qubits, r34ldpc)
 end 
@@ -30,10 +30,10 @@ end
     em = FlipError(0.3)
     error_qubits =  random_error_qubits(120, em)
     syd = syndrome_extraction(error_qubits, r34ldpc)
-    bpres = belief_propagation(syd, r34ldpc, 0.3;max_iter=200)
-    osd_error = osd(r34ldpc, bpres.error_perm,syd)
+    bpres = belief_propagation(syd.s, r34ldpc, 0.3;max_iter=200)
+    osd_error = osd(r34ldpc, bpres.error_perm,syd.s)
     
-    @test check_decode(error_qubits,syd,r34ldpc.H)
+    @test check_decode(error_qubits,syd.s,r34ldpc.H)
 end
 
 @testset "message_list" begin
@@ -78,8 +78,8 @@ end
     error_qubits = Mod2[0,0,0,1,0,0,0]
     syd = syndrome_extraction(error_qubits, tanner)
     order = [1, 2, 3, 4, 5, 6, 7]
-    osd_error = osd(tanner, order,syd)
-    @test check_decode(error_qubits,syd,tanner)
+    osd_error = osd(tanner, order,syd.s)
+    @test check_decode(error_qubits,syd.s,tanner)
 end
 
 @testset "bp_osd" begin
@@ -88,15 +88,46 @@ end
     em = FlipError(0.05)
     error_qubits =  random_error_qubits(120, em)
     syd = syndrome_extraction(error_qubits, r34ldpc)
-    res = bp_osd(syd, r34ldpc, fill(0.05,120);max_iter=100)
+    res = bp_osd(syd.s, r34ldpc, fill(0.05,120);max_iter=100)
 
-    @test check_decode(res,syd,r34ldpc.H)
+    @test check_decode(res,syd.s,r34ldpc.H)
 
     em = FlipError(0.3)
     error_qubits =  random_error_qubits(120, em)
     syd = syndrome_extraction(error_qubits, r34ldpc)
-    res = bp_osd(syd, r34ldpc, fill(0.3,120);max_iter=100)
+    res = bp_osd(syd.s, r34ldpc, fill(0.3,120);max_iter=100)
 
-    @test check_decode(res,syd,r34ldpc.H)
+    @test check_decode(res,syd.s,r34ldpc.H)
 end
 
+@testset "decode" begin
+    Random.seed!(123)
+    d = 3
+    tanner = CSSTannerGraph(SurfaceCode(d, d))
+    em = FlipError(0.05)
+    ep = random_error_qubits(d*d, em)
+    syn = syndrome_extraction(ep,tanner.stgz)
+
+    res = decode(BPDecoder(),tanner.stgz,syn)
+    @test !res.success_tag || (syn == syndrome_extraction(res.error_qubits, tanner.stgz))
+
+    res = decode(BPOSD(),tanner.stgz,syn)
+    @test (syn == syndrome_extraction(res.error_qubits, tanner.stgz))
+end
+
+@testset "compile and decode" begin
+    Random.seed!(123)
+    d = 3
+    tanner = CSSTannerGraph(SurfaceCode(d, d))
+    em = FlipError(0.05)
+    ep = random_error_qubits(d*d, em)
+    syn = syndrome_extraction(ep,tanner.stgz)
+
+    ct = compile(BPDecoder(),tanner.stgz)
+    res = decode(ct,syn)
+    @test !res.success_tag || (syn == syndrome_extraction(res.error_qubits, tanner.stgz))
+
+    ct = compile(BPOSD(),tanner.stgz)
+    res = decode(ct,syn)
+    @test (syn == syndrome_extraction(res.error_qubits, tanner.stgz))
+end

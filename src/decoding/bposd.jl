@@ -1,3 +1,10 @@
+struct BPResult
+    success_tag::Bool
+    error_qubits::Vector{Mod2}
+    iter::Int
+    error_perm::Vector{Int}
+end
+
 Base.@kwdef struct BPDecoder <: AbstractDecoder
     bp_max_iter::Int = 100
 end
@@ -6,21 +13,32 @@ Base.@kwdef struct BPOSD <: AbstractDecoder
     bp_max_iter::Int =100
 end
 
-struct BPResult
-    success_tag::Bool
-    error_qubits::Vector{Mod2}
-    iter::Int
-    error_perm::Vector{Int}
+struct CompiledBP<: CompiledDecoder 
+    problem::SimpleDecodingProblem
+    bp_max_iter::Int
 end
 
-function decode(decoder::BPDecoder, prob::SimpleDecodingProblem, syndrome::Vector{Mod2})
-    res = belief_propagation(syndrome, prob.tanner, prob.pvec;max_iter=decoder.bp_max_iter)
+function compile(decoder::BPDecoder, problem::SimpleDecodingProblem)
+    return CompiledBP(problem, decoder.bp_max_iter)
+end
+
+function decode(cb::CompiledBP,syndrome::SimpleSyndrome)
+    res = belief_propagation(syndrome.s, cb.problem.tanner, cb.problem.pvec;max_iter=cb.bp_max_iter)
     return DecodingResult(res.success_tag, res.error_qubits)
 end
 
-function decode(decoder::BPOSD, prob::SimpleDecodingProblem, syndrome::Vector{Mod2})
-    eqs = bp_osd(syndrome, prob.tanner, prob.pvec;max_iter=decoder.bp_max_iter)
-    return DecodingResult(true, eqs)
+struct CompiledBPOSD <: CompiledDecoder 
+    problem::SimpleDecodingProblem
+    bp_max_iter::Int
+end
+
+function compile(decoder::BPOSD, problem::SimpleDecodingProblem)
+    return CompiledBPOSD(problem, decoder.bp_max_iter)
+end
+
+function decode(cb::CompiledBPOSD,syndrome::SimpleSyndrome)
+    res = bp_osd(syndrome.s, cb.problem.tanner, cb.problem.pvec;max_iter=cb.bp_max_iter)
+    return DecodingResult(true, res)
 end
 
 function belief_propagation(syndrome::Vector{Mod2}, tanner::SimpleTannerGraph, p::Float64;max_iter=100)
