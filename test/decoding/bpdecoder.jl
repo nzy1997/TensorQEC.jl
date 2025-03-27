@@ -8,7 +8,7 @@ using Random
     tanner = SimpleTannerGraph(nq, sts)
     error_qubits = Mod2[1,0,0,0,0,0,0]
     syd = syndrome_extraction(error_qubits, tanner)
-    bpres = belief_propagation(syd, tanner, 0.05;max_iter=100)
+    bpres = belief_propagation(syd.s, tanner, 0.05;max_iter=100)
     @test bpres.error_qubits == error_qubits
 end
 
