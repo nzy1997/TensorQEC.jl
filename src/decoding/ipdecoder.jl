@@ -61,7 +61,7 @@ function compile(decoder::IPDecoder, sdp::CSSDecodingProblem)
 end
 
 function extract_decoding(cfdp::CSSDecodingProblemToFlatDecodingProblem, error_qubits::Vector{Mod2})
-    return extract_decoding(cfdp.c2g,extract_decoding(cfdp.gdp2fdp,error_qubits))
+    return extract_decoding(cfdp.c2g,extract_decoding(cfdp.gdp2fdp,error_qubits).error_qubits)
 end
 
 _mixed_integer_programming(fdp::FlatDecodingProblem, syndrome::Vector{Mod2}) = _mixed_integer_programming(IPDecoder(), fdp, syndrome)
@@ -99,7 +99,7 @@ function _mixed_integer_programming(decoder::IPDecoder, fdp::FlatDecodingProblem
 end
 
 function flattengdp(gdp::GeneralDecodingProblem)
-    code = gdp.ptn.code.ixs
+    code = deepcopy(gdp.ptn.code.ixs)
     pvec = Vector{Vector{Float64}}(undef, length(code))
 
     num_error_pos = gdp.tanner.nq
@@ -143,7 +143,7 @@ function extract_decoding(gdp2fdp::GeneralDecodingProblemToFlatDecodingProblem, 
         end
     end
 
-    return ans_error_qubits
+    return DecodingResult(true,ans_error_qubits)
 end
 
 function _setmod2(vec::Vector{Int})

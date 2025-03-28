@@ -1,8 +1,17 @@
 struct TNMAP <: AbstractDecoder end
-struct CompiledTNMAP{ET, FT} <: CompiledDecoder
+abstract type CompiledTN <: CompiledDecoder end
+
+struct CompiledTNMAP{ET, FT} <: CompiledTN
     uaimodel::UAIModel{ET, FT}
     qubit_num::Int
 end
+extract_decoding(ct::CompiledTNMAP, error_qubits::Vector{Int}) = DecodingResult(true, Mod2.(error_qubits[1:ct.qubit_num]))
+struct CompiledTNMAPCSS{ET, FT} <: CompiledTN
+    uaimodel::UAIModel{ET, FT}
+    qubit_num::Int
+    reduction::CSSToGeneralDecodingProblem
+end
+extract_decoding(ct::CompiledTNMAPCSS, error_qubits::Vector{Int}) = extract_decoding(ct.reduction,Mod2.(error_qubits .== 1))
 
 function stg2uaimodel(tanner::SimpleTannerGraph, ptn::TensorNetwork)
     nvars = tanner.nq + tanner.ns 
@@ -23,9 +32,20 @@ function compile(decoder::TNMAP, problem::SimpleDecodingProblem)
     ptn = TensorNetwork(code,tensors)
     return CompiledTNMAP(stg2uaimodel(problem.tanner, ptn),problem.tanner.nq)
 end
-
-function decode(ct::CompiledTNMAP,syndrome::SimpleSyndrome)
+function decode(ct::CompiledTN,syndrome::CSSSyndrome)
+    decode(ct::CompiledTN,SimpleSyndrome([syndrome.sx...,syndrome.sz...]))
+end
+function decode(ct::CompiledTN,syndrome::SimpleSyndrome)
     tn = TensorNetworkModel(ct.uaimodel,evidence=Dict([(i+ct.qubit_num,s.x ? 1 : 0) for (i,s) in enumerate(syndrome.s)]))
     _,config = most_probable_config(tn)
-    return DecodingResult(true, Mod2[config[1:ct.qubit_num]...])
+    return extract_decoding(ct, config)
+end
+
+function compile(decoder::TNMAP, problem::GeneralDecodingProblem)
+    return CompiledTNMAP(stg2uaimodel(problem.tanner, problem.ptn),problem.tanner.nq)
+end
+
+function compile(decoder::TNMAP, problem::CSSDecodingProblem)
+    c2g = reduce2general(problem.tanner,[[p.px,p.py,p.pz] for p in problem.pvec])
+    return CompiledTNMAPCSS(stg2uaimodel(c2g.gdp.tanner, c2g.gdp.ptn),c2g.gdp.tanner.nq,c2g)
 end
