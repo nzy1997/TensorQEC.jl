@@ -7,42 +7,10 @@ using Random
     nq = 7
     tanner = SimpleTannerGraph(nq, sts)
     error_qubits = Mod2[1,0,0,0,0,0,0]
-    syd = syndrome_extraction(error_qubits, tanner)
-    bpres = belief_propagation(syd.s, tanner, 0.05;max_iter=100)
+    syn = syndrome_extraction(error_qubits, tanner)
+    ct = compile(BPDecoder(),tanner)
+    bpres = decode(ct,syn)
     @test bpres.error_qubits == error_qubits
-end
-
-@testset "belief_propagation2" begin
-    Random.seed!(245)
-    r34ldpc = random_ldpc(4,3,120)
-    # plot_graph(r34ldpc)
-    em = FlipError(0.1)
-    error_qubits =  random_error_qubits(120, em)
-    syd = syndrome_extraction(error_qubits, r34ldpc)
-    bpres = belief_propagation(syd.s, r34ldpc, 0.05;max_iter=100)
-
-    @test syd == syndrome_extraction(bpres.error_qubits, r34ldpc)
-end 
-
-@testset "belief_propagation3" begin
-    Random.seed!(245)
-    r34ldpc = random_ldpc(4,3,120)
-    em = FlipError(0.3)
-    error_qubits =  random_error_qubits(120, em)
-    syd = syndrome_extraction(error_qubits, r34ldpc)
-    bpres = belief_propagation(syd.s, r34ldpc, 0.3;max_iter=200)
-    osd_error = osd(r34ldpc, bpres.error_perm,syd.s)
-    
-    @test syd == syndrome_extraction(osd_error, r34ldpc)
-end
-
-@testset "message_list" begin
-    sts = [[1, 2,3,4],[2,3,5,7],[3,4,5,6]]
-    nq = 7
-    tanner = SimpleTannerGraph(nq, sts)
-    mq2s =[[i for i in v] for v in tanner.q2s]
-    @test TensorQEC.message_list(mq2s,2,tanner.q2s,tanner.s2q;exampt_qubit = 2) == [2,2,2]
-    @test TensorQEC.message_list(mq2s,2,tanner.q2s,tanner.s2q;exampt_qubit = 1) == [2,2,2,2]
 end
 
 @testset "check_linear_indepent" begin
@@ -69,24 +37,6 @@ end
     @test syd == syndrome_extraction(osd_error, tanner)
 end
 
-@testset "bp_osd" begin
-    Random.seed!(245)
-    r34ldpc = random_ldpc(4,3,120)
-    em = FlipError(0.05)
-    error_qubits =  random_error_qubits(120, em)
-    syd = syndrome_extraction(error_qubits, r34ldpc)
-    res = bp_osd(syd.s, r34ldpc, fill(0.05,120);max_iter=100)
-
-    @test syd == syndrome_extraction(res, r34ldpc)
-
-    em = FlipError(0.3)
-    error_qubits =  random_error_qubits(120, em)
-    syd = syndrome_extraction(error_qubits, r34ldpc)
-    res = bp_osd(syd.s, r34ldpc, fill(0.3,120);max_iter=100)
-
-    @test syd == syndrome_extraction(res, r34ldpc)
-end
-
 @testset "decode" begin
     Random.seed!(123)
     d = 3
@@ -95,10 +45,10 @@ end
     ep = random_error_qubits(d*d, em)
     syn = syndrome_extraction(ep,tanner.stgz)
 
-    res = decode(BPDecoder(),tanner.stgz,syn)
+    res = decode(BPDecoder(100,false),tanner.stgz,syn)
     @test !res.success_tag || (syn == syndrome_extraction(res.error_qubits, tanner.stgz))
 
-    res = decode(BPOSD(),tanner.stgz,syn)
+    res = decode(BPDecoder(),tanner.stgz,syn)
     @test (syn == syndrome_extraction(res.error_qubits, tanner.stgz))
 end
 
@@ -110,11 +60,11 @@ end
     ep = random_error_qubits(d*d, em)
     syn = syndrome_extraction(ep,tanner.stgz)
 
-    ct = compile(BPDecoder(),tanner.stgz)
+    ct = compile(BPDecoder(100,false),tanner.stgz)
     res = decode(ct,syn)
     @test !res.success_tag || (syn == syndrome_extraction(res.error_qubits, tanner.stgz))
 
-    ct = compile(BPOSD(),tanner.stgz)
+    ct = compile(BPDecoder(),tanner.stgz)
     res = decode(ct,syn)
     @test (syn == syndrome_extraction(res.error_qubits, tanner.stgz))
 end

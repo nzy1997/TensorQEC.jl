@@ -4,27 +4,26 @@ struct BPResult
     error_perm::Vector{Int}
 end
 
-Base.@kwdef struct BPDecoder <: AbstractDecoder
+abstract type AbstractBPDecoder <: AbstractDecoder end
+Base.@kwdef struct BPDecoder <: AbstractBPDecoder
     bp_max_iter::Int = 100
+    osd::Bool = true
 end
 
-Base.@kwdef struct BPOSD <: AbstractDecoder
-    bp_max_iter::Int =100
-end
-
-struct CompiledBP<: CompiledDecoder 
+struct CompiledBP <: CompiledDecoder
     tanner::SimpleTannerGraph
     bp_max_iter::Int
     mq2s::Dict{Tuple{Int64, Int64}, Float64}
     ms2q::Dict{Tuple{Int64, Int64}, Float64}
     mu::Vector{Float64}
+    osd::Bool
 end
 
-function compile(decoder::BPDecoder, problem::SimpleDecodingProblem)
+function compile(decoder::AbstractBPDecoder, problem::SimpleDecodingProblem)
     mu = [log((1-problem.pvec[i])/problem.pvec[i]) for i in 1:problem.tanner.nq]
     mq2s = Dict([(i,j) => mu[i] for i in 1:problem.tanner.nq for j in problem.tanner.q2s[i] ])
     ms2q = Dict([(s,i) => 0.0 for s in 1:problem.tanner.ns for i in problem.tanner.s2q[s] ])
-    return CompiledBP(problem.tanner, decoder.bp_max_iter,mq2s,ms2q,mu)
+    return CompiledBP(problem.tanner, decoder.bp_max_iter,mq2s,ms2q,mu, decoder.osd)
 end
 
 function messages2q(mq2s,s2q,s)
@@ -40,8 +39,15 @@ function messageq2s(mlist,muq)
 end
 
 function decode(cb::CompiledBP,syndrome::SimpleSyndrome)
-    return belief_propagation(cb,syndrome.s)
+    bp_res = belief_propagation(cb,syndrome.s)
+    if bp_res.success_tag || !(cb.osd)
+        return DecodingResult(bp_res.success_tag,bp_res.error_qubits)
+    else
+        return DecodingResult(true,osd(cb.tanner, bp_res.error_perm, syndrome.s))
+    end
+    return 
 end
+
 function belief_propagation(cb::CompiledBP,syndrome::Vector{Mod2})
     mq2s = copy(cb.mq2s)
     q_vec = fill(0.0,cb.tanner.nq)
@@ -59,62 +65,13 @@ function belief_propagation(cb::CompiledBP,syndrome::Vector{Mod2})
             end
         end
         errored_qubits =  Mod2.(q_vec .< 0 )
-        @show q_vec
         if syndrome_extraction(errored_qubits, cb.tanner).s == syndrome
-            return BPResult(true, errored_qubits, sortperm(messageq(ms2q,tanner,mu)))
+            return BPResult(true, errored_qubits, sortperm(q_vec))
             break
         end
     end
-
-    return DecodingResult(res.success_tag, res.error_qubits)
+    return BPResult(false, fill(Mod2(0),cb.tanner.nq), sortperm(q_vec))
 end
-
-struct CompiledBPOSD <: CompiledDecoder 
-    problem::SimpleDecodingProblem
-    bp_max_iter::Int
-end
-
-function compile(decoder::BPOSD, problem::SimpleDecodingProblem)
-    return CompiledBPOSD(problem, decoder.bp_max_iter)
-end
-
-function decode(cb::CompiledBPOSD,syndrome::SimpleSyndrome)
-    res = bp_osd(syndrome.s, cb.problem.tanner, cb.problem.pvec;max_iter=cb.bp_max_iter)
-    return DecodingResult(true, res)
-end
-
-# function belief_propagation(syndrome::Vector{Mod2}, tanner::SimpleTannerGraph, p::Float64;max_iter=100)
-#     return belief_propagation(syndrome, tanner, fill(p, tanner.nq);max_iter=max_iter)
-# end
-
-# function belief_propagation(syndrome::Vector{Mod2}, tanner::SimpleTannerGraph, p::Vector{Float64};max_iter=100)
-#     mu = [log((1-p[i])/p[i]) for i in 1:tanner.nq]
-#     mq2s =[[mu[i] for _ in 1:length(tanner.q2s[i])] for i in 1:tanner.nq]
-#     ms2q = [[0.0 for _ in 1:length(tanner.s2q[s])] for s in 1:tanner.ns]
-#     errored_qubits = Mod2[]
-#     for iter in 1:max_iter
-#         ms2q = [[messages2q(message_list(mq2s,s,tanner.q2s,tanner.s2q;exampt_qubit = q),syndrome[s]) for q in tanner.s2q[s]] for s in 1:tanner.ns]
-#         mq2s = [[messageq2s(message_list(ms2q,qubit,tanner.s2q,tanner.q2s;exampt_qubit = s),mu[qubit]) for s in tanner.q2s[qubit]] for qubit in 1:tanner.nq]
-#         errored_qubits = error_qubits(ms2q,tanner,mu)
-#         if syndrome_extraction(errored_qubits, tanner).s == syndrome
-#             return BPResult(true, errored_qubits, sortperm(messageq(ms2q,tanner,mu)))
-#             break
-#         end
-#     end
-#     return BPResult(false, fill(Mod2(0),tanner.nq), sortperm(messageq(ms2q,tanner,mu)))
-# end
-
-# function message_list(mq2s,s,tq2s,ts2q;exampt_qubit = 0)
-#     return [mq2s[q][findfirst(==(s),tq2s[q])] for q in ts2q[s] if q != exampt_qubit]
-# end
-
-# function messageq(ms2q,tanner,mu)
-#     [messageq2s(message_list(ms2q,qubit,tanner.s2q,tanner.q2s),mu[qubit])  for qubit in 1:tanner.nq]
-# end
-
-# function error_qubits(ms2q,tanner,mu)
-#     Mod2.(messageq(ms2q,tanner,mu) .< 0 )
-# end
 
 function osd(tanner::SimpleTannerGraph,order::Vector{Int},syndrome::Vector{Mod2})
     H = tanner.H[:,order[1:1]]
@@ -134,14 +91,4 @@ function osd(tanner::SimpleTannerGraph,order::Vector{Int},syndrome::Vector{Mod2}
 
     error = hinv * syndrome
     return [(i ∈ qubit_list) ? (error[findfirst(==(i),qubit_list)]) : Mod2(0)  for i in 1:tanner.nq]
-end
-
-
-function bp_osd(syndrome::Vector{Mod2}, tanner::SimpleTannerGraph, p::Vector{Float64};max_iter=100)
-    bp_res = belief_propagation(syndrome, tanner, p;max_iter=max_iter)
-    if bp_res.success_tag
-        return bp_res.error_qubits
-    else
-        return osd(tanner, bp_res.error_perm, syndrome)
-    end
 end
