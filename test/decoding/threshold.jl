@@ -1,21 +1,12 @@
 using Test
 using TensorQEC
-using TensorQEC: QuantumSimulationResult,ClassicalSimulationResult
-
+using Random
 
 @testset "threshold_qec" begin
+    Random.seed!(123)
     tanner = CSSTannerGraph(SurfaceCode(3,3))
     decoder = IPDecoder()
-    error_model_vec = [DepolarizingError(0.01),DepolarizingError(0.02)]
-    res = threshold_qec(tanner,decoder,error_model_vec)
-    @test length(res) == 2
-    @test res[1] isa QuantumSimulationResult
-    @test res[2] isa QuantumSimulationResult
+    @test multi_round_qec(tanner.stgz,decoder,FlipError(0.1),tanner.stgx) isa Float64
 
-    decoder = BPDecoder(100)
-    error_model_vec= [FlipError(0.01),FlipError(0.02)]
-    res = threshold_qec(tanner.stgx,decoder,error_model_vec,tanner.stgz)
-    @test length(res) == 2
-    @test res[1] isa ClassicalSimulationResult
-    @test res[2] isa ClassicalSimulationResult
+    @test multi_round_qec(tanner,decoder,DepolarizingError(0.05)) isa Tuple{Float64, Float64, Float64}
 end

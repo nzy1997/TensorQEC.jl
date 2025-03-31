@@ -14,6 +14,7 @@ using PrettyTables
 using Optimisers
 
 using Graphs
+using SimpleWeightedGraphs
 using JuMP
 using SCIP
 
@@ -55,7 +56,7 @@ export ComplexConj, SymbolRecorder,IdentityRecorder, ein_circ, QCInfo, qc2enisum
 export coherent_error_unitary, error_quantum_circuit,toput, error_pairs,fidelity_tensornetwork, simulation_tensornetwork,error_quantum_circuit_pair_replace
 
 # ldpc
-export SimpleTannerGraph,syndrome_extraction,product_graph,CSSTannerGraph,plot_graph,dual_graph,get_graph,belief_propagation,random_ldpc,check_decode, check_linear_indepent,ldpc2tensor
+export SimpleTannerGraph,syndrome_extraction,product_graph,CSSTannerGraph,plot_graph,dual_graph,get_graph,belief_propagation,random_ldpc, check_linear_indepent
 export tensor_infer,osd,mod2matrix_inverse,bp_osd,tensor_osd,check_logical_error
 
 # tableaux
@@ -66,10 +67,13 @@ export FlipError, DepolarizingError, random_error_qubits
 @const_gate CCZ::ComplexF64 = diagm([1, 1,1,1,1,1,1,-1])
 
 # decoder
-export BPOSD,decode,BPDecoder,IPDecoder,reduce2general,extract_decoding,general_syndrome
+export BPOSD,BPDecoder,IPDecoder,MatchingDecoder,IPMatchingSolver,TNMAP
+
+# decoding
+export decode,reduce2general,extract_decoding,general_syndrome,DecodingResult,CSSDecodingResult,compile
 
 # threshold
-export multi_round_qec,threshold_qec
+export multi_round_qec
 
 # code distance
 export code_distance
@@ -81,22 +85,35 @@ export TrainningData,error_learning
 export multiprocess_run
 
 include("codes/mod2.jl")
-include("paulibasis/paulistring.jl")
-include("paulibasis/cliffordgroup.jl")
-include("paulibasis/paulibasis.jl")
-include("tensornetwork/tensornetwork.jl")
+include("clifford/paulistring.jl")
+include("clifford/cliffordgroup.jl")
+include("clifford/paulibasis.jl")
+
 include("codes/codes.jl")
-include("codes/encoder.jl")
-include("tensornetwork/inferences.jl")
-include("codes/measurement.jl")
-include("codes/tablemake.jl")
-include("tensornetwork/simulation.jl")
-include("decoding/error_model.jl")
 include("codes/ldpc.jl")
-include("paulibasis/tableaux.jl")
-include("decoding/decoder.jl")
+
+include("codes/encoder.jl")
+include("decoding/error_model.jl")
+include("decoding/interfaces.jl")
+
+include("nonclifford/tensornetwork.jl")
+include("decoding/inferenceswithencoder.jl")
+include("decoding/measurement.jl")
+include("decoding/tablemake.jl")
+include("nonclifford/simulation.jl")
+
+include("clifford/tableaux.jl")
 include("decoding/threshold.jl")
 include("codes/code_distance.jl")
-include("decoding/error_learning.jl")
+include("nonclifford/error_learning.jl")
 include("multiprocessing.jl")
+include("codes/gaussian_elimination.jl")
+
+# decoders
+include("decoding/general_decoding.jl")
+include("decoding/bposd.jl")
+include("decoding/tndecoder.jl")
+include("decoding/ipdecoder.jl")
+include("decoding/matching.jl")
+
 end
