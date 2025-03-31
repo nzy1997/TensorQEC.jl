@@ -64,7 +64,6 @@ function extract_decoding(cfdp::CSSDecodingProblemToFlatDecodingProblem, error_q
     return extract_decoding(cfdp.c2g,extract_decoding(cfdp.gdp2fdp,error_qubits).error_qubits)
 end
 
-_mixed_integer_programming(fdp::FlatDecodingProblem, syndrome::Vector{Mod2}) = _mixed_integer_programming(IPDecoder(), fdp, syndrome)
 function _mixed_integer_programming(decoder::IPDecoder, fdp::FlatDecodingProblem, syndrome::Vector{Mod2})
     H = [a.x for a in fdp.tanner.H]
     m,n = size(H)

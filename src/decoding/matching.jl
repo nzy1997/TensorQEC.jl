@@ -20,7 +20,6 @@ struct FWSWeightedGraph{T}
     error_path:: Matrix{Vector{Int}}
 end
 Graphs.nv(fwg::FWSWeightedGraph) = length(fwg.v2e)
-Graphs.ne(fwg::FWSWeightedGraph) = length(fwg.edges)
 
 
 function fws_edges(tanner::SimpleTannerGraph, p::Vector{Float64})
@@ -35,10 +34,6 @@ function fws_edges(tanner::SimpleTannerGraph, p::Vector{Float64})
     end
     fws = floyd_warshall_shortest_paths(g)
     return fws, collect(edges(g)),edge_mat
-end
-
-function  tanner2fwswg(tanner::SimpleTannerGraph)
-    return tanner2fwswg(tanner,fill(0.1,tanner.nq))
 end
 
 function tanner2fwswg(tanner::SimpleTannerGraph, p::Vector{Float64})

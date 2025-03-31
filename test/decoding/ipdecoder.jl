@@ -43,6 +43,7 @@ end
     syn = syndrome_extraction(ep,tanner)
 
     res = decode(IPDecoder(),tanner,syn)
+    @show res
     @test syn == syndrome_extraction(res.error_qubits, tanner)
 
     ct = compile(IPDecoder(), tanner)

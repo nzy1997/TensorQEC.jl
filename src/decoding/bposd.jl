@@ -34,10 +34,6 @@ function messages2q(mq2s,s2q,s)
     return pro
 end
 
-function messageq2s(mlist,muq)
-    return max(min(sum(mlist) + muq,10),-10)
-end
-
 function decode(cb::CompiledBP,syndrome::SimpleSyndrome)
     bp_res = belief_propagation(cb,syndrome.s)
     if bp_res.success_tag || !(cb.osd)
@@ -45,7 +41,6 @@ function decode(cb::CompiledBP,syndrome::SimpleSyndrome)
     else
         return DecodingResult(true,osd(cb.tanner, bp_res.error_perm, syndrome.s))
     end
-    return 
 end
 
 function belief_propagation(cb::CompiledBP,syndrome::Vector{Mod2})
