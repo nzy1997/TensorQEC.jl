@@ -61,9 +61,9 @@ end
     include("codes/code_distance.jl")
 end
 
-# @testset "threshold" begin
-#     include("decoding/threshold.jl")
-# end
+@testset "threshold" begin
+    include("decoding/threshold.jl")
+end
 
 @testset "decoder" begin
     include("decoding/general_decoding.jl")

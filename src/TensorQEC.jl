@@ -73,7 +73,7 @@ export BPOSD,BPDecoder,IPDecoder,MatchingDecoder,IPMatchingSolver,TNMAP
 export decode,reduce2general,extract_decoding,general_syndrome,DecodingResult,CSSDecodingResult,compile
 
 # threshold
-export multi_round_qec,threshold_qec
+export multi_round_qec
 
 # code distance
 export code_distance
