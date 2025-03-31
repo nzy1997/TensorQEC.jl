@@ -6,23 +6,23 @@ using Test
 end
 
 @testset "paulistring" begin
-    include("paulibasis/paulistring.jl")
+    include("clifford/paulistring.jl")
 end
 
 @testset "clifford" begin
-    include("paulibasis/cliffordgroup.jl")
+    include("clifford/cliffordgroup.jl")
 end
 
 @testset "pauli basis" begin
-    include("paulibasis/paulibasis.jl")
+    include("clifford/paulibasis.jl")
 end
 
 @testset "tensor network" begin
-    include("tensornetwork/tensornetwork.jl")
+    include("nonclifford/tensornetwork.jl")
 end
 
 @testset "inferences" begin
-    include("tensornetwork/inferences.jl")
+    include("decoding/inferenceswithencoder.jl")
 end
 
 @testset "codes" begin
@@ -34,15 +34,15 @@ end
 end
 
 @testset "measurement" begin
-    include("codes/measurement.jl")
+    include("decoding/measurement.jl")
 end
 
 @testset "table make" begin
-    include("codes/tablemake.jl")
+    include("decoding/tablemake.jl")
 end
 
 @testset "simulation" begin
-    include("tensornetwork/simulation.jl") 
+    include("nonclifford/simulation.jl") 
 end
 
 @testset "ldpc" begin
@@ -50,7 +50,7 @@ end
 end
 
 @testset "tableau" begin
-    include("paulibasis/tableaux.jl")
+    include("clifford/tableaux.jl")
 end
 
 @testset "error_model" begin
@@ -66,7 +66,7 @@ end
 # end
 
 @testset "decoder" begin
-    include("decoding/decoder.jl")
+    include("decoding/general_decoding.jl")
 end
 
 @testset "multiprocessing" begin
@@ -74,7 +74,7 @@ end
 end
 
 @testset "error_learning" begin
-    include("decoding/error_learning.jl")
+    include("nonclifford/error_learning.jl")
 end
 
 @testset "matching" begin
@@ -86,7 +86,7 @@ end
 end
 
 @testset "bpdecoder" begin
-    include("decoding/bpdecoder.jl")
+    include("decoding/bposd.jl")
 end
 
 @testset "decoding interfaces" begin
