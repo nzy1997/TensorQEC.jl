@@ -62,7 +62,6 @@ function belief_propagation(cb::CompiledBP,syndrome::Vector{Mod2})
         errored_qubits =  Mod2.(q_vec .< 0 )
         if syndrome_extraction(errored_qubits, cb.tanner).s == syndrome
             return BPResult(true, errored_qubits, sortperm(q_vec))
-            break
         end
     end
     return BPResult(false, fill(Mod2(0),cb.tanner.nq), sortperm(q_vec))
