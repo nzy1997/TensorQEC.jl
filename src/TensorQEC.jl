@@ -12,6 +12,7 @@ using OMEinsum
 using Yao.YaoBlocks.Optimise
 using PrettyTables
 using Optimisers
+using BitBasis
 
 using Graphs
 using SimpleWeightedGraphs
@@ -46,7 +47,7 @@ export CSSBimatrix,syndrome_transform, encode_stabilizers,place_qubits
 export measure_circuit_fault_tol,  measure_circuit_steane,measure_circuit, measure_circuit_steane_single_type
 
 # tablemake
-export make_table, save_table, load_table,correct_circuit,show_table,TruthTable,table_inference
+export make_table, save_table, load_table,correction_circuit,TruthTable,correction_dict
 
 # clifford group
 export pauli_group, clifford_group, clifford_simulate,to_perm_matrix,perm_of_paulistring,paulistring_annotate,annotate_history,annotate_circuit_pics,perm_of_pauligroup,generate_group
@@ -99,7 +100,7 @@ include("decoding/interfaces.jl")
 include("nonclifford/tensornetwork.jl")
 include("decoding/inferenceswithencoder.jl")
 include("decoding/measurement.jl")
-include("decoding/tablemake.jl")
+include("decoding/truthtable.jl")
 include("nonclifford/simulation.jl")
 
 include("clifford/tableaux.jl")
@@ -108,6 +109,7 @@ include("codes/code_distance.jl")
 include("nonclifford/error_learning.jl")
 include("multiprocessing.jl")
 include("codes/gaussian_elimination.jl")
+include("nonclifford/correction.jl")
 
 # decoders
 include("decoding/general_decoding.jl")

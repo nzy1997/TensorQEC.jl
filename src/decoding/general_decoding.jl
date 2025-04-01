@@ -13,6 +13,7 @@ function extract_decoding(cgdp::CSSToGeneralDecodingProblem, error_qubits::Vecto
     return CSSDecodingResult(true, CSSErrorPattern(error_qubits[1:num_qubits] .+  error_qubits[(num_qubits+1):2*num_qubits] , error_qubits[(2*num_qubits+1):3*num_qubits] .+  error_qubits[(num_qubits+1):2*num_qubits]))
 end
 
+# pvec=[px,py,pz], i represent x error, i+num_qubits represent y error, i+2*num_qubits represent z error
 function reduce2general(tanner::CSSTannerGraph, pvec::Vector{Vector{Float64}})
     num_qubits = nq(tanner)
     tn = TensorNetwork(DynamicEinCode([[i,i+num_qubits,i+2*num_qubits] for i in 1:num_qubits],Int[]),[single_qubit_tensor(pvec[j]...) for j in 1:num_qubits])

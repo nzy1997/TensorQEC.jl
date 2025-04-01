@@ -55,8 +55,13 @@ end
 
 Base.show(io::IO, ::MIME"text/plain", cep::CSSErrorPattern) = show(io, cep)
 function Base.show(io::IO, cep::CSSErrorPattern)
-    println(io, "X error:", findall(v->v.x, cep.xerror))
-    println(io, "Z error:", findall(v->v.x,cep.zerror))
+    xe = findall(v->v.x, cep.xerror)
+    ze = findall(v->v.x, cep.zerror)
+    n = length(cep.xerror)
+    psx = paulistring(n,2,xe)
+    psz = paulistring(n,4,ze)
+    println(io, (PauliGroup(1,psx)*PauliGroup(1,psz)).ps)
+    return
 end
 function random_error_qubits(qubit_number::Int, em::DepolarizingError)
     return random_error_qubits(fill(em, qubit_number))

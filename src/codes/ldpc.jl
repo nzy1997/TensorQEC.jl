@@ -54,6 +54,8 @@ struct CSSTannerGraph <: AbstractTannerGraph
 end
 nq(stg::SimpleTannerGraph) = stg.nq
 nq(stg::CSSTannerGraph) = stg.stgx.nq
+ns(stg::SimpleTannerGraph) = stg.ns
+ns(stg::CSSTannerGraph) = ns(stg.stgx) + ns(stg.stgz)
 function dual_graph(tanner::SimpleTannerGraph)
     return SimpleTannerGraph( tanner.ns,  tanner.nq, tanner.s2q, tanner.q2s, transpose(tanner.H))
 end
