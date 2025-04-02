@@ -1,4 +1,6 @@
 using Test, TensorQEC, TensorQEC.Yao
+using TensorQEC.TensorInference
+
 @testset "measure_syndrome!" begin
     result=stabilizers(SurfaceCode(3,3))
     code = TensorQEC.stabilizers2bimatrix(result)
@@ -138,4 +140,35 @@ end
     @test measure_syndrome!(reg, st) == [1,1,1,1,1,1]
     apply!(reg, qc')
     @test fidelity(density_matrix(reg, [qubit_num]),density_matrix(regcopy, [qubit_num])) ≈ 1.0
+end
+
+@testset "marginal_logical_error Z" begin
+    qubit_num = 9
+    st = stabilizers(SurfaceCode(3,3))
+    qc, data_qubits, code = TensorQEC.encode_stabilizers(st)
+
+    measure_outcome = [-1, 1, 1, 1, 1, 1, 1, 1]
+    syn_dict=TensorQEC.generate_syndrome_dict(code,syndrome_transform(code, measure_outcome))
+
+    cl = clifford_network(qc)
+    p = fill([0.7,0.1,0.1,0.1],qubit_num)
+    p[1]= [0.97,0.01,0.01,0.01]
+    p[2]= [0.97,0.01,0.01,0.01]
+    tn = TensorQEC.marginal_logical_error(cl, syn_dict, p)
+    @show marginals(tn)
+end
+
+@testset "marginal_logical_error X" begin
+    qubit_num = 9
+    st = stabilizers(SurfaceCode(3,3))
+    qc, data_qubits, code = TensorQEC.encode_stabilizers(st)
+
+    measure_outcome = [1, 1, 1, 1, 1, 1, -1, 1]
+    syn_dict=TensorQEC.generate_syndrome_dict(code,syndrome_transform(code, measure_outcome))
+
+    cl = clifford_network(qc)
+    p = fill([0.7,0.1,0.1,0.1],qubit_num)
+    # p[3]= [0.1,0.3,0.3,0.3]
+    tn = TensorQEC.marginal_logical_error(cl, syn_dict, p)
+    @show marginals(tn)
 end
