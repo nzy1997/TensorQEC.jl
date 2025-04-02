@@ -36,6 +36,12 @@ function SimpleTannerGraph(nq::Int, sts::Vector{Vector{Int}})
     end
     return SimpleTannerGraph(nq, ns, q2s, sts, H)
 end
+function SimpleTannerGraph(H::Matrix{Mod2})
+    ns = size(H, 1)
+    nq = size(H, 2)
+    sts = [findall(x-> x.x, H[i, :]) for i in 1:ns]
+    return SimpleTannerGraph(nq, sts)
+end
 
 """
     CSSCSSTannerGraph(stgx::SimpleTannerGraph, stgz::SimpleTannerGraph)

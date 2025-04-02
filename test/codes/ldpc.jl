@@ -14,6 +14,13 @@ using TensorQEC.LinearAlgebra
     @test tanner.H == Mod2[1 1 1 1 0; 0 1 1 1 1]
     @test count(x->x.x, tanner.H) == sum(length.(tanner.q2s))
     @test sum(length.(tanner.q2s)) == sum(length.(tanner.s2q))
+
+    H = Mod2[1 1 1 1 0; 0 1 1 1 1]
+    tanner = SimpleTannerGraph(H)
+    @test tanner.q2s == [[1],[1,2],[1,2],[1,2],[2]]
+    @test tanner.s2q == [[1,2,3,4],[2,3,4,5]]
+    @test tanner.ns == 2
+    @test tanner.H == Mod2[1 1 1 1 0; 0 1 1 1 1]
 end
 
 @testset "dual_graph" begin 
