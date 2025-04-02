@@ -33,6 +33,9 @@ horizontal_edges(t::ToricCode) = reshape(nsite(t)+1:2*nsite(t), t.m, t.n)
 	stabilizers(shor::ShorCode)
 	stabilizers(steane::SteaneCode)
 	stabilizers(code832::Code832)
+	stabilizers(code422::Code422)
+	stabilizers(code1573::Code1573)
+	stabilizers(code513::Code513)
 
 Get the stabilizers of the code instances.
 """

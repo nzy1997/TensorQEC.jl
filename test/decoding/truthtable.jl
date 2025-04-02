@@ -97,13 +97,12 @@ end
     tensors= [[TensorQEC.single_qubit_tensor(0.01,0.01,0.01) for j in [1,2,3,5,6,8,9]]...,a]
     tn = TensorNetwork(code,tensors)
     td = TensorQEC.TNDistribution(tn,9)
-    INT =BitBasis.LongLongUInt{1}
+    INT = BitBasis.LongLongUInt{1}
 
     @test TensorQEC.get_probability(td,(INT(72),INT(8))) ≈ a[1,2,1,2,1,1] * 0.97^7 atol = 1e-8
 
     tanner = CSSTannerGraph(SurfaceCode(3, 3))
     tb = make_table(tanner,4,TensorQEC.TNDistribution(tn,9))
-    @show tb.table[zero(INT)]
 
     syn = TensorQEC.CSSSyndrome(Mod2[0, 0, 1, 1], Mod2[1, 0, 0, 1])
     ep = TensorQEC.lluint2error(tb.table[INT(156)],9)
