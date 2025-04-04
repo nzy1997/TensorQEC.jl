@@ -50,3 +50,13 @@ end
     res = decode(ct, syn)
     @test syn == syndrome_extraction(res.error_qubits, tanner)
 end
+
+@testset "_mixed_integer_programming_for_one_solution" begin
+    d = 3
+    n = d^2
+    tanner = CSSTannerGraph(SurfaceCode(d,d))
+    error_qubits = random_error_qubits(n, FlipError(0.2))
+    syd = syndrome_extraction(error_qubits, tanner.stgz)
+    res = TensorQEC._mixed_integer_programming_for_one_solution(getfield.(tanner.stgz.H, :x), syd.s)
+    @test syd == syndrome_extraction(res, tanner.stgz)
+end

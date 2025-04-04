@@ -118,4 +118,5 @@ include("decoding/tndecoder.jl")
 include("decoding/ipdecoder.jl")
 include("decoding/matching.jl")
 
+include("decoding/mcmc.jl")
 end
