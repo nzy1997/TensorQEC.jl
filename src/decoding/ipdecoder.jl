@@ -169,7 +169,7 @@ function _mixed_integer_programming_for_one_solution(H, syndrome::Vector{Mod2})
     for i in 1:m
         @constraint(model, sum(z[j] for j in 1:n if H[i,j] == 1) == 2 * k[i] + (syndrome[i].x ? 1 : 0))
     end
-    @objective(model, Max, 1.0)
+
     optimize!(model)
     @assert is_solved_and_feasible(model) "The problem is infeasible!"
     return Mod2.(value.(z) .> 0.5)

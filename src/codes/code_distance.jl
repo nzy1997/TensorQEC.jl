@@ -63,6 +63,7 @@ function logical_oprator(Hx::Matrix{Bool}, Hz::Matrix{Bool})
     return lz
 end
 
+# TODO: Make lx and lz in the same qubit order
 function logical_oprator(tanner::CSSTannerGraph)
     lz = logical_oprator([a.x for a in tanner.stgx.H], [a.x for a in tanner.stgz.H])
     lx = logical_oprator([a.x for a in tanner.stgz.H], [a.x for a in tanner.stgx.H])

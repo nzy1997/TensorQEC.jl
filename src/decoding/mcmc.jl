@@ -24,9 +24,19 @@ Returns (minimum cost, optimal configuration).
 """
 function anneal_singlerun!(config, prob, tempscales::Vector{Float64}, num_update_each_temp::Int)
     logical_count = 0
+
     cost = energy(config, prob)
     optimal_cost = cost
     optimal_config = deepcopy(config)
+
+    zero_config = deepcopy(config)
+    one_config = deepcopy(config)
+    one_config.config[prob.logical_qubits] .= one_config.config[prob.logical_qubits] .+ Mod2(1)
+
+    if sum(config.config[prob.logical_qubits2]).x
+        zero_config, one_config = one_config, zero_config
+    end
+
     for beta = 1 ./ tempscales
         for i = 1:num_update_each_temp  # single instruction multiple data, see julia performance tips.
             proposal, ΔE = propose(config, prob)
@@ -38,9 +48,16 @@ function anneal_singlerun!(config, prob, tempscales::Vector{Float64}, num_update
                     optimal_config = deepcopy(config)
                 end
             end
+            sum(config.config[prob.logical_qubits2]).x && (logical_count += 1)
+            @show logical_count/(i)
+            if i > 10000
+                num = i - 10000
 
-            @show logical_count/(i-10000)
-            (i>10000 && sum(config.config[prob.logical_qubits2]).x) && (logical_count += 1)
+                @info (logical_count/num - (logical_count/(num))^2)/sqrt(num)
+                (logical_count/num - (logical_count/(num))^2)/sqrt(num) < abs(0.5 - logical_count/num) && (return logical_count/num > 0.5 ? one_config : zero_config)
+            end
+
+            # (i>10000 && sum(config.config[prob.logical_qubits2]).x) && (logical_count += 1)
         end
     end
     @show optimal_cost optimal_config

@@ -34,7 +34,11 @@ end
     # p_vector[2] = 0.7
     # p_vector[3] = 0.7
 
-    prob = SpinGlassSA(tanner.stgx.s2q, syd.s, [1,2,3], p_vector,[3,6,9])
+    lx,lz = TensorQEC.logical_oprator(tanner)
+    @show lx
+    @show lz
+
+    prob = SpinGlassSA(tanner.stgx.s2q, syd.s, findall(lx[1,:]), p_vector, findall(lz[1,:]))
     config = SpinConfig(Mod2[1,0,0,0,0,0,0,0,0])
     @show anneal_singlerun!(config, prob, [1.0], 110000)
 end
@@ -46,10 +50,10 @@ end
     p_vector = fill(0.1, 9)
     # p_vector[2] = 0.7
     # p_vector[3] = 0.7
-
+    lx,lz = TensorQEC.logical_oprator(CSSTannerGraph(SurfaceCode(3,3)))
     uaimodel = compile(TNMAP(), tanner, p_vector).uaimodel
     factors = uaimodel.factors
-    push!(uaimodel.factors, TensorInference.Factor((3,6,9,14), TensorQEC.parity_check_matrix(3)))
+    push!(uaimodel.factors, TensorInference.Factor((findall(lz[1,:])...,14), TensorQEC.parity_check_matrix(3)))
 
     tn_new = TensorNetworkModel(
 		1:14,
@@ -58,5 +62,12 @@ end
 		mars = [[14]],
         evidence=Dict([(i+9,s.x ? 1 : 0) for (i,s) in enumerate(syd.s)])
 	)
+
+    res = TensorQEC._mixed_integer_programming_for_one_solution(getfield.(tanner.H, :x), syd.s)
+
+    @show sum(res .* lz[1,:])
+    @show sum((res.+lx[1,:]) .* lz[1,:])
     @show marginals(tn_new)
+
+    @show res
 end

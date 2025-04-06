@@ -6,10 +6,9 @@ struct CompiledTNMAP{ET, FT} <: CompiledTN
     qubit_num::Int
 end
 extract_decoding(ct::CompiledTNMAP, error_qubits::Vector{Int}) = DecodingResult(true, Mod2.(error_qubits[1:ct.qubit_num]))
-struct CompiledTNMAPCSS{ET, FT} <: CompiledTN
-    uaimodel::UAIModel{ET, FT}
+struct CompiledTNMAPCSS{LT, ET, MT} <: CompiledTN
+    tn::TensorNetworkModel{LT, ET, MT}
     qubit_num::Int
-    reduction::CSSToGeneralDecodingProblem
 end
 extract_decoding(ct::CompiledTNMAPCSS, error_qubits::Vector{Int}) = extract_decoding(ct.reduction,Mod2.(error_qubits .== 1))
 
@@ -32,9 +31,7 @@ function compile(decoder::TNMAP, problem::SimpleDecodingProblem)
     ptn = TensorNetwork(code,tensors)
     return CompiledTNMAP(stg2uaimodel(problem.tanner, ptn),problem.tanner.nq)
 end
-function decode(ct::CompiledTN,syndrome::CSSSyndrome)
-    decode(ct::CompiledTN,SimpleSyndrome([syndrome.sx...,syndrome.sz...]))
-end
+
 function decode(ct::CompiledTN,syndrome::SimpleSyndrome)
     tn = TensorNetworkModel(ct.uaimodel,evidence=Dict([(i+ct.qubit_num,s.x ? 1 : 0) for (i,s) in enumerate(syndrome.s)]))
     _,config = most_probable_config(tn)
@@ -46,6 +43,40 @@ function compile(decoder::TNMAP, problem::GeneralDecodingProblem)
 end
 
 function compile(decoder::TNMAP, problem::CSSDecodingProblem)
-    c2g = reduce2general(problem.tanner,[[p.px,p.py,p.pz] for p in problem.pvec])
-    return CompiledTNMAPCSS(stg2uaimodel(c2g.gdp.tanner, c2g.gdp.ptn),c2g.gdp.tanner.nq,c2g)
+    tanner = problem.tanner
+    qubit_num = nq(tanner)
+    lx,lz = logical_oprator(tanner)
+    lxs = [findall(lx[i,:]) for i in axes(lx, 1)]
+    lzs = [findall(lz[i,:]) for i in axes(lz, 1)]
+
+    nvars = 2 * qubit_num + ns(tanner) + size(lx,1) + size(lz,1)
+    mars = [[i] for i in 2 * qubit_num + ns(tanner)+1:nvars]
+    cards = fill(2, nvars)
+
+    xfactors = [Factor(((c.+ qubit_num)...,i + 2 * qubit_num),parity_check_matrix(length(c))) for (i,c) in enumerate(tanner.stgx.s2q)]
+    zfactors = [Factor((c...,i + 2 * qubit_num + ns(tanner.stgx)),parity_check_matrix(length(c))) for (i,c) in enumerate(tanner.stgz.s2q)]
+
+    pfac = [Factor((i,i+qubit_num),[1-p.px-p.py-p.pz p.px;p.pz p.py]) for (i,p) in enumerate(problem.pvec)]
+    
+    logicalx = [Factor((lz...,i+2 * qubit_num + ns(tanner)),parity_check_matrix(length(lz))) for (i,lz) in enumerate(lzs)]
+
+    logicalz = [Factor(((lx.+ qubit_num)...,i+2 * qubit_num + ns(tanner) + size(lz,1)),parity_check_matrix(length(lx))) for (i,lx) in enumerate(lxs)]
+    factors = vcat(xfactors,zfactors,pfac,logicalx,logicalz)
+
+    @show nvars cards mars logicalz
+    tn = TensorNetworkModel(1:nvars,cards,factors;mars=mars,evidence=Dict([(i+2*qubit_num, 0) for (i) in 1:ns(tanner)]))
+
+    return CompiledTNMAPCSS(tn,qubit_num)
+end
+
+function decode(ct::CompiledTNMAPCSS,syn::CSSSyndrome)
+    tn = ct.tn
+    for (i,s) in enumerate(syn.sx)
+        tn.evidence[(i+2*ct.qubit_num)] = s.x ? 1 : 0
+    end
+    for (i,s) in enumerate(syn.sz)
+        tn.evidence[(i+2*ct.qubit_num)+length(syn.sx)] = s.x ? 1 : 0
+    end
+    # res = _mixed_integer_programming_for_one_solution(getfield.(tanner.H, :x), syd.s)
+    return marginals(tn)
 end
