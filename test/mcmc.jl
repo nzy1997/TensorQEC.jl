@@ -30,7 +30,7 @@ using TensorQEC.TensorInference
     error_qubits = Mod2[1,0,0,0,0,0,0,0,0]
     syd = syndrome_extraction(error_qubits, tanner.stgz)
 
-    p_vector = fill(0.1, 9)
+    p_vector = fill(T(0.1), 9)
     p_vector[2] = 0.26
     p_vector[3] = 0.26
 
@@ -42,10 +42,10 @@ using TensorQEC.TensorInference
 
     prob = SpinGlassSA(tanner.stgx.s2q, syd.s, findall(lx[1,:]), p_vector, findall(lz[1,:]))
     config = SpinConfig(Mod2[1,0,0,0,0,0,0,0,0])
-    res = anneal_singlerun!(config, prob, [1.0], 510000)
+    res = anneal_singlerun!(config, prob, T[1.0], 510000)
     @show res.p1
     @test 0.4 < res.p1 < 0.5
-    @test res.predict.config[1].x == 1
+    @test res.mostlikely.config[1].x == 1
 end
 
 @testset "marginals" begin

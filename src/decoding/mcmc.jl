@@ -9,6 +9,7 @@ end
 
 function SpinGlassSA(s2q::AbstractVector{Vector{Int}}, syndrome::AbstractVector{Mod2}, logical_qubits::AbstractVector{Int}, p_vector::AbstractVector{T}, logical_qubits2::AbstractVector{Int}) where T
     @assert all(p-> 0 <= p <= 1, p_vector) "`p_vector` should be in [0,1], got: $p_vector"
+    # TODO: boundary check
     return SpinGlassSA(s2q, syndrome, logical_qubits, log.(p_vector), log.(one(T) .- p_vector), logical_qubits2)
 end
 
@@ -21,25 +22,25 @@ end
 
 Perform Simulated Annealing using Metropolis updates for the single run.
 
-    * configuration that can be updated.
-    * prob: problem with `energy`, `flip!` and `random_config` interfaces.
-    * tempscales: temperature scales, which should be a decreasing array.
-    * num_update_each_temp: the number of update in each temprature scale.
+    * `config`: configuration that can be updated.
+    * `sap`: problem with `energy`, `flip!` and `random_config` interfaces.
+    * `tempscales`: temperature scales, which should be a decreasing array.
+    * `num_update_each_temp`: the number of update in each temprature scale.
 
 Returns (minimum cost, optimal configuration).
 """
-function anneal_singlerun!(config, prob, tempscales::Vector{Float64}, num_update_each_temp::Int)
+function anneal_singlerun!(config, sap::SpinGlassSA{T}, tempscales::Vector{T}, num_update_each_temp::Int, rng=Random.GLOBAL_RNG) where T
     logical_count = 0
 
-    cost = energy(config, prob)
+    cost = energy(config, sap)
     optimal_cost = cost
     optimal_config = deepcopy(config)
 
     zero_config = deepcopy(config)
     one_config = deepcopy(config)
-    one_config.config[prob.logical_qubits] .= one_config.config[prob.logical_qubits] .+ Mod2(1)
+    one_config.config[sap.logical_qubits] .= one_config.config[sap.logical_qubits] .+ Mod2(1)
 
-    if sum(config.config[prob.logical_qubits2]).x
+    if sum(config.config[sap.logical_qubits2]).x
         zero_config, one_config = one_config, zero_config
     end
 
@@ -47,16 +48,18 @@ function anneal_singlerun!(config, prob, tempscales::Vector{Float64}, num_update
     # xmean = 0
     for beta = 1 ./ tempscales
         for i = 1:num_update_each_temp  # single instruction multiple data, see julia performance tips.
-            proposal, ΔE = propose(config, prob)
-            if exp(-beta*ΔE) > rand()  #accept
-                flip!(config, proposal, prob)
+            proposal, ΔE = propose(rng, config, sap)
+            # TODO: implement a faster exp: https://deathandthepenguinblog.wordpress.com/2015/04/13/writing-a-faster-exp/
+            prob = ΔE <= 0 ? 1 : @fastmath exp(-beta*ΔE)
+            if prob > rand(rng)  #accept
+                flip!(config, proposal, sap)
                 cost += ΔE
                 if cost < optimal_cost
                     optimal_cost = cost
                     optimal_config = deepcopy(config)
                 end
             end
-            sum(i->config.config[i], prob.logical_qubits2).x && (logical_count += 1)
+            sum(i->config.config[i], sap.logical_qubits2).x && (logical_count += 1)
             # xmean = logical_count/i
             # i > 10000 && (xmean - xmean^2)/sqrt(i) < 1e-3 * abs(0.5 - xmean) && (return xmean > 0.5 ? one_config : zero_config)
             #@show logical_count/i, (xmean - xmean^2)/sqrt(i)
@@ -72,7 +75,7 @@ function anneal_singlerun!(config, prob, tempscales::Vector{Float64}, num_update
     return (; optimal_cost,
             optimal_config,
             p1 = logical_count/num_update_each_temp,
-            predict = logical_count/num_update_each_temp > 0.5 ? one_config : zero_config
+            mostlikely = logical_count/num_update_each_temp * 2 > 1 ? one_config : zero_config
         )
 end
  
@@ -86,18 +89,18 @@ function energy(config::SpinConfig, sap::SpinGlassSA{T}) where T
 end
 
 """
-    propose(config::AnnealingConfig, ap::AnnealingProblem) -> (Proposal, Real)
+    propose(rng::Random.AbstractRNG, config::AnnealingConfig, ap::AnnealingProblem) -> (Proposal, Real)
 
 Propose a change, as well as the energy change.
 """
-@inline function propose(config::SpinConfig, sap::SpinGlassSA{T}) where T  # ommit the name of argument, since not used.
+@inline function propose(rng::Random.AbstractRNG, config::SpinConfig, sap::SpinGlassSA{T}) where T  # ommit the name of argument, since not used.
     max_ispin = length(sap.s2q) + 1
-    ispin = rand(1:max_ispin)
+    ispin = rand(rng, 1:max_ispin)
     ΔE = zero(T)
+    # TODO: allow tuning the logical qubits flip probability
     fliplocs = ispin == length(sap.s2q)+1 ? sap.logical_qubits : sap.s2q[ispin]
-    for i in fliplocs
-        dE = sap.logp_vector_error[i] - sap.logp_vector_noerror[i]
-        @inbounds ΔE += config.config[i].x ? dE : -dE
+    @inbounds for i in fliplocs
+        ΔE += config.config[i].x ? sap.logp_vector_error[i] - sap.logp_vector_noerror[i] : sap.logp_vector_noerror[i] - sap.logp_vector_error[i]
     end
     return ispin, ΔE
 end
@@ -108,10 +111,9 @@ end
 Apply the change to the configuration.
 """
 function flip!(config::SpinConfig, ispin::Int, sap::SpinGlassSA)
-    if ispin == length(sap.s2q)+1
-        config.config[sap.logical_qubits] .= config.config[sap.logical_qubits] .+ Mod2(1)
-    else
-        config.config[sap.s2q[ispin]] .= config.config[sap.s2q[ispin]] .+ Mod2(1)
+    fliplocs = ispin == length(sap.s2q)+1 ? sap.logical_qubits : sap.s2q[ispin]
+    for q in fliplocs
+        @inbounds config.config[q] = config.config[q] .+ Mod2(1)
     end
-    config
+    return config
 end
