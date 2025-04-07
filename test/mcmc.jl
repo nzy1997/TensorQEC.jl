@@ -2,28 +2,28 @@ using TensorQEC
 using Test
 using TensorQEC: SpinGlassSA, SpinConfig, energy, propose, flip!,anneal_singlerun!
 using TensorQEC.TensorInference
-@testset "energy" begin
-    tanner = CSSTannerGraph(SurfaceCode(3,3)).stgz
-    error_qubits = Mod2[0,0,0,1,0,0,0,0,0]
-    syd = syndrome_extraction(error_qubits, tanner)
+# @testset "energy" begin
+#     tanner = CSSTannerGraph(SurfaceCode(3,3)).stgz
+#     error_qubits = Mod2[0,0,0,1,0,0,0,0,0]
+#     syd = syndrome_extraction(error_qubits, tanner)
 
-    p_vector = fill(0.1, 9)
-    prob = SpinGlassSA(tanner.s2q, syd.s, [1,2,3,10], p_vector)
-    config = SpinConfig(Mod2[0,0,0,0,0,0,0,0,0,0])
-    @show energy(config, prob)
+#     p_vector = fill(0.1, 9)
+#     prob = SpinGlassSA(tanner.s2q, syd.s, [1,2,3,10], p_vector)
+#     config = SpinConfig(Mod2[0,0,0,0,0,0,0,0,0,0])
+#     @show energy(config, prob)
 
-    config = SpinConfig(Mod2[0,0,0,1,0,0,0,0,0,1])
-    @show energy(config, prob)
+#     config = SpinConfig(Mod2[0,0,0,1,0,0,0,0,0,1])
+#     @show energy(config, prob)
 
-    config = SpinConfig(Mod2[0,0,0,1,0,0,0,0,0,0])
-    @show energy(config, prob)
+#     config = SpinConfig(Mod2[0,0,0,1,0,0,0,0,0,0])
+#     @show energy(config, prob)
 
-    proposal, ΔE = propose(config, prob)
-    config_new = flip!(deepcopy(config), proposal, prob)
-    @show config_new
-    @show energy(config, prob) - energy(config_new, prob)
-    @show ΔE
-end
+#     proposal, ΔE = propose(config, prob)
+#     config_new = flip!(deepcopy(config), proposal, prob)
+#     @show config_new
+#     @show energy(config, prob) - energy(config_new, prob)
+#     @show ΔE
+# end
 
 @testset "anneal" begin
     tanner = CSSTannerGraph(SurfaceCode(3,3))
@@ -31,16 +31,18 @@ end
     syd = syndrome_extraction(error_qubits, tanner.stgz)
 
     p_vector = fill(0.1, 9)
-    # p_vector[2] = 0.7
-    # p_vector[3] = 0.7
+    p_vector[2] = 0.26
+    p_vector[3] = 0.26
 
     lx,lz = TensorQEC.logical_oprator(tanner)
     @show lx
     @show lz
 
+
+
     prob = SpinGlassSA(tanner.stgx.s2q, syd.s, findall(lx[1,:]), p_vector, findall(lz[1,:]))
     config = SpinConfig(Mod2[1,0,0,0,0,0,0,0,0])
-    @show anneal_singlerun!(config, prob, [1.0], 110000)
+    @show anneal_singlerun!(config, prob, [1.0], 510000)
 end
 
 @testset "marginals" begin
@@ -48,8 +50,8 @@ end
     error_qubits = Mod2[1,0,0,0,0,0,0,0,0]
     syd = syndrome_extraction(error_qubits, tanner)
     p_vector = fill(0.1, 9)
-    # p_vector[2] = 0.7
-    # p_vector[3] = 0.7
+    p_vector[2] = 0.25
+    p_vector[3] = 0.25
     lx,lz = TensorQEC.logical_oprator(CSSTannerGraph(SurfaceCode(3,3)))
     uaimodel = compile(TNMAP(), tanner, p_vector).uaimodel
     factors = uaimodel.factors

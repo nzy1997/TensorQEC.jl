@@ -37,6 +37,8 @@ function anneal_singlerun!(config, prob, tempscales::Vector{Float64}, num_update
         zero_config, one_config = one_config, zero_config
     end
 
+    # xsqure = 0
+    # xmean = 0
     for beta = 1 ./ tempscales
         for i = 1:num_update_each_temp  # single instruction multiple data, see julia performance tips.
             proposal, ΔE = propose(config, prob)
@@ -49,19 +51,20 @@ function anneal_singlerun!(config, prob, tempscales::Vector{Float64}, num_update
                 end
             end
             sum(config.config[prob.logical_qubits2]).x && (logical_count += 1)
-            @show logical_count/(i)
-            if i > 10000
-                num = i - 10000
-
-                @info (logical_count/num - (logical_count/(num))^2)/sqrt(num)
-                (logical_count/num - (logical_count/(num))^2)/sqrt(num) < abs(0.5 - logical_count/num) && (return logical_count/num > 0.5 ? one_config : zero_config)
-            end
-
+            xmean = logical_count/i
+            # i > 10000 && (xmean - xmean^2)/sqrt(i) < 1e-3 * abs(0.5 - xmean) && (return xmean > 0.5 ? one_config : zero_config)
+            #@show logical_count/i, (xmean - xmean^2)/sqrt(i)
+            # if i > 10000
+            #     num = i - 10000
+            #     xmean = logical_count/num
+            #     # @info (logical_count/num - (logical_count/(num))^2)/sqrt(num)
+            #     (logical_count/num - (logical_count/(num))^2)/sqrt(num) < 0.25 * abs(0.5 - logical_count/num) && (return logical_count/num > 0.5 ? one_config : zero_config)
+            # end
             # (i>10000 && sum(config.config[prob.logical_qubits2]).x) && (logical_count += 1)
         end
     end
-    @show optimal_cost optimal_config
-    logical_count
+    @show optimal_cost optimal_config logical_count/num_update_each_temp
+    logical_count/num_update_each_temp > 0.5 ? one_config : zero_config
 end
  
 """
