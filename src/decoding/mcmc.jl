@@ -18,18 +18,19 @@ struct SpinConfig
 end
 
 """
-    anneal_singlerun!(config::AnnealingConfig, prob, betas::Vector{Float64}, num_update_each_temp::Int)
+    anneal_singlerun!(config::AnnealingConfig, prob, betas::Vector{Float64}, num_sweep::Int)
 
 Perform Simulated Annealing using Metropolis updates for the single run.
 
     * `config`: configuration that can be updated.
     * `sap`: problem with `energy`, `flip!` and `random_config` interfaces.
     * `betas`: inverse temperature scales.
-    * `num_update_each_temp`: the number of update in each temprature scale.
+    * `num_sweep`: the number of sweeps.
 
 Returns (minimum cost, optimal configuration).
 """
-function anneal_singlerun!(config, sap::SpinGlassSA{T}, betas::Vector{T}, etas::Vector{T}, num_update_each_temp::Int; ptemp=0.1, rng=Random.Xoshiro()) where T
+function anneal_singlerun!(config, sap::SpinGlassSA{T}, betas::Vector{T}, num_sweep::Int; num_sweep_thermalize=100, ptemp=0.1, rng=Random.Xoshiro(), eta_lr=0.2) where T
+    n = length(config.config)
     total_count = logical_count = 0
 
     cost = energy(config, sap)
@@ -44,18 +45,40 @@ function anneal_singlerun!(config, sap::SpinGlassSA{T}, betas::Vector{T}, etas::
         zero_config, one_config = one_config, zero_config
     end
 
+    # thermalizing stage, update eta
     ibeta = 1; beta = betas[ibeta]
-    accept_count = 0
-    for i = 1:num_update_each_temp  # single instruction multiple data, see julia performance tips.
+    etas = fill(T(0), length(betas))
+    for _ = 1:num_sweep_thermalize * n
+        if length(betas) > 1 && rand(rng) < 0.5
+            new_ibeta = rand(rng, 1:length(betas)-1); new_ibeta >= ibeta && (new_ibeta += 1)  # propose a new beta
+            lbeta, hbeta = minmax(ibeta, new_ibeta)
+            etas[hbeta] = (1-eta_lr) * etas[hbeta] + eta_lr * (betas[hbeta] - betas[lbeta])*cost  # update low beta
+            prob = exp(-(betas[new_ibeta] - beta)*cost + (etas[new_ibeta] - etas[ibeta]))
+            if rand(rng) < prob
+                beta = betas[new_ibeta]
+                ibeta = new_ibeta
+            end
+        end
+        proposal, ΔE = propose(rng, config, sap)
+        if rand(rng) < exp(-beta*ΔE)
+            flip!(config, proposal, sap)
+        end
+    end
+
+    propose_count = accept_count = 0
+    beta_propose_count = beta_update_count = 0
+    for _ = 1:num_sweep * n  # single instruction multiple data, see julia performance tips.
         if length(betas) > 1 && rand(rng) < ptemp
+            beta_propose_count += 1
             new_ibeta = rand(rng, 1:length(betas)-1); new_ibeta >= ibeta && (new_ibeta += 1)  # propose a new beta
             prob = exp(-(betas[new_ibeta] - beta)*cost + etas[new_ibeta] - etas[ibeta])
             if rand(rng) < prob
                 beta = betas[new_ibeta]
                 ibeta = new_ibeta
-                accept_count += 1
+                beta_update_count += 1
             end
         else
+            propose_count += 1
             proposal, ΔE = propose(rng, config, sap)
             # TODO: implement a faster exp: https://deathandthepenguinblog.wordpress.com/2015/04/13/writing-a-faster-exp/
             prob = ΔE <= 0 ? 1 : @fastmath exp(-beta*ΔE)
@@ -78,7 +101,10 @@ function anneal_singlerun!(config, sap::SpinGlassSA{T}, betas::Vector{T}, etas::
             optimal_config,
             p1 = logical_count/total_count,
             mostlikely = logical_count/total_count * 2 > 1 ? one_config : zero_config,
-            accept_rate = accept_count/num_update_each_temp
+            accept_rate = accept_count/propose_count,
+            beta_accpet_rate = beta_update_count/beta_propose_count,
+            valid_samples = propose_count,
+            etas = etas
         )
 end
  
