@@ -22,32 +22,28 @@ end
 
 Perform Simulated Annealing using Metropolis updates for the single run.
 
-    * `config`: configuration that can be updated.
-    * `sap`: problem with `energy`, `flip!` and `random_config` interfaces.
-    * `betas`: inverse temperature scales.
-    * `num_sweep`: the number of sweeps.
+# Arguments
+* `config`: configuration that can be updated.
+* `sap`: problem with `energy`, `flip!` and `random_config` interfaces.
+* `betas`: inverse temperature scales, i.e. it can be [1.0, 0.5, 0.0]
 
-Returns (minimum cost, optimal configuration).
+# Keyword arguments
+* `num_sweep`: the number of sweeps.
+* `num_sweep_thermalize`: the number of sweeps for thermalization.
+* `ptemp`: the probability of proposing a new beta.
+* `rng`: the random number generator.
+* `eta_lr`: the learning rate of eta.
+
+Returns a named tuple: (; optimal_cost, optimal_configuration, p1, mostlikely_configuration, acceptance_rate, beta_acceptance_rate, valid_samples, etas).
 """
-function anneal_singlerun!(config, sap::SpinGlassSA{T}, betas::Vector{T}, num_sweep::Int; num_sweep_thermalize=100, ptemp=0.1, rng=Random.Xoshiro(), eta_lr=0.2) where T
+function anneal_singlerun!(config, sap::SpinGlassSA{T}, betas::Vector{T}; num_sweep::Int=100000, num_sweep_thermalize::Int=100, ptemp=T(0.1), rng=Random.Xoshiro(), eta_lr=T(0.2)) where T
+    @assert isone(betas[1]) "betas[1] must be 1.0, since this is the temperature to sample the logical qubits!"
     n = length(config.config)
-    total_count = logical_count = 0
-
-    cost = energy(config, sap)
-    optimal_cost = cost
-    optimal_config = deepcopy(config)
-
-    zero_config = deepcopy(config)
-    one_config = deepcopy(config)
-    one_config.config[sap.logical_qubits] .= one_config.config[sap.logical_qubits] .+ Mod2(1)
-
-    if sum(config.config[sap.logical_qubits2]).x
-        zero_config, one_config = one_config, zero_config
-    end
-
+    zero_config, one_config = get01configs(config, sap.logical_qubits, sap.logical_qubits2)
     # thermalizing stage, update eta
     ibeta = 1; beta = betas[ibeta]
     etas = fill(T(0), length(betas))
+    cost = energy(config, sap)
     for _ = 1:num_sweep_thermalize * n
         if length(betas) > 1 && rand(rng) < 0.5
             new_ibeta = rand(rng, 1:length(betas)-1); new_ibeta >= ibeta && (new_ibeta += 1)  # propose a new beta
@@ -62,11 +58,15 @@ function anneal_singlerun!(config, sap::SpinGlassSA{T}, betas::Vector{T}, num_sw
         proposal, ΔE = propose(rng, config, sap)
         if rand(rng) < exp(-beta*ΔE)
             flip!(config, proposal, sap)
+            cost += ΔE
         end
     end
 
-    propose_count = accept_count = 0
-    beta_propose_count = beta_update_count = 0
+    propose_count = accept_count = 0  # for all temperature
+    valid_count = one_count = 0       # for beta = 1.0
+    beta_propose_count = beta_update_count = 0  # for beta-swap
+    optimal_cost = cost
+    optimal_config = deepcopy(config)
     for _ = 1:num_sweep * n  # single instruction multiple data, see julia performance tips.
         if length(betas) > 1 && rand(rng) < ptemp
             beta_propose_count += 1
@@ -92,20 +92,32 @@ function anneal_singlerun!(config, sap::SpinGlassSA{T}, betas::Vector{T}, num_sw
                 accept_count += 1
             end
             if isone(beta)
-                total_count += 1
-                sum(i->config.config[i], sap.logical_qubits2).x && (logical_count += 1)
+                valid_count += 1
+                sum(i->config.config[i], sap.logical_qubits2).x && (one_count += 1)
             end
         end
     end
+    
     return (; optimal_cost,
             optimal_config,
-            p1 = logical_count/total_count,
-            mostlikely = logical_count/total_count * 2 > 1 ? one_config : zero_config,
+            p1 = one_count/valid_count,
+            mostlikely = one_count/valid_count * 2 > 1 ? one_config : zero_config,
             accept_rate = accept_count/propose_count,
             beta_accpet_rate = beta_update_count/beta_propose_count,
             valid_samples = propose_count,
             etas = etas
         )
+end
+
+function get01configs(config, logical_qubits::Vector{Int}, logical_qubits2::Vector{Int})
+    zero_config = deepcopy(config)
+    one_config = deepcopy(config)
+    one_config.config[logical_qubits] .= one_config.config[logical_qubits] .+ Mod2(1)
+
+    if sum(config.config[logical_qubits2]).x
+        zero_config, one_config = one_config, zero_config
+    end
+    return zero_config, one_config
 end
  
 """

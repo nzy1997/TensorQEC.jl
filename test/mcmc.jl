@@ -39,16 +39,14 @@ using TensorQEC.TensorInference
     @show lx
     @show lz
 
-
-
     prob = SpinGlassSA(tanner.stgx.s2q, syd.s, findall(lx[1,:]), p_vector, findall(lz[1,:]))
     config = SpinConfig(Mod2[1,0,0,0,0,0,0,0,0])
     nsweeps = 100000
-    res = anneal_singlerun!(config, prob, T[1.0, 0.5, 0.0], nsweeps; ptemp=0.1)
+    res = anneal_singlerun!(config, prob, T[1.0, 0.5, 0.0]; num_sweep=nsweeps, ptemp=0.1)
     #res = anneal_singlerun!(config, prob, T[1.0], T[0.0], 10000000; ptemp=0.1)
     @show res
     @test res.accept_rate > 0.05
-    @test res.beta_accpet_rate > 0.01
+    @test res.beta_accpet_rate > 0.1
     @test res.valid_samples > nsweeps
     @test isapprox(res.p1, 0.431, atol=0.3)
     @test res.mostlikely.config[1].x == 1
