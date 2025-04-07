@@ -29,7 +29,7 @@ Perform Simulated Annealing using Metropolis updates for the single run.
 
 Returns (minimum cost, optimal configuration).
 """
-function anneal_singlerun!(config, sap::SpinGlassSA{T}, tempscales::Vector{T}, num_update_each_temp::Int, rng=Random.GLOBAL_RNG) where T
+function anneal_singlerun!(config, sap::SpinGlassSA{T}, tempscales::Vector{T}, num_update_each_temp::Int, rng=Random.Xoshiro()) where T
     logical_count = 0
 
     cost = energy(config, sap)
