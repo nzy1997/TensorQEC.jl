@@ -81,7 +81,7 @@ function anneal_singlerun!(config, sap::SpinGlassSA{T}, betas::Vector{T}; num_sw
             propose_count += 1
             proposal, ΔE = propose(rng, config, sap)
             # TODO: implement a faster exp: https://deathandthepenguinblog.wordpress.com/2015/04/13/writing-a-faster-exp/
-            prob = ΔE <= 0 ? 1 : @fastmath exp(-beta*ΔE)
+            prob = ΔE <= 0 ? 1.0 : @fastmath exp(-beta*ΔE)
             if rand(rng) < prob  #accept
                 flip!(config, proposal, sap)
                 cost += ΔE
