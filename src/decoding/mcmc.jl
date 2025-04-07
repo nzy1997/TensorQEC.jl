@@ -63,8 +63,11 @@ function anneal_singlerun!(config, prob, tempscales::Vector{Float64}, num_update
             # (i>10000 && sum(config.config[prob.logical_qubits2]).x) && (logical_count += 1)
         end
     end
-    @show optimal_cost optimal_config logical_count/num_update_each_temp
-    logical_count/num_update_each_temp > 0.5 ? one_config : zero_config
+    return (; optimal_cost,
+            optimal_config,
+            p1 = logical_count/num_update_each_temp,
+            predict = logical_count/num_update_each_temp > 0.5 ? one_config : zero_config
+        )
 end
  
 """
