@@ -18,19 +18,19 @@ struct SpinConfig
 end
 
 """
-    anneal_singlerun!(config::AnnealingConfig, prob, tempscales::Vector{Float64}, num_update_each_temp::Int)
+    anneal_singlerun!(config::AnnealingConfig, prob, betas::Vector{Float64}, num_update_each_temp::Int)
 
 Perform Simulated Annealing using Metropolis updates for the single run.
 
     * `config`: configuration that can be updated.
     * `sap`: problem with `energy`, `flip!` and `random_config` interfaces.
-    * `tempscales`: temperature scales, which should be a decreasing array.
+    * `betas`: inverse temperature scales.
     * `num_update_each_temp`: the number of update in each temprature scale.
 
 Returns (minimum cost, optimal configuration).
 """
-function anneal_singlerun!(config, sap::SpinGlassSA{T}, tempscales::Vector{T}, num_update_each_temp::Int, rng=Random.Xoshiro()) where T
-    logical_count = 0
+function anneal_singlerun!(config, sap::SpinGlassSA{T}, betas::Vector{T}, etas::Vector{T}, num_update_each_temp::Int; ptemp=0.1, rng=Random.Xoshiro()) where T
+    total_count = logical_count = 0
 
     cost = energy(config, sap)
     optimal_cost = cost
@@ -44,38 +44,41 @@ function anneal_singlerun!(config, sap::SpinGlassSA{T}, tempscales::Vector{T}, n
         zero_config, one_config = one_config, zero_config
     end
 
-    # xsqure = 0
-    # xmean = 0
-    for beta = 1 ./ tempscales
-        for i = 1:num_update_each_temp  # single instruction multiple data, see julia performance tips.
+    ibeta = 1; beta = betas[ibeta]
+    accept_count = 0
+    for i = 1:num_update_each_temp  # single instruction multiple data, see julia performance tips.
+        if length(betas) > 1 && rand(rng) < ptemp
+            new_ibeta = rand(rng, 1:length(betas)-1); new_ibeta >= ibeta && (new_ibeta += 1)  # propose a new beta
+            prob = exp(-(betas[new_ibeta] - beta)*cost + etas[new_ibeta] - etas[ibeta])
+            if rand(rng) < prob
+                beta = betas[new_ibeta]
+                ibeta = new_ibeta
+                accept_count += 1
+            end
+        else
             proposal, ΔE = propose(rng, config, sap)
             # TODO: implement a faster exp: https://deathandthepenguinblog.wordpress.com/2015/04/13/writing-a-faster-exp/
             prob = ΔE <= 0 ? 1 : @fastmath exp(-beta*ΔE)
-            if prob > rand(rng)  #accept
+            if rand(rng) < prob  #accept
                 flip!(config, proposal, sap)
                 cost += ΔE
                 if cost < optimal_cost
                     optimal_cost = cost
                     optimal_config = deepcopy(config)
                 end
+                accept_count += 1
             end
-            sum(i->config.config[i], sap.logical_qubits2).x && (logical_count += 1)
-            # xmean = logical_count/i
-            # i > 10000 && (xmean - xmean^2)/sqrt(i) < 1e-3 * abs(0.5 - xmean) && (return xmean > 0.5 ? one_config : zero_config)
-            #@show logical_count/i, (xmean - xmean^2)/sqrt(i)
-            # if i > 10000
-            #     num = i - 10000
-            #     xmean = logical_count/num
-            #     # @info (logical_count/num - (logical_count/(num))^2)/sqrt(num)
-            #     (logical_count/num - (logical_count/(num))^2)/sqrt(num) < 0.25 * abs(0.5 - logical_count/num) && (return logical_count/num > 0.5 ? one_config : zero_config)
-            # end
-            # (i>10000 && sum(config.config[prob.logical_qubits2]).x) && (logical_count += 1)
+            if isone(beta)
+                total_count += 1
+                sum(i->config.config[i], sap.logical_qubits2).x && (logical_count += 1)
+            end
         end
     end
     return (; optimal_cost,
             optimal_config,
-            p1 = logical_count/num_update_each_temp,
-            mostlikely = logical_count/num_update_each_temp * 2 > 1 ? one_config : zero_config
+            p1 = logical_count/total_count,
+            mostlikely = logical_count/total_count * 2 > 1 ? one_config : zero_config,
+            accept_rate = accept_count/num_update_each_temp
         )
 end
  
