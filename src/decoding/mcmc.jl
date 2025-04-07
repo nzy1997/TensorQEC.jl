@@ -1,9 +1,15 @@
-struct SpinGlassSA
+struct SpinGlassSA{T}
     s2q::Vector{Vector{Int}}
     syndrome::Vector{Mod2}
     logical_qubits::Vector{Int}
-    p_vector::Vector{Float64}
+    logp_vector_error::Vector{T}
+    logp_vector_noerror::Vector{T}
     logical_qubits2::Vector{Int} # logicals to check
+end
+
+function SpinGlassSA(s2q::AbstractVector{Vector{Int}}, syndrome::AbstractVector{Mod2}, logical_qubits::AbstractVector{Int}, p_vector::AbstractVector{T}, logical_qubits2::AbstractVector{Int}) where T
+    @assert all(p-> 0 <= p <= 1, p_vector) "`p_vector` should be in [0,1], got: $p_vector"
+    return SpinGlassSA(s2q, syndrome, logical_qubits, log.(p_vector), log.(one(T) .- p_vector), logical_qubits2)
 end
 
 struct SpinConfig
@@ -50,8 +56,8 @@ function anneal_singlerun!(config, prob, tempscales::Vector{Float64}, num_update
                     optimal_config = deepcopy(config)
                 end
             end
-            sum(config.config[prob.logical_qubits2]).x && (logical_count += 1)
-            xmean = logical_count/i
+            sum(i->config.config[i], prob.logical_qubits2).x && (logical_count += 1)
+            # xmean = logical_count/i
             # i > 10000 && (xmean - xmean^2)/sqrt(i) < 1e-3 * abs(0.5 - xmean) && (return xmean > 0.5 ? one_config : zero_config)
             #@show logical_count/i, (xmean - xmean^2)/sqrt(i)
             # if i > 10000
@@ -75,8 +81,8 @@ end
 
 Get the cost of specific configuration.
 """
-function energy(config::SpinConfig, sap::SpinGlassSA)
-    return -sum(i -> config.config[i].x ? log(sap.p_vector[i]) : log(1.0 - sap.p_vector[i]), 1:(length(config.config)))
+function energy(config::SpinConfig, sap::SpinGlassSA{T}) where T
+    return -sum(i -> config.config[i].x ? sap.logp_vector_error[i] : sap.logp_vector_noerror[i], 1:(length(config.config)))
 end
 
 """
@@ -84,16 +90,16 @@ end
 
 Propose a change, as well as the energy change.
 """
-@inline function propose(config::SpinConfig, sap::SpinGlassSA)  # ommit the name of argument, since not used.
+@inline function propose(config::SpinConfig, sap::SpinGlassSA{T}) where T  # ommit the name of argument, since not used.
     max_ispin = length(sap.s2q) + 1
     ispin = rand(1:max_ispin)
-    if ispin == length(sap.s2q)+1
-        ΔE = sum(i -> config.config[i].x ? log(sap.p_vector[i]/((1.0 - sap.p_vector[i]))) : log((1.0 - sap.p_vector[i])/(sap.p_vector[i])), sap.logical_qubits)
-        return ispin, ΔE
-    else
-        ΔE = sum(i -> config.config[i].x ? log(sap.p_vector[i]/((1.0 - sap.p_vector[i]))) : log((1.0 - sap.p_vector[i])/(sap.p_vector[i])), sap.s2q[ispin])
-        return ispin, ΔE
+    ΔE = zero(T)
+    fliplocs = ispin == length(sap.s2q)+1 ? sap.logical_qubits : sap.s2q[ispin]
+    for i in fliplocs
+        dE = sap.logp_vector_error[i] - sap.logp_vector_noerror[i]
+        @inbounds ΔE += config.config[i].x ? dE : -dE
     end
+    return ispin, ΔE
 end
 
 """
