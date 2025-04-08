@@ -132,6 +132,6 @@ function random_ldpc(n1::Int,n2::Int,nq::Int)
     return SimpleTannerGraph(nq, sts)
 end
 
-function check_logical_error(errored_qubits1::Vector{Mod2}, errored_qubits2::Vector{Mod2}, H)
-    return !check_linear_indepent([a.x for a in [H;transpose(errored_qubits1+errored_qubits2)]])
+function check_logical_error(errored_qubits1::Vector{Mod2}, errored_qubits2::Vector{Mod2}, lz::Matrix{Mod2})
+    return all(i->!sum(lz[i,:].*errored_qubits1-errored_qubits2).x, 1:size(lz,1))
 end

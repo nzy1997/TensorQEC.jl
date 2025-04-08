@@ -50,7 +50,7 @@ function null_space(H::Matrix{Bool})
     return null_space
 end
 
-function logical_oprator(Hx::Matrix{Bool}, Hz::Matrix{Bool})
+function logical_operator(Hx::Matrix{Bool}, Hz::Matrix{Bool})
     kerHx = null_space(Hx)
 
     H = [Hz; kerHx]
@@ -60,14 +60,25 @@ function logical_oprator(Hx::Matrix{Bool}, Hz::Matrix{Bool})
 
     lz = lz[any.(!iszero, eachrow(lz)), :]
     lz[:,bimat.ordering] = lz
-    return lz
+    return Mod2.(lz)
 end
 
 # TODO: Make lx and lz in the same qubit order
-function logical_oprator(tanner::CSSTannerGraph)
-    lz = logical_oprator([a.x for a in tanner.stgx.H], [a.x for a in tanner.stgz.H])
-    lx = logical_oprator([a.x for a in tanner.stgz.H], [a.x for a in tanner.stgx.H])
-    return lx, lz
+function logical_operator(tanner::CSSTannerGraph)
+    lz = logical_operator([a.x for a in tanner.stgx.H], [a.x for a in tanner.stgz.H])
+    lx = logical_operator([a.x for a in tanner.stgz.H], [a.x for a in tanner.stgx.H])
+    return lx,lz
+    return same_qubit_order(lx,lz)
+end
+
+function same_qubit_order(lx::Matrix{Mod2},lz::Matrix{Mod2})
+    lx_new = zeros(Mod2, size(lx))
+    for j in 1:size(lz,1)
+        lxj = findall(i->sum(lx[i,:].*lz[j,:]).x, 1:size(lx,1))
+        @assert length(lxj) == 1 "The logical operator is not unique!"
+        lx_new[j,:] = lx[lxj[1],:]
+    end
+    return lx_new, lz
 end
 
 function code_distance(Hz::Matrix{Int},lz::Matrix{Int}; verbose = false,ipsolver = SCIP.Optimizer)
@@ -97,7 +108,7 @@ function code_distance(Hz::Matrix{Int},lz::Matrix{Int}; verbose = false,ipsolver
 end
 
 function code_distance(tanner::CSSTannerGraph)
-    lx,lz = logical_oprator(tanner)
+    lx,lz = logical_operator(tanner)
     dx = code_distance(Int.(tanner.stgz.H), Int.(lz))
     dz = code_distance(Int.(tanner.stgx.H), Int.(lx))
     return min(dx,dz)
