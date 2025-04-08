@@ -39,7 +39,7 @@ using TensorQEC.TensorInference
     @show lx
     @show lz
 
-    prob = SpinGlassSA(tanner.stgx.s2q, syd.s, findall(lx[1,:]), p_vector, findall(lz[1,:]))
+    prob = SpinGlassSA(tanner.stgx.s2q, findall(lx[1,:]), p_vector, findall(lz[1,:]))
     config = SpinConfig(Mod2[1,0,0,0,0,0,0,0,0])
     nsweeps = 100000
     res = anneal_singlerun!(config, prob, T[1.0, 0.5, 0.0]; num_sweep=nsweeps, ptemp=0.1)
