@@ -103,7 +103,7 @@ function anneal_singlerun!(config, sap::SpinGlassSA{T}, betas::Vector{T}; num_sw
             mostlikely = one_count/valid_count * 2 > 1 ? one_config : zero_config,
             accept_rate = accept_count/propose_count,
             beta_accpet_rate = beta_update_count/beta_propose_count,
-            valid_samples = propose_count,
+            valid_sample_rate = valid_count/num_sweep/n,
             etas = etas
         )
 end

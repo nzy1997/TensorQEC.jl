@@ -60,7 +60,7 @@ function logical_operator(Hx::Matrix{Bool}, Hz::Matrix{Bool})
 
     lz = lz[any.(!iszero, eachrow(lz)), :]
     lz[:,bimat.ordering] = lz
-    return Mod2.(lz)
+    return (lz)
 end
 
 # TODO: Make lx and lz in the same qubit order

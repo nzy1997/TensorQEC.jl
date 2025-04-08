@@ -45,7 +45,7 @@ end
 function compile(decoder::TNMAP, problem::CSSDecodingProblem)
     tanner = problem.tanner
     qubit_num = nq(tanner)
-    lx,lz = logical_oprator(tanner)
+    lx,lz = logical_operator(tanner)
     lxs = [findall(lx[i,:]) for i in axes(lx, 1)]
     lzs = [findall(lz[i,:]) for i in axes(lz, 1)]
 

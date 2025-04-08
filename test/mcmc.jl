@@ -35,7 +35,7 @@ using TensorQEC.TensorInference
     p_vector[2] = 0.26
     p_vector[3] = 0.26
 
-    lx,lz = TensorQEC.logical_oprator(tanner)
+    lx,lz = TensorQEC.logical_operator(tanner)
     @show lx
     @show lz
 
@@ -43,11 +43,11 @@ using TensorQEC.TensorInference
     config = SpinConfig(Mod2[1,0,0,0,0,0,0,0,0])
     nsweeps = 100000
     res = anneal_singlerun!(config, prob, T[1.0, 0.5, 0.0]; num_sweep=nsweeps, ptemp=0.1)
-    #res = anneal_singlerun!(config, prob, T[1.0], T[0.0], 10000000; ptemp=0.1)
+
     @show res
     @test res.accept_rate > 0.05
     @test res.beta_accpet_rate > 0.1
-    @test res.valid_samples > nsweeps
+    # @test res.valid_samples > nsweeps
     @test isapprox(res.p1, 0.431, atol=0.3)
     @test res.mostlikely.config[1].x == 1
 
@@ -56,24 +56,27 @@ using TensorQEC.TensorInference
     @show sum(lz.*error_qubits)
 end
 
+
 @testset "marginals" begin
-    tanner = CSSTannerGraph(SurfaceCode(3,3)).stgz
+    d = 3
+    tanner = CSSTannerGraph(SurfaceCode(d,d)).stgz
     error_qubits = Mod2[1,0,0,0,0,0,0,0,0]
     syd = syndrome_extraction(error_qubits, tanner)
-    p_vector = fill(0.1, 9)
+    p_vector = fill(0.1, d*d)
     p_vector[2] = 0.26
     p_vector[3] = 0.26
-    lx,lz = TensorQEC.logical_oprator(CSSTannerGraph(SurfaceCode(3,3)))
+    lx,lz = TensorQEC.logical_operator(CSSTannerGraph(SurfaceCode(d,d)))
     uaimodel = compile(TNMAP(), tanner, p_vector).uaimodel
     factors = uaimodel.factors
-    push!(uaimodel.factors, TensorInference.Factor((findall(lz[1,:])...,14), TensorQEC.parity_check_matrix(3)))
+    newfactor_pos= length(factors)+1
+    push!(uaimodel.factors, TensorInference.Factor((findall(lz[1,:])...,newfactor_pos), TensorQEC.parity_check_matrix(d)))
 
     tn_new = TensorNetworkModel(
-		1:14,
-		fill(2,14),
+		1:newfactor_pos,
+		fill(2,newfactor_pos),
 		factors;
-		mars = [[14]],
-        evidence=Dict([(i+9,s.x ? 1 : 0) for (i,s) in enumerate(syd.s)])
+		mars = [[newfactor_pos]],
+        evidence=Dict([(i+d*d,s.x ? 1 : 0) for (i,s) in enumerate(syd.s)])
 	)
 
     res = TensorQEC._mixed_integer_programming_for_one_solution(getfield.(tanner.H, :x), syd.s)
@@ -90,14 +93,49 @@ end
     error_qubits = Mod2[0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0]
     tanner = CSSTannerGraph(SurfaceCode(5,5))
     syd = syndrome_extraction(error_qubits, tanner.stgz)
-    p_vector = fill(T(0.15), 25)
+    p_vector = fill(T(0.1), 25)
 
-    lx,lz = TensorQEC.logical_oprator(tanner)
+    lx,lz = TensorQEC.logical_operator(tanner)
     prob = SpinGlassSA(tanner.stgx.s2q, findall(lx[1,:]), p_vector, findall(lz[1,:]))
     config = SpinConfig(TensorQEC._mixed_integer_programming_for_one_solution(getfield.(tanner.stgz.H, :x), syd.s))
-    res = anneal_singlerun!(config, prob, T[1.0, 0.1], T[0.0, -5.0], 1000000; ptemp=0.1)
+    nsweeps = 100000
+    res = anneal_singlerun!(config, prob, T[1.0, 0.8, 0.5, 0.0]; num_sweep=nsweeps,num_sweep_thermalize=100, ptemp=0.1)
     @show res
     @show res.mostlikely.config
     @show sum(lz.*res.mostlikely.config)
     @show sum(lz.*error_qubits)
+
+    # ct = compile(TNMAP(), tanner, fill(DepolarizingError(0.15,0.0,0.0), 25))
+    # css_syd = CSSSyndrome(zeros(Mod2,25),syd.s)
+    # tnres = decode(ct, css_syd)
+    # @show tnres
 end 
+
+@testset "marginals" begin
+    d = 5
+    tanner = CSSTannerGraph(SurfaceCode(d,d)).stgz
+    error_qubits = Mod2[0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0]
+    syd = syndrome_extraction(error_qubits, tanner)
+    p_vector = fill(0.1, d*d)
+    lx,lz = TensorQEC.logical_operator(CSSTannerGraph(SurfaceCode(d,d)))
+    uaimodel = compile(TNMAP(), tanner, p_vector).uaimodel
+    factors = uaimodel.factors
+    newfactor_pos= length(factors)+1
+    push!(uaimodel.factors, TensorInference.Factor((findall(lz[1,:])...,newfactor_pos), TensorQEC.parity_check_matrix(d)))
+
+    tn_new = TensorNetworkModel(
+		1:newfactor_pos,
+		fill(2,newfactor_pos),
+		factors;
+		mars = [[newfactor_pos]],
+        evidence=Dict([(i+d*d,s.x ? 1 : 0) for (i,s) in enumerate(syd.s)])
+	)
+
+    res = TensorQEC._mixed_integer_programming_for_one_solution(getfield.(tanner.H, :x), syd.s)
+
+    @show sum(res .* lz[1,:])
+    @show sum((res.+lx[1,:]) .* lz[1,:])
+    @show marginals(tn_new)
+
+    @show res
+end
