@@ -1,16 +1,15 @@
 struct SpinGlassSA{T}
     s2q::Vector{Vector{Int}}
-    syndrome::Vector{Mod2}
     logical_qubits::Vector{Int}
     logp_vector_error::Vector{T}
     logp_vector_noerror::Vector{T}
-    logical_qubits2::Vector{Int} # logicals to check
+    logical_qubits_check::Vector{Int} # logicals to check
 end
 
-function SpinGlassSA(s2q::AbstractVector{Vector{Int}}, syndrome::AbstractVector{Mod2}, logical_qubits::AbstractVector{Int}, p_vector::AbstractVector{T}, logical_qubits2::AbstractVector{Int}) where T
+function SpinGlassSA(s2q::AbstractVector{Vector{Int}}, logical_qubits::AbstractVector{Int}, p_vector::AbstractVector{T}, logical_qubits2::AbstractVector{Int}) where T
     @assert all(p-> 0 <= p <= 1, p_vector) "`p_vector` should be in [0,1], got: $p_vector"
     # TODO: boundary check
-    return SpinGlassSA(s2q, syndrome, logical_qubits, log.(p_vector), log.(one(T) .- p_vector), logical_qubits2)
+    return SpinGlassSA(s2q, logical_qubits, log.(p_vector), log.(one(T) .- p_vector), logical_qubits2)
 end
 
 struct SpinConfig
@@ -39,7 +38,7 @@ Returns a named tuple: (; optimal_cost, optimal_configuration, p1, mostlikely_co
 function anneal_singlerun!(config, sap::SpinGlassSA{T}, betas::Vector{T}; num_sweep::Int=100000, num_sweep_thermalize::Int=100, ptemp=T(0.1), rng=Random.Xoshiro(), eta_lr=T(0.2)) where T
     @assert isone(betas[1]) "betas[1] must be 1.0, since this is the temperature to sample the logical qubits!"
     n = length(config.config)
-    zero_config, one_config = get01configs(config, sap.logical_qubits, sap.logical_qubits2)
+    zero_config, one_config = get01configs(config, sap.logical_qubits, sap.logical_qubits_check)
     # thermalizing stage, update eta
     ibeta = 1; beta = betas[ibeta]
     etas = fill(T(0), length(betas))
@@ -93,7 +92,7 @@ function anneal_singlerun!(config, sap::SpinGlassSA{T}, betas::Vector{T}; num_sw
             end
             if isone(beta)
                 valid_count += 1
-                sum(i->config.config[i], sap.logical_qubits2).x && (one_count += 1)
+                sum(i->config.config[i], sap.logical_qubits_check).x && (one_count += 1)
             end
         end
     end
@@ -158,3 +157,21 @@ function flip!(config::SpinConfig, ispin::Int, sap::SpinGlassSA)
     end
     return config
 end
+struct MCMC{T} <: AbstractDecoder 
+    betas::Vector{T}     
+    etas::Vector{T}
+    num_update_each_temp::Int
+    ptemp::Float64
+end
+
+struct CompiledMCMC{T} <: CompiledDecoder 
+    sap::SpinGlassSA{T}
+    decoder::MCMC{T}
+end
+
+# function compile(decoder::MCMC, problem::SimpleDecodingProblem)
+    
+#     return CompiledMCMC(SpinGlassSA(problem.tanner.s2q, problem.tanner.logical_qubits, problem.pvec, problem.tanner.logical_qubits_check), decoder)
+# end
+
+

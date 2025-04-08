@@ -50,6 +50,10 @@ using TensorQEC.TensorInference
     @test res.valid_samples > nsweeps
     @test isapprox(res.p1, 0.431, atol=0.3)
     @test res.mostlikely.config[1].x == 1
+
+    @show  syndrome_extraction(res.mostlikely.config, tanner.stgz) == syd
+    @show sum(lz.*res.mostlikely.config)
+    @show sum(lz.*error_qubits)
 end
 
 @testset "marginals" begin
@@ -57,8 +61,8 @@ end
     error_qubits = Mod2[1,0,0,0,0,0,0,0,0]
     syd = syndrome_extraction(error_qubits, tanner)
     p_vector = fill(0.1, 9)
-    p_vector[2] = 0.25
-    p_vector[3] = 0.25
+    p_vector[2] = 0.26
+    p_vector[3] = 0.26
     lx,lz = TensorQEC.logical_oprator(CSSTannerGraph(SurfaceCode(3,3)))
     uaimodel = compile(TNMAP(), tanner, p_vector).uaimodel
     factors = uaimodel.factors
@@ -80,3 +84,20 @@ end
 
     @show res
 end
+
+@testset "mcmc d = 5" begin
+    T = Float32
+    error_qubits = Mod2[0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0]
+    tanner = CSSTannerGraph(SurfaceCode(5,5))
+    syd = syndrome_extraction(error_qubits, tanner.stgz)
+    p_vector = fill(T(0.15), 25)
+
+    lx,lz = TensorQEC.logical_oprator(tanner)
+    prob = SpinGlassSA(tanner.stgx.s2q, findall(lx[1,:]), p_vector, findall(lz[1,:]))
+    config = SpinConfig(TensorQEC._mixed_integer_programming_for_one_solution(getfield.(tanner.stgz.H, :x), syd.s))
+    res = anneal_singlerun!(config, prob, T[1.0, 0.1], T[0.0, -5.0], 1000000; ptemp=0.1)
+    @show res
+    @show res.mostlikely.config
+    @show sum(lz.*res.mostlikely.config)
+    @show sum(lz.*error_qubits)
+end 
