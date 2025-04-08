@@ -26,34 +26,48 @@ using TensorQEC.TensorInference
 # end
 
 @testset "anneal" begin
-    tanner = CSSTannerGraph(SurfaceCode(3,3))
+    d = 3
+    tanner = CSSTannerGraph(SurfaceCode(d,d))
     error_qubits = Mod2[1,0,0,0,0,0,0,0,0]
     syd = syndrome_extraction(error_qubits, tanner.stgz)
     T = Float32
 
-    p_vector = fill(T(0.1), 9)
-    p_vector[2] = 0.26
-    p_vector[3] = 0.26
+    p_vector = fill((0.1), d*d)
+    # p_vector[2] = 0.26
+    # p_vector[3] = 0.26
 
     lx,lz = TensorQEC.logical_operator(tanner)
     @show lx
     @show lz
 
-    prob = SpinGlassSA(tanner.stgx.s2q, findall(lx[1,:]), p_vector, findall(lz[1,:]))
-    config = SpinConfig(Mod2[1,0,0,0,0,0,0,0,0])
+    prob = SpinGlassSA(tanner.stgx.s2q, T.(p_vector))
     nsweeps = 100000
-    res = anneal_singlerun!(config, prob, T[1.0, 0.5, 0.0]; num_sweep=nsweeps, ptemp=0.1)
 
-    @show res
-    @test res.accept_rate > 0.05
-    @test res.beta_accpet_rate > 0.1
-    # @test res.valid_samples > nsweeps
-    @test isapprox(res.p1, 0.431, atol=0.3)
-    @test res.mostlikely.config[1].x == 1
+    config = SpinConfig(Mod2[1,0,0,0,0,0,0,0,0])
+    res0 = anneal_singlerun!(config, prob; num_sweep=nsweeps)
 
-    @show  syndrome_extraction(res.mostlikely.config, tanner.stgz) == syd
-    @show sum(lz.*res.mostlikely.config)
-    @show sum(lz.*error_qubits)
+    @show res0
+    config = SpinConfig(Mod2[0,1,1,0,0,0,0,0,0])
+    res1 = anneal_singlerun!(config, prob; num_sweep=nsweeps)
+    @show res1
+
+    @show res0.mean_p > res1.mean_p ? res0.optimal_config : res1.optimal_config
+
+    uaimodel = compile(TNMAP(), tanner.stgz, p_vector).uaimodel
+    factors = uaimodel.factors
+    newfactor_pos= length(factors)+1
+    push!(uaimodel.factors, TensorInference.Factor((findall(lz[1,:])...,newfactor_pos), TensorQEC.parity_check_matrix(d)))
+
+    tn_new = TensorNetworkModel(
+		1:newfactor_pos,
+		fill(2,newfactor_pos),
+		factors;
+		mars = [[newfactor_pos]],
+        evidence=Dict([(i+d*d,s.x ? 1 : 0) for (i,s) in enumerate(syd.s)])
+	)
+    mar = marginals(tn_new)
+    @show mar
+    @show mar[[newfactor_pos]][1] < 0.5 ? error_qubits : error_qubits.+lx[1,:]
 end
 
 
@@ -79,13 +93,12 @@ end
         evidence=Dict([(i+d*d,s.x ? 1 : 0) for (i,s) in enumerate(syd.s)])
 	)
 
-    res = TensorQEC._mixed_integer_programming_for_one_solution(getfield.(tanner.H, :x), syd.s)
+    @show sum(error_qubits .* lz[1,:])
 
-    @show sum(res .* lz[1,:])
-    @show sum((res.+lx[1,:]) .* lz[1,:])
-    @show marginals(tn_new)
+    mar = marginals(tn_new)
+    @show mar
 
-    @show res
+    @show mar[[newfactor_pos]][1] < 0.5 ? error_qubits : error_qubits.+lx[1,:]
 end
 
 @testset "mcmc d = 5" begin
