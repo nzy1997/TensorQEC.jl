@@ -16,6 +16,19 @@ struct SpinConfig
     config::Vector{Mod2}
 end
 
+function beta_update(::Type{T}, ibeta, nbeta, rng) where T
+    if ibeta == 1
+        new_ibeta = 2
+    elseif ibeta == nbeta
+        new_ibeta = nbeta - 1
+    else
+        new_ibeta = rand(rng)> 0.5 ? ibeta - 1 : ibeta+1 # propose a new beta
+    end
+    poldtonew = ibeta == 1 || ibeta == nbeta ? T(1.0) : T(0.5)
+    pnewtoold = new_ibeta == 1 || new_ibeta == nbeta ? T(1.0) : T(0.5)
+    return new_ibeta, poldtonew/pnewtoold
+end
+
 """
     anneal_singlerun!(config::AnnealingConfig, prob, betas::Vector{Float64}, num_sweep::Int)
 
@@ -35,7 +48,7 @@ Perform Simulated Annealing using Metropolis updates for the single run.
 
 Returns a named tuple: (; optimal_cost, optimal_configuration, p1, mostlikely_configuration, acceptance_rate, beta_acceptance_rate, valid_samples, etas).
 """
-function anneal_singlerun!(config, sap::SpinGlassSA{T}, betas::Vector{T}; num_sweep::Int=100000, num_sweep_thermalize::Int=100, ptemp=T(0.1), rng=Random.Xoshiro(), eta_lr=T(0.2)) where T
+function anneal_singlerun!(config, sap::SpinGlassSA{T}, betas::Vector{T}; num_sweep::Int=100000, num_sweep_thermalize::Int=100, ptemp=T(0.1), rng=Random.Xoshiro(), eta_lr=T(1.0)) where T
     @assert isone(betas[1]) "betas[1] must be 1.0, since this is the temperature to sample the logical qubits!"
     n = length(config.config)
     zero_config, one_config = get01configs(config, sap.logical_qubits, sap.logical_qubits_check)
@@ -45,10 +58,14 @@ function anneal_singlerun!(config, sap::SpinGlassSA{T}, betas::Vector{T}; num_sw
     cost = energy(config, sap)
     for _ = 1:num_sweep_thermalize * n
         if length(betas) > 1 && rand(rng) < 0.5
-            new_ibeta = rand(rng, 1:length(betas)-1); new_ibeta >= ibeta && (new_ibeta += 1)  # propose a new beta
+            new_ibeta, bias = beta_update(T, ibeta, length(betas), rng)
             lbeta, hbeta = minmax(ibeta, new_ibeta)
-            etas[hbeta] = (1-eta_lr) * etas[hbeta] + eta_lr * (betas[hbeta] - betas[lbeta])*cost  # update low beta
-            prob = exp(-(betas[new_ibeta] - beta)*cost + (etas[new_ibeta] - etas[ibeta]))
+            #etas[hbeta] = (1-eta_lr) * etas[hbeta] + eta_lr * ((betas[hbeta] - betas[lbeta])*cost)  # update low beta
+            diff = etas[hbeta] - etas[lbeta]
+            diff = (1-eta_lr) * diff + eta_lr * ((betas[hbeta] - betas[lbeta])*cost)
+            etas[hbeta] = etas[lbeta] + diff
+            etas[hbeta] += ibeta > new_ibeta ? -log(bias) : log(bias)
+            prob = exp(-(betas[new_ibeta] - beta)*cost + (etas[new_ibeta] - etas[ibeta])) / bias
             if rand(rng) < prob
                 beta = betas[new_ibeta]
                 ibeta = new_ibeta
@@ -60,7 +77,7 @@ function anneal_singlerun!(config, sap::SpinGlassSA{T}, betas::Vector{T}; num_sw
             cost += ΔE
         end
     end
-
+    
     propose_count = accept_count = 0  # for all temperature
     valid_count = one_count = 0       # for beta = 1.0
     beta_propose_count = beta_update_count = 0  # for beta-swap
@@ -69,8 +86,8 @@ function anneal_singlerun!(config, sap::SpinGlassSA{T}, betas::Vector{T}; num_sw
     for _ = 1:num_sweep * n  # single instruction multiple data, see julia performance tips.
         if length(betas) > 1 && rand(rng) < ptemp
             beta_propose_count += 1
-            new_ibeta = rand(rng, 1:length(betas)-1); new_ibeta >= ibeta && (new_ibeta += 1)  # propose a new beta
-            prob = exp(-(betas[new_ibeta] - beta)*cost + etas[new_ibeta] - etas[ibeta])
+            new_ibeta, bias = beta_update(T, ibeta, length(betas), rng)
+            prob = exp(-(betas[new_ibeta] - beta)*cost + etas[new_ibeta] - etas[ibeta]) / bias
             if rand(rng) < prob
                 beta = betas[new_ibeta]
                 ibeta = new_ibeta
