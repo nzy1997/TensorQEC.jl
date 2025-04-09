@@ -12,8 +12,8 @@ function SpinGlassSA(s2q::AbstractVector{Vector{Int}}, logical_qubits::AbstractV
 	return SpinGlassSA(s2q, logical_qubits, log.(p_vector), log.(one(T) .- p_vector), logical_qubits2)
 end
 
-struct SpinConfig
-	config::Vector{Mod2}
+struct SpinConfig{VT}
+	config::VT
 end
 
 function beta_update(::Type{T}, ibeta, nbeta, rng) where T
@@ -48,7 +48,7 @@ Perform Simulated Annealing using Metropolis updates for the single run.
 
 Returns a named tuple: (; optimal_cost, optimal_configuration, p1, mostlikely_configuration, acceptance_rate, beta_acceptance_rate, valid_samples, etas).
 """
-function anneal_singlerun!(config, sap::SpinGlassSA{T}, betas::Vector{T}; rng = Random.Xoshiro(), num_trials) where T
+function anneal_singlerun!(config::SpinConfig{<:Vector}, sap::SpinGlassSA{T}, betas::Vector{T}; rng = Random.Xoshiro(), num_trials) where T
 	zero_config, one_config = get01configs(config, sap.logical_qubits, sap.logical_qubits_check)
 	one_count = 0
 	for _ in 1:num_trials

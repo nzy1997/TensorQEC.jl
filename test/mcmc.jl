@@ -47,6 +47,30 @@ using TensorQEC.TensorInference
     @show res
 end
 
+using CUDA
+@testset "anneal - CUDA" begin
+    tanner = CSSTannerGraph(SurfaceCode(3,3))
+    error_qubits = Mod2[1,0,0,0,0,0,0,0,0]
+    syd = syndrome_extraction(error_qubits, tanner.stgz)
+    T = Float32
+
+    p_vector = fill(T(0.1), 9)
+    p_vector[2] = 0.26
+    p_vector[3] = 0.26
+
+    lx,lz = TensorQEC.logical_operator(tanner)
+    @show lx
+    @show lz
+
+    prob = SpinGlassSA(tanner.stgx.s2q, findall(lx[1,:]), p_vector, findall(lz[1,:]))
+    config = SpinConfig(Mod2[1,0,0,0,0,0,0,0,0])
+    nsweeps = 1000
+    res = anneal_singlerun!(SpinConfig(CUDA.CuVector(config.config)), prob, collect(T, 0:1e-4:1.0);num_trials=nsweeps)
+
+    @show res
+end
+
+
 
 @testset "marginals" begin
     d = 3
