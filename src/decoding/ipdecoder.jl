@@ -1,16 +1,18 @@
+abstract type AbstractIPDecoder <: AbstractDecoder end
+
 """
     IPDecoder <: AbstractDecoder
 
 An integer programming decoder.
 """
-Base.@kwdef struct IPDecoder <: AbstractDecoder 
+Base.@kwdef struct IPDecoder <: AbstractIPDecoder 
     optimizer = SCIP.Optimizer
     verbose::Bool = false
 end
 
-struct CompiledIP <: CompiledDecoder
-    decoder::IPDecoder
-    reduction::AbstractReductionResult
+struct CompiledIP{D <: AbstractIPDecoder, R <: AbstractReductionResult} <: CompiledDecoder
+    decoder::D
+    reduction::R
 end
 
 struct FlatDecodingProblem
@@ -31,12 +33,12 @@ end
 get_fdp(cfdp::SimpleDecodingProblemToFlatDecodingProblem) = cfdp.fdp
 extract_decoding(re::SimpleDecodingProblemToFlatDecodingProblem, error_qubits::Vector{Mod2}) = DecodingResult(true, error_qubits)
 
-function compile(decoder::IPDecoder, gdp::GeneralDecodingProblem)
+function compile(decoder::AbstractIPDecoder, gdp::GeneralDecodingProblem)
     gdp2fdp = flattengdp(gdp)
     return CompiledIP(decoder, gdp2fdp)
 end
 
-function compile(decoder::IPDecoder, sdp::SimpleDecodingProblem)
+function compile(decoder::AbstractIPDecoder, sdp::SimpleDecodingProblem)
     fdp = FlatDecodingProblem(sdp.tanner, [[i] for i in 1:sdp.tanner.nq], [[p] for p in sdp.pvec])
     return CompiledIP(decoder, SimpleDecodingProblemToFlatDecodingProblem(fdp))
 end
@@ -44,7 +46,7 @@ end
 function decode(ci::CompiledIP, syndrome::CSSSyndrome)
     return decode(ci,SimpleSyndrome([syndrome.sx...,syndrome.sz...]))
 end
-function decode(ci::CompiledIP, syndrome::SimpleSyndrome)
+function decode(ci::CompiledIP{IPDecoder,R}, syndrome::SimpleSyndrome) where {R}
     return extract_decoding(ci.reduction,_mixed_integer_programming(ci.decoder,get_fdp(ci.reduction), syndrome.s))
 end
 
@@ -54,7 +56,7 @@ struct CSSDecodingProblemToFlatDecodingProblem <: AbstractReductionResult
     gdp2fdp::GeneralDecodingProblemToFlatDecodingProblem
 end
 get_fdp(cfdp::CSSDecodingProblemToFlatDecodingProblem) = cfdp.fdp
-function compile(decoder::IPDecoder, sdp::CSSDecodingProblem)
+function compile(decoder::AbstractIPDecoder, sdp::CSSDecodingProblem)
     c2g = reduce2general(sdp.tanner,[[p.px,p.py,p.pz] for p in sdp.pvec])
     gdp2fdp = flattengdp(c2g.gdp)
     return CompiledIP(decoder, CSSDecodingProblemToFlatDecodingProblem(gdp2fdp.fdp,c2g,gdp2fdp))
@@ -173,4 +175,47 @@ function _mixed_integer_programming_for_one_solution(H, syndrome::Vector{Mod2})
     optimize!(model)
     @assert is_solved_and_feasible(model) "The problem is infeasible!"
     return Mod2.(value.(z) .> 0.5)
+end
+
+Base.@kwdef struct IPLPDecoder <: AbstractIPDecoder 
+    optimizer = SCIP.Optimizer
+    verbose::Bool = false
+end
+
+function _mixed_integer_programming(decoder::IPLPDecoder, fdp::FlatDecodingProblem, syndrome::Vector{Mod2})
+    H = [a.x for a in fdp.tanner.H]
+    m,n = size(H)
+    model = Model(decoder.optimizer)
+    !decoder.verbose && set_silent(model)
+
+    @variable(model, 0 <= z[i = 1:n] <= 1)
+    @variable(model, 0 <= k[i = 1:m], Int)
+    @variable(model, -0.1 <= ep[i = 1:m] <= 0.1)
+    for i in 1:m
+        @constraint(model, sum(z[j] for j in 1:n if H[i,j] == 1) == 2 * k[i] + (syndrome[i].x ? 1 : 0) + ep[i])
+    end
+
+    obj = 0.0
+    for (i,code) in enumerate(fdp.code)
+        tensor = fdp.pvec[i]
+        zsum = sum([z[i] for i in code])
+        @constraint(model, zsum <= 1)
+        for j in 1:length(tensor)
+            if tensor[j] == 0.0
+                @constraint(model, z[code[j]] == 0)
+            else
+                obj += log(tensor[j]) * z[code[j]]
+            end
+        end
+        obj += log(1-sum(tensor)) * (1-zsum)
+    end
+    @objective(model, Max, obj)
+    optimize!(model)
+    @assert is_solved_and_feasible(model) "The problem is infeasible!"
+    return Mod2.(value.(z) .> 0.5)
+    return value.(z)
+end
+
+function decode(ci::CompiledIP{IPLPDecoder,R}, syndrome::SimpleSyndrome) where {R}
+    return _mixed_integer_programming(ci.decoder,get_fdp(ci.reduction), syndrome.s)
 end

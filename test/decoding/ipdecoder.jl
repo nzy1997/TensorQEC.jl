@@ -60,3 +60,18 @@ end
     res = TensorQEC._mixed_integer_programming_for_one_solution(getfield.(tanner.stgz.H, :x), syd.s)
     @test syd == syndrome_extraction(res, tanner.stgz)
 end
+
+@testset "IPLPDecoder" begin
+    d = 3
+    n = d^2
+    tanner = CSSTannerGraph(SurfaceCode(d,d))
+    error_qubits = Mod2[1,0,0,0,0,0,0,0,0]
+    syd = syndrome_extraction(error_qubits, tanner.stgz)
+    p_vector = fill(0.1, 9)
+    p_vector[2] = 0.26
+    p_vector[3] = 0.26
+    ip = TensorQEC.IPLPDecoder()
+    ct = compile(ip, tanner.stgz, p_vector)
+    res = decode(ct, syd)
+    @show res
+end
