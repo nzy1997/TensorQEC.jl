@@ -32,8 +32,8 @@ using TensorQEC.TensorInference
     T = Float32
 
     p_vector = fill(T(0.1), 9)
-    p_vector[2] = 0.26
-    p_vector[3] = 0.26
+    # p_vector[2] = 0.26
+    # p_vector[3] = 0.26
 
     lx,lz = TensorQEC.logical_operator(tanner)
     @show lx
@@ -63,8 +63,8 @@ end
     error_qubits = Mod2[1,0,0,0,0,0,0,0,0]
     syd = syndrome_extraction(error_qubits, tanner)
     p_vector = fill(0.1, d*d)
-    p_vector[2] = 0.26
-    p_vector[3] = 0.26
+    # p_vector[2] = 0.26
+    # p_vector[3] = 0.26
     lx,lz = TensorQEC.logical_operator(CSSTannerGraph(SurfaceCode(d,d)))
     uaimodel = compile(TNMAP(), tanner, p_vector).uaimodel
     factors = uaimodel.factors
