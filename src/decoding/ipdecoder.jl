@@ -158,9 +158,9 @@ function _setmod2(vec::Vector{Int})
     return vans
 end
 
-function _mixed_integer_programming_for_one_solution(H, syndrome::Vector{Mod2})
+function _mixed_integer_programming_for_one_solution(H, syndrome::Vector{Mod2};solver=SCIP.Optimizer)
     m,n = size(H)
-    model = Model(SCIP.Optimizer)
+    model = Model(solver)
     set_silent(model)
 
     @variable(model, 0 <= z[i = 1:n] <= 1, Int)
