@@ -65,7 +65,7 @@ function extract_decoding(cfdp::CSSDecodingProblemToFlatDecodingProblem, error_q
 end
 
 function _mixed_integer_programming(decoder::IPDecoder, fdp::FlatDecodingProblem, syndrome::Vector{Mod2})
-    H = [a.x for a in fdp.tanner.H]
+    H = fdp.tanner.H
     m,n = size(H)
     model = Model(decoder.optimizer)
     !decoder.verbose && set_silent(model)
@@ -74,7 +74,7 @@ function _mixed_integer_programming(decoder::IPDecoder, fdp::FlatDecodingProblem
     @variable(model, 0 <= k[i = 1:m], Int)
     
     for i in 1:m
-        @constraint(model, sum(z[j] for j in 1:n if H[i,j] == 1) == 2 * k[i] + (syndrome[i].x ? 1 : 0))
+        @constraint(model, sum(z[j] for j in 1:n if H[i,j].x) == 2 * k[i] + (syndrome[i].x ? 1 : 0))
     end
 
     obj = 0.0
@@ -158,7 +158,7 @@ function _setmod2(vec::Vector{Int})
     return vans
 end
 
-function _mixed_integer_programming_for_one_solution(H, syndrome::Vector{Mod2})
+function _mixed_integer_programming_for_one_solution(H::Matrix{Mod2}, syndrome::Vector{Mod2})
     m,n = size(H)
     model = Model(SCIP.Optimizer)
     set_silent(model)
@@ -167,10 +167,14 @@ function _mixed_integer_programming_for_one_solution(H, syndrome::Vector{Mod2})
     @variable(model, 0 <= k[i = 1:m], Int)
     
     for i in 1:m
-        @constraint(model, sum(z[j] for j in 1:n if H[i,j] == 1) == 2 * k[i] + (syndrome[i].x ? 1 : 0))
+        @constraint(model, sum(z[j] for j in 1:n if H[i,j].x) == 2 * k[i] + (syndrome[i].x ? 1 : 0))
     end
 
     optimize!(model)
     @assert is_solved_and_feasible(model) "The problem is infeasible!"
     return Mod2.(value.(z) .> 0.5)
+end
+
+function _mixed_integer_programming_for_one_solution(tanner::CSSTannerGraph, syndrome::CSSSyndrome)
+    return _mixed_integer_programming_for_one_solution(tanner.stgz.H, syndrome.sz), _mixed_integer_programming_for_one_solution(tanner.stgx.H, syndrome.sx)
 end

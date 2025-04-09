@@ -55,3 +55,27 @@ end
     res = decode(ct,syn)
     @test syn == syndrome_extraction(res.error_qubits, tanner)
 end
+
+@testset "bitflip probability" begin
+    d = 3
+    tanner = CSSTannerGraph(SurfaceCode(d,d))
+    error_qubits = Mod2[1, 0, 0, 0, 0, 0, 0, 0, 0]
+    syd = syndrome_extraction(error_qubits, tanner.stgz)
+    p_vector = fill(0.1, d*d)
+    ct = compile(TNMAP(), tanner, [DepolarizingError(p_vector[i],0.0,0.0) for i in 1:d*d])
+    css_syd = CSSSyndrome(zeros(Mod2,(d*d-1)÷2),syd.s)
+    tnres = decode(ct, css_syd)
+    @test tnres.error_qubits.xerror == Mod2[1, 0, 0, 0, 0, 0, 0, 0, 0]
+    @test tnres.error_qubits.zerror == Mod2[0, 0, 0, 0, 0, 0, 0, 0, 0]
+    @test css_syd == syndrome_extraction(tnres.error_qubits, tanner)
+
+    p_vector = fill(0.1, d*d)
+    p_vector[2] = 0.26
+    p_vector[3] = 0.26
+    ct = compile(TNMAP(), tanner, [DepolarizingError(p_vector[i],0.0,0.0) for i in 1:d*d])
+    css_syd = CSSSyndrome(zeros(Mod2,(d*d-1)÷2),syd.s)
+    tnres = decode(ct, css_syd)
+    @test tnres.error_qubits.xerror == Mod2[1, 0, 0, 0, 0, 0, 1, 1, 1]
+    @test tnres.error_qubits.zerror == Mod2[0, 0, 0, 0, 0, 0, 0, 0, 0]
+    @test css_syd == syndrome_extraction(tnres.error_qubits, tanner)
+end 

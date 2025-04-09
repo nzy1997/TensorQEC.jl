@@ -57,6 +57,12 @@ end
     tanner = CSSTannerGraph(SurfaceCode(d,d))
     error_qubits = random_error_qubits(n, FlipError(0.2))
     syd = syndrome_extraction(error_qubits, tanner.stgz)
-    res = TensorQEC._mixed_integer_programming_for_one_solution(getfield.(tanner.stgz.H, :x), syd.s)
+    res = TensorQEC._mixed_integer_programming_for_one_solution(tanner.stgz.H, syd.s)
     @test syd == syndrome_extraction(res, tanner.stgz)
+
+    error_qubits = random_error_qubits(n, DepolarizingError(0.1,0.1,0.1))
+    syd = syndrome_extraction(error_qubits, tanner)
+    xe,ze = TensorQEC._mixed_integer_programming_for_one_solution(tanner, syd)
+    res = TensorQEC.CSSErrorPattern(xe, ze)
+    @test syd == syndrome_extraction(res, tanner)
 end
