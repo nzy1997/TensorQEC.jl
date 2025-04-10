@@ -18,7 +18,7 @@ using TensorQEC:SpinGlassSA, SpinConfig, anneal_singlerun!
     hz = getfield.(tanner.stgz.H, :x)
     config = SpinConfig(TensorQEC._mixed_integer_programming_for_one_solution(hz, syd.s))
     num_trials = 1000
-    @time CUDA.@sync res = anneal_singlerun!(SpinConfig(CUDA.CuVector(config.config)), prob, collect(T, 0:1e-4:1.0); num_trials)
+    @time CUDA.@sync res = anneal_singlerun!(SpinConfig(CUDA.CuVector(config.config)), prob, collect(T, 0:1e-6:1.0); num_trials)
     # @time res = anneal_singlerun!(SpinConfig(config.config), prob, collect(T, 0:1e-6:1.0);num_trials)
     @show res
 end
