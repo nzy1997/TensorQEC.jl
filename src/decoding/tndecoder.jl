@@ -1,4 +1,7 @@
-struct TNMAP <: AbstractDecoder end
+@kwdef struct TNMAP <: AbstractDecoder 
+    usecuda::Bool = false
+end
+
 abstract type CompiledTN <: CompiledDecoder end
 
 struct CompiledTNMAP{ET, FT} <: CompiledTN
@@ -9,8 +12,11 @@ extract_decoding(ct::CompiledTNMAP, error_qubits::Vector{Int}) = DecodingResult(
 struct CompiledTNMAPCSS{LT, ET, MT} <: CompiledTN
     tn::TensorNetworkModel{LT, ET, MT}
     tanner::CSSTannerGraph
+    lx::Matrix{Mod2}
+    lz::Matrix{Mod2}
+    usecuda::Bool
 end
-extract_decoding(ct::CompiledTNMAPCSS, error_qubits::Vector{Int}) = extract_decoding(ct.reduction,Mod2.(error_qubits .== 1))
+# extract_decoding(ct::CompiledTNMAPCSS, error_qubits::Vector{Int}) = extract_decoding(ct.reduction,Mod2.(error_qubits .== 1))
 
 function stg2uaimodel(tanner::SimpleTannerGraph, ptn::TensorNetwork)
     nvars = tanner.nq + tanner.ns 
@@ -67,7 +73,7 @@ function compile(decoder::TNMAP, problem::CSSDecodingProblem)
 
     tn = TensorNetworkModel(1:nvars,cards,factors;mars=mars,evidence=Dict([(i+2*qubit_num, 0) for (i) in 1:ns(tanner)]))
 
-    return CompiledTNMAPCSS(tn,tanner)
+    return CompiledTNMAPCSS(tn,tanner,lx,lz,decoder.usecuda)
 end
 
 function decode(ct::CompiledTNMAPCSS,syn::CSSSyndrome)
@@ -80,11 +86,12 @@ function decode(ct::CompiledTNMAPCSS,syn::CSSSyndrome)
     end
     start_var = ns(ct.tanner) + 2 * nq(ct.tanner)
     ex,ez = _mixed_integer_programming_for_one_solution(ct.tanner, syn)
-    lx,lz = logical_operator(ct.tanner)
-    mar = marginals(tn)
-    for i in axes(lx,1)
-        (sum(lz[i,:].* ex).x == (mar[[start_var+i]][2] > 0.5)) || (ex += lx[i,:])
-        (sum(lx[i,:].* ez).x == (mar[[start_var+i+size(lx,1)]][2] > 0.5)) || (ez += lz[i,:])
+    # @show contraction_complexity(tn)
+    # return
+    mar = marginals(tn; usecuda=ct.usecuda)
+    for i in axes(ct.lx,1)
+        (sum(ct.lz[i,:].* ex).x == (mar[[start_var+i]][2] > 0.5)) || (ex += ct.lx[i,:])
+        (sum(ct.lx[i,:].* ez).x == (mar[[start_var+i+size(ct.lx,1)]][2] > 0.5)) || (ez += ct.lz[i,:])
     end
     return CSSDecodingResult(true,CSSErrorPattern(ex,ez))
 end

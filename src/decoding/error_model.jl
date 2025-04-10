@@ -124,5 +124,5 @@ function check_logical_error(errored_qubits1::Vector{Mod2}, errored_qubits2::Vec
 end
 
 function check_logical_error(errored_qubits1::CSSErrorPattern, errored_qubits2::CSSErrorPattern, lx::Matrix{Mod2}, lz::Matrix{Mod2})
-    return check_logical_error(errored_qubits1.zerror, errored_qubits2.zerror, lx) && check_logical_error(errored_qubits1.xerror, errored_qubits2.xerror, lz)
+    return check_logical_error(errored_qubits1.zerror, errored_qubits2.zerror, lx) || check_logical_error(errored_qubits1.xerror, errored_qubits2.xerror, lz)
 end

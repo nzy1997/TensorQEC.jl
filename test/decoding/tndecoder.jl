@@ -61,12 +61,13 @@ end
     tanner = CSSTannerGraph(SurfaceCode(d,d))
     error_qubits = Mod2[1, 0, 0, 0, 0, 0, 0, 0, 0]
     syd = syndrome_extraction(error_qubits, tanner.stgz)
+    lx,lz = logical_operator(tanner)
     p_vector = fill(0.1, d*d)
     ct = compile(TNMAP(), tanner, [DepolarizingError(p_vector[i],0.0,0.0) for i in 1:d*d])
     css_syd = CSSSyndrome(zeros(Mod2,(d*d-1)÷2),syd.s)
     tnres = decode(ct, css_syd)
-    @test tnres.error_qubits.xerror == Mod2[1, 0, 0, 0, 0, 0, 0, 0, 0]
-    @test tnres.error_qubits.zerror == Mod2[0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+    @test !check_logical_error(tnres.error_qubits, TensorQEC.CSSErrorPattern(Mod2[1, 0, 0, 0, 0, 0, 0, 0, 0], Mod2[0, 0, 0, 0, 0, 0, 0, 0, 0]), lx, lz)
     @test css_syd == syndrome_extraction(tnres.error_qubits, tanner)
 
     p_vector = fill(0.1, d*d)
@@ -75,7 +76,6 @@ end
     ct = compile(TNMAP(), tanner, [DepolarizingError(p_vector[i],0.0,0.0) for i in 1:d*d])
     css_syd = CSSSyndrome(zeros(Mod2,(d*d-1)÷2),syd.s)
     tnres = decode(ct, css_syd)
-    @test tnres.error_qubits.xerror == Mod2[1, 0, 0, 0, 0, 0, 1, 1, 1]
-    @test tnres.error_qubits.zerror == Mod2[0, 0, 0, 0, 0, 0, 0, 0, 0]
+    @test check_logical_error(tnres.error_qubits, TensorQEC.CSSErrorPattern(Mod2[1, 0, 0, 0, 0, 0, 0, 0, 0], Mod2[0, 0, 0, 0, 0, 0, 0, 0, 0]), lx, lz)
     @test css_syd == syndrome_extraction(tnres.error_qubits, tanner)
 end 
