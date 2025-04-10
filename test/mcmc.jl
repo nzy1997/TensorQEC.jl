@@ -39,34 +39,36 @@ using TensorQEC.TensorInference
     @show lx
     @show lz
 
-    prob = SpinGlassSA(tanner.stgx.s2q, findall(lx[1,:]), p_vector, findall(lz[1,:]))
+    prob = SpinGlassSA(tanner.stgx.s2q, findall(i -> i.x, lx[1,:]), p_vector, findall(i -> i.x, lz[1,:]))
     config = SpinConfig(Mod2[1,0,0,0,0,0,0,0,0])
     nsweeps = 1000
     res = anneal_singlerun!(config, prob, collect(T, 0:1e-4:1.0);num_trials=nsweeps)
 
+    # config_new = copy(res.mostlikely.config)
+    # config_new = Mod2[1,0,0,0,0,0,0,0,0]
+    # (sum(lz[1,:].* config_new).x == (res.p1 > 0.5)) || (config_new += lx[1,:])
     @show res
+    # @show config_new
 end
 
 using CUDA
 @testset "anneal - CUDA" begin
-    tanner = CSSTannerGraph(SurfaceCode(3,3))
-    error_qubits = Mod2[1,0,0,0,0,0,0,0,0]
+    d = 21
+    tanner = CSSTannerGraph(SurfaceCode(d,d))
+    em = FlipError(0.1)
+    error_qubits = random_error_qubits(d^2, em)
     syd = syndrome_extraction(error_qubits, tanner.stgz)
     T = Float32
-
-    p_vector = fill(T(0.1), 9)
-    p_vector[2] = 0.26
-    p_vector[3] = 0.26
+    p_vector = fill(T(0.1), d^2)
 
     lx,lz = TensorQEC.logical_operator(tanner)
-    @show lx
-    @show lz
 
-    prob = SpinGlassSA(tanner.stgx.s2q, findall(lx[1,:]), p_vector, findall(lz[1,:]))
-    config = SpinConfig(Mod2[1,0,0,0,0,0,0,0,0])
-    nsweeps = 1000
-    res = anneal_singlerun!(SpinConfig(CUDA.CuVector(config.config)), prob, collect(T, 0:1e-4:1.0);num_trials=nsweeps)
-
+    prob = SpinGlassSA(tanner.stgx.s2q, findall(i -> i.x, lx[1,:]), p_vector, findall(i -> i.x, lz[1,:]))
+    hz = tanner.stgz.H
+    config = SpinConfig(TensorQEC._mixed_integer_programming_for_one_solution(hz, syd.s))
+    num_trials = 1000
+    @time CUDA.@sync res = anneal_singlerun!(SpinConfig(CUDA.CuVector(config.config)), prob, collect(T, 0:1e-6:1.0);num_trials)
+    # @time res = anneal_singlerun!(SpinConfig(config.config), prob, collect(T, 0:1e-6:1.0);num_trials)
     @show res
 end
 
