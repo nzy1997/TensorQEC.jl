@@ -48,8 +48,8 @@ function compile(decoder::TNMAP, problem::CSSDecodingProblem)
     tanner = problem.tanner
     qubit_num = nq(tanner)
     lx,lz = logical_operator(tanner)
-    lxs = [findall(lx[i,:]) for i in axes(lx, 1)]
-    lzs = [findall(lz[i,:]) for i in axes(lz, 1)]
+    lxs = [findall(j->j.x,lx[i,:]) for i in axes(lx, 1)]
+    lzs = [findall(j->j.x,lz[i,:]) for i in axes(lz, 1)]
 
     nvars = 2 * qubit_num + ns(tanner) + size(lx,1) + size(lz,1)
     mars = [[i] for i in 2 * qubit_num + ns(tanner)+1:nvars]

@@ -22,3 +22,16 @@ end
     @test count(v->v.x,ez)/qubit_num ≈ 0.16 atol=0.05
 end
 
+@testset "check_logical_error" begin
+    st = stabilizers(SurfaceCode(3, 3))
+    tannerxz = CSSTannerGraph(st)
+    lx,lz = TensorQEC.logical_operator(tannerxz)
+
+    @test check_logical_error(Mod2[0,0,0,0,0,0,0,0,0],Mod2[1,1,1,0,0,0,0,0,0],lz)
+    @test !check_logical_error(Mod2[0,0,0,0,0,0,0,0,0],Mod2[1,1,0,1,1,0,0,0,0],lz)
+
+    cssep1 = TensorQEC.CSSErrorPattern(Mod2[0,0,0,0,0,0,0,0,0],Mod2[0,0,0,0,0,0,0,0,0])
+    cssep2 = TensorQEC.CSSErrorPattern(Mod2[0,0,0,0,0,0,0,0,0],Mod2[0,0,0,0,0,0,0,0,0])
+
+    @test !check_logical_error(cssep1, cssep2, lx, lz)
+end

@@ -78,7 +78,7 @@ export decode,reduce2general,extract_decoding,general_syndrome,DecodingResult,CS
 export multi_round_qec
 
 # code distance
-export code_distance
+export code_distance,logical_operator
 
 # error_learning
 export TrainningData,error_learning

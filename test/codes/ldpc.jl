@@ -79,12 +79,3 @@ end
     q = mod2matrix_inverse(H)
     @test q * H == Matrix{Bool}(I,3,3)
 end
-
-@testset "check_logical_error" begin
-    st = stabilizers(SurfaceCode(3, 3))
-    tannerxz = CSSTannerGraph(st)
-    lx,lz = TensorQEC.logical_operator(tannerxz)
-
-    @test !TensorQEC.check_logical_error(Mod2[0,0,0,0,0,0,0,0,0],Mod2[1,1,1,0,0,0,0,0,0],lz)
-    @test TensorQEC.check_logical_error(Mod2[0,0,0,0,0,0,0,0,0],Mod2[1,1,0,1,1,0,0,0,0],lz)
-end

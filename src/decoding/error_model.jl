@@ -118,3 +118,11 @@ Base.:(==)(s1::CSSSyndrome, s2::CSSSyndrome) = s1.sx == s2.sx && s1.sz == s2.sz
 function syndrome_extraction(error_patterns::CSSErrorPattern, tanner::CSSTannerGraph)
     return CSSSyndrome(syndrome_extraction(error_patterns.zerror, tanner.stgx).s, syndrome_extraction(error_patterns.xerror, tanner.stgz).s)
 end
+
+function check_logical_error(errored_qubits1::Vector{Mod2}, errored_qubits2::Vector{Mod2}, lz::Matrix{Mod2})
+    return any(i->sum(lz[i,:].*(errored_qubits1-errored_qubits2)).x, 1:size(lz,1))
+end
+
+function check_logical_error(errored_qubits1::CSSErrorPattern, errored_qubits2::CSSErrorPattern, lx::Matrix{Mod2}, lz::Matrix{Mod2})
+    return check_logical_error(errored_qubits1.zerror, errored_qubits2.zerror, lx) && check_logical_error(errored_qubits1.xerror, errored_qubits2.xerror, lz)
+end

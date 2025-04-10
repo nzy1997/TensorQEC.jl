@@ -60,14 +60,12 @@ function logical_operator(Hx::Matrix{Bool}, Hz::Matrix{Bool})
 
     lz = lz[any.(!iszero, eachrow(lz)), :]
     lz[:,bimat.ordering] = lz
-    return (lz)
+    return Mod2.(lz)
 end
 
-# TODO: Make lx and lz in the same qubit order
 function logical_operator(tanner::CSSTannerGraph)
     lz = logical_operator([a.x for a in tanner.stgx.H], [a.x for a in tanner.stgz.H])
     lx = logical_operator([a.x for a in tanner.stgz.H], [a.x for a in tanner.stgx.H])
-    return lx,lz
     return same_qubit_order(lx,lz)
 end
 
