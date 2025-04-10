@@ -20,20 +20,27 @@ SimpleWeightedGraphs = "47aef6b3-ad0c-573a-a1e2-d07658019622"
 TensorInference = "c2297e78-99bd-40ad-871d-f50e56b81012"
 Yao = "5872b779-8223-5990-8dd0-5abbb0748c8c"
 
+[weakdeps]
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
+
+[extensions]
+CUDAExt = "CUDA"
+
 [compat]
-BitBasis = "0.9.8"
+BitBasis = "0.9"
+CUDA = "5"
 Combinatorics = "1"
 DelimitedFiles = "1"
-Distributed = "1.11"
+Distributed = "1"
 Graphs = "1"
-JuMP = "1.24"
+JuMP = "1"
 LinearAlgebra = "1"
 OMEinsum = "0.8"
 Optimisers = "0.4"
 PrettyTables = "2"
 Random = "1"
-SCIP = "0.12.3"
-SimpleWeightedGraphs = "1.5"
+SCIP = "0.12"
+SimpleWeightedGraphs = "1"
 TensorInference = "0.4,0.5"
 Yao = "0.9"
-julia = "1"
+julia = "1.10"
