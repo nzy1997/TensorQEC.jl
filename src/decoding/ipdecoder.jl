@@ -160,7 +160,7 @@ end
 
 function _mixed_integer_programming_for_one_solution(H::Matrix{Mod2}, syndrome::Vector{Mod2})
     m,n = size(H)
-    model = Model(solver)
+    model = Model(SCIP.Optimizer)
     set_silent(model)
 
     @variable(model, 0 <= z[i = 1:n] <= 1, Int)
