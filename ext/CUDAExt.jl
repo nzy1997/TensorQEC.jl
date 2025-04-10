@@ -24,8 +24,9 @@ end
 function _anneal_kernel!(batched_config::CuMatrix{Bool}, betas::Vector{T}, s2q::CuVector{Int32}, s2q_ptr::CuVector{Int32}, logp_vector_error::CuVector{T}, logp_vector_noerror::CuVector{T}, partitions::Vector{<:CuVector{Int32}}) where T
     function anneal_kernel!(batched_config, beta, s2q, s2q_ptr, logp_vector_error, logp_vector_noerror, partition, maxpart)
         index = (blockIdx().x - Int32(1)) * blockDim().x + threadIdx().x
-        (i, icheck) = divrem(index - Int32(1), maxpart) .+ Int32(1)
-        if icheck <= length(partition) && i <= size(batched_config, Int32(2))
+        (i, ic) = divrem(index - Int32(1), maxpart) .+ Int32(1)
+        if ic <= length(partition) && i <= size(batched_config, Int32(2))
+            icheck = partition[ic]
             ΔE = zero(T)
             @inbounds for idx in s2q_ptr[icheck]:s2q_ptr[icheck+Int32(1)]-Int32(1)
                 loc = s2q[idx]
@@ -44,7 +45,6 @@ function _anneal_kernel!(batched_config::CuMatrix{Bool}, betas::Vector{T}, s2q::
     config = launch_configuration(kernel.fun)
     threads = min(maxpart * size(batched_config, 2), config.threads)
     blocks = cld(maxpart * size(batched_config, 2), threads)
-    @show partitions maxpart length(partitions)
     for beta in betas
         #for partition in partitions
         for partition in partitions
