@@ -76,6 +76,12 @@ function compile(decoder::TNMAP, problem::CSSDecodingProblem)
     return CompiledTNMAPCSS(tn,tanner,lx,lz,decoder.usecuda)
 end
 
+struct TNDecodingResult
+    success_tag::Bool
+    error_qubits::CSSErrorPattern
+    mar::Tuple{Float64,Float64}
+end
+
 function decode(ct::CompiledTNMAPCSS,syn::CSSSyndrome)
     tn = ct.tn
     for (i,s) in enumerate(syn.sx)
@@ -86,13 +92,12 @@ function decode(ct::CompiledTNMAPCSS,syn::CSSSyndrome)
     end
     start_var = ns(ct.tanner) + 2 * nq(ct.tanner)
     ex,ez = _mixed_integer_programming_for_one_solution(ct.tanner, syn)
-    # @show contraction_complexity(tn)
-    # return
     mar = marginals(tn; usecuda=ct.usecuda)
     for i in axes(ct.lx,1)
         if ct.usecuda
             (sum(ct.lz[i,:].* ex).x == (Array(mar[[start_var+i]])[2] > 0.5)) || (ex += ct.lx[i,:])
             (sum(ct.lx[i,:].* ez).x == (Array(mar[[start_var+i+size(ct.lx,1)]])[2] > 0.5)) || (ez += ct.lz[i,:])
+            return TNDecodingResult(true,CSSErrorPattern(ex,ez),(Array(mar[[start_var+i]])[2],Array(mar[[start_var+i+size(ct.lx,1)]])[2]))
         else
             (sum(ct.lz[i,:].* ex).x == (mar[[start_var+i]][2] > 0.5)) || (ex += ct.lx[i,:])
             (sum(ct.lx[i,:].* ez).x == (mar[[start_var+i+size(ct.lx,1)]][2] > 0.5)) || (ez += ct.lz[i,:])
