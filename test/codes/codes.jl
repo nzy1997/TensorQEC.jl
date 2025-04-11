@@ -146,3 +146,15 @@ end
 @testset "Code513" begin
 	st = stabilizers(Code513())
 end
+
+@testset "[[98,6,12]] BivariateBicycleCode" begin
+	st = stabilizers(BivariateBicycleCode(7,7, ((1,0),(0,3),(0,4)), ((0,1),(3,0),(4,0))))
+	@test length(st) == 92
+	# @test code_distance(CSSTannerGraph(st)) == 12
+end
+
+@testset "[[144,12,12]] BivariateBicycleCode" begin
+	st = stabilizers(BivariateBicycleCode(6,12, ((3,0),(0,1),(0,2)), ((0,3),(1,0),(2,0))))
+	@test length(st) == 132
+	# @test code_distance(CSSTannerGraph(st)) == 12
+end
