@@ -57,7 +57,7 @@ end
     
     pgraph = product_graph(tanner1, tanner2)
 
-    st_toric = stabilizers(ToricCode(3,3);linearly_independent = false)
+    st_toric = stabilizers(ToricCode(3,3);rm_linear_dependency = false)
     tanner_toric = CSSTannerGraph(st_toric)
 
     g1 = get_graph(pgraph)
