@@ -90,8 +90,13 @@ function decode(ct::CompiledTNMAPCSS,syn::CSSSyndrome)
     # return
     mar = marginals(tn; usecuda=ct.usecuda)
     for i in axes(ct.lx,1)
-        (sum(ct.lz[i,:].* ex).x == (mar[[start_var+i]][2] > 0.5)) || (ex += ct.lx[i,:])
-        (sum(ct.lx[i,:].* ez).x == (mar[[start_var+i+size(ct.lx,1)]][2] > 0.5)) || (ez += ct.lz[i,:])
+        if ct.usecuda
+            (sum(ct.lz[i,:].* ex).x == (Array(mar[[start_var+i]])[2] > 0.5)) || (ex += ct.lx[i,:])
+            (sum(ct.lx[i,:].* ez).x == (Array(mar[[start_var+i+size(ct.lx,1)]])[2] > 0.5)) || (ez += ct.lz[i,:])
+        else
+            (sum(ct.lz[i,:].* ex).x == (mar[[start_var+i]][2] > 0.5)) || (ex += ct.lx[i,:])
+            (sum(ct.lx[i,:].* ez).x == (mar[[start_var+i+size(ct.lx,1)]][2] > 0.5)) || (ez += ct.lz[i,:])
+        end
     end
     return CSSDecodingResult(true,CSSErrorPattern(ex,ez))
 end
