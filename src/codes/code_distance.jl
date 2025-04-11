@@ -101,3 +101,9 @@ function code_distance(tanner::CSSTannerGraph)
     dz = code_distance(Int.(tanner.stgx.H), Int.(lx))
     return min(dx,dz)
 end
+
+function remove_linear_dependency(sts::Vector{PauliString{N}}) where N
+	code = stabilizers2bimatrix(sts)
+	code2 = gaussian_elimination!(code)
+    return sts[any.(!iszero, eachrow(code2.matrix))]
+end

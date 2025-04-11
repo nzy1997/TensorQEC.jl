@@ -37,7 +37,7 @@ export PauliString, PauliGroup, isanticommute,paulistring
 export syndrome_inference, measure_syndrome!,correction_pauli_string, generate_syndrome_dict,pauli_string_map_iter, inference, transformed_syndrome_dict
 
 # codes 
-export toric_code, stabilizers,ToricCode, SurfaceCode, ShorCode,SteaneCode,Code832, Code422, Code1573, Code513
+export stabilizers,ToricCode, SurfaceCode, ShorCode,SteaneCode,Code832, Code422, Code1573, Code513, BivariateBicycleCode
 
 # encoder
 export CSSBimatrix,syndrome_transform, encode_stabilizers,place_qubits
@@ -76,7 +76,7 @@ export decode,reduce2general,extract_decoding,general_syndrome,DecodingResult,CS
 export multi_round_qec
 
 # code distance
-export code_distance
+export code_distance,logical_qubit_number
 
 # error_learning
 export TrainningData,error_learning

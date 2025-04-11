@@ -1,66 +1,5 @@
 abstract type QuantumCode end
 abstract type CSSQuantumCode <: QuantumCode end
-"""
-	ToricCode(m::Int, n::Int)
-
-Construct a Toric code with `m` rows and `n` columns. 
-"""
-struct ToricCode <: CSSQuantumCode
-	m::Int
-	n::Int
-end
-
-nsite(t::ToricCode) = t.m * t.n
-Yao.nqubits(t::ToricCode) = 2 * nsite(t)
-vertical_edges(t::ToricCode) = reshape(1:nsite(t), t.m, t.n)
-horizontal_edges(t::ToricCode) = reshape(nsite(t)+1:2*nsite(t), t.m, t.n)
-
-# Toric code (2*2)
-# ∘---5---∘---7---∘
-# |       |       |
-# 1   ∘   3   ∘   1 
-# |       |       |
-# ∘---6---∘---8---∘
-# |       |       | 
-# 2   ∘   4   ∘   2
-# |       |       |
-# ∘---5---∘---7---∘
-
-
-"""
-	stabilizers(tc::ToricCode)
-	stabilizers(sc::SurfaceCode)
-	stabilizers(shor::ShorCode)
-	stabilizers(steane::SteaneCode)
-	stabilizers(code832::Code832)
-
-Get the stabilizers of the code instances.
-"""
-function stabilizers(toric::ToricCode; linearly_independent::Bool = true)
-	nq, m, n = nqubits(toric), toric.m, toric.n
-	output = PauliString{nq}[]
-	# numbering the qubits
-	ve = vertical_edges(toric)
-	he = horizontal_edges(toric)
-	# X stabilizers
-	for j in 1:n, i in 1:m
-		i == m && j == n && linearly_independent && continue # not linearly independent
-		push!(output, paulistring(nq, 2, (
-			he[i, j], he[mod1(i + 1, m), j],
-			ve[i, j], ve[i, mod1(j + 1, n)],
-		)))
-	end
-	# Z stabilizers
-	for j in 1:n, i in 1:m
-		i == m && j == n && linearly_independent && continue # not linearly independent
-		push!(output, paulistring(nq, 4, (
-			ve[i, j], ve[mod1(i - 1, m), j],
-			he[i, j], he[i, mod1(j - 1, n)],
-		)))
-	end
-	return output
-end
-
 
 """
 	SurfaceCode(m::Int, n::Int)
@@ -86,7 +25,15 @@ end
 # X type: 36, 1245, 5689, 47
 # Z type: 12, 2356, 4578, 89
 
+"""
+	stabilizers(tc::ToricCode)
+	stabilizers(sc::SurfaceCode)
+	stabilizers(shor::ShorCode)
+	stabilizers(steane::SteaneCode)
+	stabilizers(code832::Code832)
 
+Get the stabilizers of the code instances.
+"""
 function stabilizers(sc::SurfaceCode)
     m, n = sc.m, sc.n
 	qubit_config = reshape(1:m*n, n, m)' 
@@ -230,3 +177,65 @@ function stabilizers(::Code513)
 	push!(pauli_string, PauliString((4,2,1,2,4)))
 	return pauli_string
 end
+
+struct BivariateBicycleCode{N}
+    m::Int
+    n::Int
+	vc::NTuple{N,Tuple{Int,Int}}
+	hd::NTuple{N,Tuple{Int,Int}}
+end
+nsite(bb::BivariateBicycleCode) = bb.m * bb.n
+Yao.nqubits(bb::BivariateBicycleCode) = 2 * nsite(bb)
+vertical_edges(bb::BivariateBicycleCode) = reshape(1:nsite(bb), bb.m, bb.n)
+horizontal_edges(bb::BivariateBicycleCode) = reshape(nsite(bb)+1:2*nsite(bb), bb.m, bb.n)
+
+function stabilizers(bb::BivariateBicycleCode{N};rm_linear_dependency::Bool = true) where N
+	nq, m, n = nqubits(bb), bb.m, bb.n
+	output = PauliString{nq}[]
+	# numbering the qubits
+	ve = vertical_edges(bb)
+	he = horizontal_edges(bb)
+	# X stabilizers
+	for j in 1:n, i in 1:m
+		st = Int[]
+		for (s,t) in bb.hd
+			push!(st, ve[mod1(i+s, m), mod1(j+t, n)])
+		end
+		for (s,t) in bb.vc
+			push!(st, he[mod1(i+s, m), mod1(j+t, n)])
+		end
+		push!(output, paulistring(nq, 2, st))
+	end
+	# Z stabilizers
+	for j in 1:n, i in 1:m	
+		st = Int[]
+		for (s,t) in bb.vc
+			push!(st, ve[mod1(i-s, m), mod1(j-t, n)])
+		end
+		for (s,t) in bb.hd
+			push!(st, he[mod1(i-s, m), mod1(j-t, n)])
+		end
+		push!(output, paulistring(nq, 4, st))
+	end
+	if rm_linear_dependency
+		output = remove_linear_dependency(output)
+	end
+	return output
+end
+
+# Toric code (2*2)
+# ∘---5---∘---7---∘
+# |       |       |
+# 1   ∘   3   ∘   1 
+# |       |       |
+# ∘---6---∘---8---∘
+# |       |       | 
+# 2   ∘   4   ∘   2
+# |       |       |
+# ∘---5---∘---7---∘
+"""
+	ToricCode(m::Int, n::Int)
+
+Construct a Toric code with `m` rows and `n` columns. 
+"""
+ToricCode(m::Int,n::Int) = BivariateBicycleCode(m,n,((1,0),(0,0)), ((0,1),(0,0)))
