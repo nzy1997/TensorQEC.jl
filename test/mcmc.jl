@@ -2,6 +2,8 @@ using TensorQEC
 using Test
 using TensorQEC: SpinGlassSA, SpinConfig, energy, propose, flip!,anneal_singlerun!
 using TensorQEC.TensorInference
+using Random
+
 # @testset "energy" begin
 #     tanner = CSSTannerGraph(SurfaceCode(3,3)).stgz
 #     error_qubits = Mod2[0,0,0,1,0,0,0,0,0]
@@ -86,7 +88,7 @@ end
     uaimodel = compile(TNMAP(), tanner, p_vector).uaimodel
     factors = uaimodel.factors
     newfactor_pos= length(factors)+1
-    push!(uaimodel.factors, TensorInference.Factor((findall(lz[1,:])...,newfactor_pos), TensorQEC.parity_check_matrix(d)))
+    push!(uaimodel.factors, TensorInference.Factor((findall(i-> i.x, lz[1,:])...,newfactor_pos), TensorQEC.parity_check_matrix(d)))
 
     tn_new = TensorNetworkModel(
 		1:newfactor_pos,
@@ -96,7 +98,7 @@ end
         evidence=Dict([(i+d*d,s.x ? 1 : 0) for (i,s) in enumerate(syd.s)])
 	)
 
-    res = TensorQEC._mixed_integer_programming_for_one_solution(getfield.(tanner.H, :x), syd.s)
+    res = TensorQEC._mixed_integer_programming_for_one_solution(tanner.H, syd.s)
 
     @show sum(res .* lz[1,:])
     @show sum((res.+lx[1,:]) .* lz[1,:])
@@ -105,54 +107,27 @@ end
     @show res
 end
 
-@testset "mcmc d = 5" begin
-    T = Float32
-    error_qubits = Mod2[0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0]
-    tanner = CSSTannerGraph(SurfaceCode(5,5))
+@testset "mcmc d = 9" begin
+    d = 9
+    p = 0.15
+    tanner = CSSTannerGraph(SurfaceCode(d,d))  
+    p_vector = fill(p, d*d)
+    Random.seed!(1234)
+    error_qubits = random_error_qubits(d^2, FlipError(p))
     syd = syndrome_extraction(error_qubits, tanner.stgz)
-    p_vector = fill(T(0.1), 25)
+    ct = compile(TNMAP(), tanner, [DepolarizingError(p_vector[i],0.0,0.0) for i in 1:d*d])
+    css_syd = CSSSyndrome(zeros(Mod2,(d*d-1)÷2),syd.s)
+    tnres = decode(ct, css_syd)
+    @show tnres
+# 0.5914153505916218
 
+    T = Float32
     lx,lz = TensorQEC.logical_operator(tanner)
-    prob = SpinGlassSA(tanner.stgx.s2q, findall(lx[1,:]), p_vector, findall(lz[1,:]))
-    config = SpinConfig(TensorQEC._mixed_integer_programming_for_one_solution(getfield.(tanner.stgz.H, :x), syd.s))
-    nsweeps = 100000
-    res = anneal_singlerun!(config, prob, T[1.0, 0.8, 0.5, 0.0]; num_sweep=nsweeps,num_sweep_thermalize=100, ptemp=0.1)
-    @show res
-    @show res.mostlikely.config
-    @show sum(lz.*res.mostlikely.config)
-    @show sum(lz.*error_qubits)
 
-    # ct = compile(TNMAP(), tanner, fill(DepolarizingError(0.15,0.0,0.0), 25))
-    # css_syd = CSSSyndrome(zeros(Mod2,25),syd.s)
-    # tnres = decode(ct, css_syd)
-    # @show tnres
+    prob = SpinGlassSA(tanner.stgx.s2q, findall(i -> i.x, lx[1,:]), T.(p_vector), findall(i -> i.x, lz[1,:]))
+
+    config = SpinConfig(TensorQEC._mixed_integer_programming_for_one_solution(tanner.stgz.H, syd.s))
+    nsweeps = 1000
+    res = anneal_singlerun!(config, prob, collect(T, 0:1e-5:1.0);num_trials=nsweeps)
+    @show res
 end 
-
-@testset "marginals" begin
-    d = 5
-    tanner = CSSTannerGraph(SurfaceCode(d,d)).stgz
-    error_qubits = Mod2[0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0]
-    syd = syndrome_extraction(error_qubits, tanner)
-    p_vector = fill(0.1, d*d)
-    lx,lz = TensorQEC.logical_operator(CSSTannerGraph(SurfaceCode(d,d)))
-    uaimodel = compile(TNMAP(), tanner, p_vector).uaimodel
-    factors = uaimodel.factors
-    newfactor_pos= length(factors)+1
-    push!(uaimodel.factors, TensorInference.Factor((findall(lz[1,:])...,newfactor_pos), TensorQEC.parity_check_matrix(d)))
-
-    tn_new = TensorNetworkModel(
-		1:newfactor_pos,
-		fill(2,newfactor_pos),
-		factors;
-		mars = [[newfactor_pos]],
-        evidence=Dict([(i+d*d,s.x ? 1 : 0) for (i,s) in enumerate(syd.s)])
-	)
-
-    res = TensorQEC._mixed_integer_programming_for_one_solution(getfield.(tanner.H, :x), syd.s)
-
-    @show sum(res .* lz[1,:])
-    @show sum((res.+lx[1,:]) .* lz[1,:])
-    @show marginals(tn_new)
-
-    @show res
-end

@@ -93,6 +93,7 @@ function decode(ct::CompiledTNMAPCSS,syn::CSSSyndrome)
     start_var = ns(ct.tanner) + 2 * nq(ct.tanner)
     ex,ez = _mixed_integer_programming_for_one_solution(ct.tanner, syn)
     mar = marginals(tn; usecuda=ct.usecuda)
+    @show mar
     for i in axes(ct.lx,1)
         if ct.usecuda
             (sum(ct.lz[i,:].* ex).x == (Array(mar[[start_var+i]])[2] > 0.5)) || (ex += ct.lx[i,:])
