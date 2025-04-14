@@ -71,10 +71,18 @@ end
 
 function same_qubit_order(lx::Matrix{Mod2},lz::Matrix{Mod2})
     lx_new = zeros(Mod2, size(lx))
+    lxc = copy(lx)
     for j in 1:size(lz,1)
-        lxj = findall(i->sum(lx[i,:].*lz[j,:]).x, 1:size(lx,1))
-        @assert length(lxj) == 1 "The logical operator is not unique!"
-        lx_new[j,:] = lx[lxj[1],:]
+        lxj = findall(i->sum(lxc[i,:].*lz[j,:]).x, 1:size(lxc,1))
+        @assert length(lxj) >= 1 "The logical operator is linearly dependent!"
+        if length(lxj) == 1
+            lx_new[j,:] = lxc[lxj[1],:]
+        else
+            lx_new[j,:] = lxc[lxj[1],:]
+            for i in lxj[2:end]
+                lxc[i,:] += lxc[lxj[1],:]
+            end
+        end
     end
     return lx_new, lz
 end

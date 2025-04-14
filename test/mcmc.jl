@@ -112,15 +112,15 @@ end
     p = 0.15
     tanner = CSSTannerGraph(SurfaceCode(d,d))  
     p_vector = fill(p, d*d)
-    Random.seed!(1234)
+    Random.seed!(798899)
     error_qubits = random_error_qubits(d^2, FlipError(p))
     syd = syndrome_extraction(error_qubits, tanner.stgz)
     ct = compile(TNMAP(), tanner, [DepolarizingError(p_vector[i],0.0,0.0) for i in 1:d*d])
     css_syd = CSSSyndrome(zeros(Mod2,(d*d-1)÷2),syd.s)
     tnres = decode(ct, css_syd)
     @show tnres
-# 0.5914153505916218
-
+#    Random.seed!(1234)  0.5914153505916218
+#   Random.seed!(798899) 0.7758626199730365
     T = Float32
     lx,lz = TensorQEC.logical_operator(tanner)
 
