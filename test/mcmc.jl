@@ -109,7 +109,7 @@ end
 
 @testset "mcmc d = 9" begin
     d = 9
-    p = 0.15
+    p = 0.05
     tanner = CSSTannerGraph(SurfaceCode(d,d))  
     p_vector = fill(p, d*d)
     Random.seed!(798899)
@@ -119,8 +119,11 @@ end
     css_syd = CSSSyndrome(zeros(Mod2,(d*d-1)÷2),syd.s)
     tnres = decode(ct, css_syd)
     @show tnres
-#    Random.seed!(1234)  0.5914153505916218
-#   Random.seed!(798899) 0.7758626199730365
+#    Random.seed!(1234)  0.5914153505916218 0.15
+#   Random.seed!(798899) 0.7758626199730365 0.15
+#   Random.seed!(1234)  0.00 0.05
+    # Random.seed!(798899)  0.288157226241484 0.05
+
     T = Float32
     lx,lz = TensorQEC.logical_operator(tanner)
 
