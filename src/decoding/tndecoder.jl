@@ -64,7 +64,7 @@ function compile(decoder::TNMAP, problem::CSSDecodingProblem)
     xfactors = [Factor(((c.+ qubit_num)...,i + 2 * qubit_num),parity_check_matrix(length(c))) for (i,c) in enumerate(tanner.stgx.s2q)]
     zfactors = [Factor((c...,i + 2 * qubit_num + ns(tanner.stgx)),parity_check_matrix(length(c))) for (i,c) in enumerate(tanner.stgz.s2q)]
 
-    pfac = [Factor((i,i+qubit_num),[1-p.px-p.py-p.pz p.pz;p.px p.py]) for (i,p) in enumerate(problem.pvec)]
+    pfac = [Factor((i,i+qubit_num),[1-px-py-pz pz;px py]) for (i,(px,py,pz)) in enumerate(zip(problem.pvec.px,problem.pvec.py,problem.pvec.pz))]
     
     logicalx_checked_by_lz = [Factor((lz...,i+2 * qubit_num + ns(tanner)),parity_check_matrix(length(lz))) for (i,lz) in enumerate(lzs)]
 

@@ -19,18 +19,18 @@ struct SimpleDecodingProblem <: AbstractDecodingProblem
 end
 get_problem(tanner::SimpleTannerGraph,pvec::Vector{Float64}) = SimpleDecodingProblem(tanner,pvec)
 """ 
-    CSSDecodingProblem(tanner::CSSTannerGraph, pvec::Vector{Float64})
+    CSSDecodingProblem(tanner::CSSTannerGraph, pvec::IndependentDepolarizingError)
 
 A CSS decoding problem.
 Fields:
 - `tanner::CSSTannerGraph`: the Tanner graph
-- `pvec::Vector{DepolarizingError}`: the independent probability distributions on each qubit
+- `pvec::IndependentDepolarizingError`: the independent probability distributions on each qubit
 """
 struct CSSDecodingProblem <: AbstractDecodingProblem
     tanner::CSSTannerGraph
-    pvec::Vector{DepolarizingError}
+    pvec::IndependentDepolarizingError
 end
-get_problem(tanner::CSSTannerGraph,pvec::Vector{DepolarizingError}) = CSSDecodingProblem(tanner,pvec)
+get_problem(tanner::CSSTannerGraph,pvec::IndependentDepolarizingError) = CSSDecodingProblem(tanner,pvec)
 
 """
     GeneralDecodingProblem(tanner::SimpleTannerGraph, ptn::TensorNetwork)
@@ -60,9 +60,9 @@ Compile the decoder to specific tanner graph and prior probability distributions
 abstract type CompiledDecoder end
 
 function compile(decoder::AbstractDecoder, tanner::AbstractTannerGraph)
-    return compile(decoder, tanner, uniform_error_vector(0.05,tanner))
+    return compile(decoder, tanner, iid_error_vector(0.05,tanner))
 end
-function compile(decoder::AbstractDecoder, tanner::AbstractTannerGraph, pvec::Vector)
+function compile(decoder::AbstractDecoder, tanner::AbstractTannerGraph, pvec::IndependentDepolarizingError)
     return compile(decoder, get_problem(tanner,pvec))
 end
 

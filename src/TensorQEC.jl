@@ -65,7 +65,7 @@ export tensor_infer,osd,mod2matrix_inverse,bp_osd,tensor_osd,check_logical_error
 export Tableau, new_tableau,tableau_simulate
 
 # error model
-export FlipError, DepolarizingError, random_error_qubits,SimpleSyndrome,CSSSyndrome
+export IndependentFlipError, IndependentDepolarizingError, random_error_qubits,SimpleSyndrome,CSSSyndrome,iid_error,CSSErrorPattern
 @const_gate CCZ::ComplexF64 = diagm([1, 1,1,1,1,1,1,-1])
 
 # decoder

@@ -130,14 +130,14 @@ function load_table(filename::String, num_qubits::Int, num_st::Int)
 	return TruthTable(table, num_qubits, num_st)
 end
 
-struct DepolarizingDistribution <:AbstractSyndromeConflict 
-	pvec::Vector{DepolarizingError}
-end
+# struct DepolarizingDistribution <:AbstractSyndromeConflict 
+# 	pvec::Vector{DepolarizingError}
+# end
 
-struct TNDistribution <:AbstractSyndromeConflict 
-	ptn::TensorNetwork # probability distributions
-	qubit_num::Int
-end
+# struct TNDistribution <:AbstractSyndromeConflict 
+# 	ptn::TensorNetwork # probability distributions
+# 	qubit_num::Int
+# end
 
 # p1 is the old one
 function conflict_syndrome(cep1::Tuple{INT, INT}, cep2::Tuple{INT, INT},sc::AbstractSyndromeConflict) where {INT}
@@ -146,7 +146,7 @@ function conflict_syndrome(cep1::Tuple{INT, INT}, cep2::Tuple{INT, INT},sc::Abst
 	return p1 < p2
 end
 
-function get_probability(sc::DepolarizingDistribution, cep::Tuple{INT, INT}) where {INT}
+function get_probability(sc::IndependentDepolarizingError, cep::Tuple{INT, INT}) where {INT}
 	p = 1.0
 	for (i,pm) in enumerate(sc.pvec)
 		if iszero(readbit(cep[1], i)) 

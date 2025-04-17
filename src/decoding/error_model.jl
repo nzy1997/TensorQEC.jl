@@ -2,42 +2,31 @@ abstract type AbstractErrorModel end
 abstract type AbstractClassicalErrorModel <: AbstractErrorModel end
 abstract type AbstractQuantumErrorModel <: AbstractErrorModel end
 
-"""
-    FlipError(p::Float64) <: AbstractClassicalErrorModel
-
-A classical error model that flips a qubit with probability `p`.
-"""
-struct FlipError <: AbstractClassicalErrorModel
-    p::Float64
+struct TNDistribution <:AbstractQuantumErrorModel 
+	ptn::TensorNetwork # probability distributions
 end
 
-uniform_error_vector(p::Float64,tanner::SimpleTannerGraph) = fill(p,tanner.nq)
-"""
-    DepolarizingError <: AbstractQuantumErrorModel
-    DepolarizingError(p::Float64)
-    DepolarizingError(px::Float64, py::Float64, pz::Float64)
-    
-A quantum error model that flips a qubit by a Pauli operator σ with probability `pσ`.
-Fields:
-- `px::Float64`: the probability of an X error
-- `py::Float64`: the probability of a Y error
-- `pz::Float64`: the probability of a Z error
-"""
-struct DepolarizingError <: AbstractQuantumErrorModel
-    px::Float64
-    py::Float64
-    pz::Float64
+struct IndependentFlipError{T} <: AbstractClassicalErrorModel
+    p::Vector{T}
 end
-DepolarizingError(p::Float64) = DepolarizingError(p, p, p)
-uniform_error_vector(p::Float64,tanner::CSSTannerGraph) = fill(DepolarizingError(p),nq(tanner))
+iid_error(p::T,n::Int) where T <: Real = IndependentFlipError(fill(p,n))
+iid_error(p,tanner::SimpleTannerGraph) = iid_error(p,nq(tanner))
+
+struct IndependentDepolarizingError{T} <: AbstractQuantumErrorModel
+    px::Vector{T}
+    py::Vector{T}
+    pz::Vector{T}
+end
+iid_error(px::T,py::T,pz::T,n::Int) where T <: Real = IndependentDepolarizingError(fill(px,n),fill(py,n),fill(pz,n))
+iid_error(p::T, tanner::CSSTannerGraph) where T <: Real = iid_error(p,p,p,nq(tanner))
 
 """
     random_error_qubits(qubit_number::Int, em::AbstractErrorModel)
 
 Generate a random error pattern for a given number of qubits and an error model.
 """
-function random_error_qubits(qubit_number::Int, em::FlipError)
-    return Mod2.([rand() < em.p for _ in 1:qubit_number])
+function random_error_qubits(em::IndependentFlipError)
+    return Mod2.([rand() < em.p[i] for i in 1:length(em.p)])
 end
 
 """
@@ -63,23 +52,19 @@ function Base.show(io::IO, cep::CSSErrorPattern)
     println(io, (PauliGroup(1,psx)*PauliGroup(1,psz)).ps)
     return
 end
-function random_error_qubits(qubit_number::Int, em::DepolarizingError)
-    return random_error_qubits(fill(em, qubit_number))
-end
 
-function random_error_qubits(ems::Vector{DepolarizingError})
+function random_error_qubits(em::IndependentDepolarizingError)
     xerror =  Mod2[]
     zerror =  Mod2[]
-
-    for em in ems
+    for i in 1:length(em.px)
         randnum = rand()
-        if randnum < em.py
+        if randnum < em.py[i]
             push!(xerror, Mod2(true))
             push!(zerror, Mod2(true))
-        elseif randnum < em.px + em.py
+        elseif randnum < em.px[i] + em.py[i]
             push!(xerror, Mod2(true))
             push!(zerror, Mod2(false))
-        elseif randnum < em.px + em.py + em.pz
+        elseif randnum < em.px[i] + em.py[i] + em.pz[i]
             push!(xerror, Mod2(false))
             push!(zerror, Mod2(true))
         else

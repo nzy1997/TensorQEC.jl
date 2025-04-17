@@ -1,56 +1,47 @@
 using TensorQEC
 using Test
-using TensorQEC: SpinGlassSA, SpinConfig, energy, propose, flip!,anneal_singlerun!
+using TensorQEC: generate_spin_glass_sa, flip!,anneal_singlerun!
 using TensorQEC.TensorInference
 using Random
 
-# @testset "energy" begin
-#     tanner = CSSTannerGraph(SurfaceCode(3,3)).stgz
-#     error_qubits = Mod2[0,0,0,1,0,0,0,0,0]
-#     syd = syndrome_extraction(error_qubits, tanner)
-
-#     p_vector = fill(0.1, 9)
-#     prob = SpinGlassSA(tanner.s2q, syd.s, [1,2,3,10], p_vector)
-#     config = SpinConfig(Mod2[0,0,0,0,0,0,0,0,0,0])
-#     @show energy(config, prob)
-
-#     config = SpinConfig(Mod2[0,0,0,1,0,0,0,0,0,1])
-#     @show energy(config, prob)
-
-#     config = SpinConfig(Mod2[0,0,0,1,0,0,0,0,0,0])
-#     @show energy(config, prob)
-
-#     proposal, ΔE = propose(config, prob)
-#     config_new = flip!(deepcopy(config), proposal, prob)
-#     @show config_new
-#     @show energy(config, prob) - energy(config_new, prob)
-#     @show ΔE
-# end
+@testset "bitflip probability" begin
+    d = 3
+    p_vector = fill(0.1, d*d)
+    p_vector[2] = 0.2
+    p_vector[3] = 0.2
+    em = IndependentDepolarizingError(p_vector,p_vector,p_vector)
+    tanner = CSSTannerGraph(SurfaceCode(d,d))
+    Random.seed!(1234)
+    error_qubits = random_error_qubits(em)
+    syd = syndrome_extraction(error_qubits, tanner)
+  
+    ct = compile(TNMAP(), tanner, em)
+    tnres = decode(ct, syd)
+    @show tnres
+end 
 
 @testset "anneal" begin
-    tanner = CSSTannerGraph(SurfaceCode(3,3))
-    error_qubits = Mod2[1,0,0,0,0,0,0,0,0]
-    syd = syndrome_extraction(error_qubits, tanner.stgz)
     T = Float32
+    d = 3
+    p_vector = fill(0.1, d*d)
+    em = IndependentDepolarizingError(T.(p_vector),T.(p_vector),T.(p_vector))
+    tanner = CSSTannerGraph(SurfaceCode(d,d))
+    Random.seed!(1234)
+    error_qubits = random_error_qubits(em)
+    syd = syndrome_extraction(error_qubits, tanner)
 
-    p_vector = fill(T(0.1), 9)
-    p_vector[2] = 0.26
-    p_vector[3] = 0.26
-
-    lx,lz = TensorQEC.logical_operator(tanner)
-    @show lx
-    @show lz
-
-    prob = SpinGlassSA(tanner.stgx.s2q, findall(i -> i.x, lx[1,:]), p_vector, findall(i -> i.x, lz[1,:]))
-    config = SpinConfig(Mod2[1,0,0,0,0,0,0,0,0])
+    config = CSSErrorPattern(TensorQEC._mixed_integer_programming_for_one_solution(tanner, syd)...)
     nsweeps = 1000
-    res = anneal_singlerun!(config, prob, collect(T, 0:1e-4:1.0);num_trials=nsweeps)
+    prob = generate_spin_glass_sa(tanner, em)
+    res = anneal_singlerun!(config, prob, collect(T, 0:1e-4:1.0),nsweeps)
 
-    # config_new = copy(res.mostlikely.config)
-    # config_new = Mod2[1,0,0,0,0,0,0,0,0]
-    # (sum(lz[1,:].* config_new).x == (res.p1 > 0.5)) || (config_new += lx[1,:])
     @show res
-    # @show config_new
+    # em = IndependentDepolarizingError(p_vector,p_vector,p_vector)
+    # ct = compile(TNMAP(), tanner, em)
+    # tnres = decode(ct, syd)
+    # marz = [0.7611243449261554, 0.23887565507384462]
+    # marx = [0.8949023344449739, 0.1050976655550262]
+    # kron(marz, marx) = [0.681131953077318, 0.07999239184883748, 0.21377038136765592, 0.02510527370618872]
 end
 
 using CUDA
