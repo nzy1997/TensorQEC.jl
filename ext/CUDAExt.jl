@@ -6,7 +6,7 @@ using TensorQEC
 using TensorQEC: SpinConfig, SpinGlassSA, Mod2
 using TensorQEC.Graphs
 
-function TensorQEC.anneal_singlerun!(config::SpinConfig{<:CuVector}, sap::SpinGlassSA{T}, betas::Vector{T}; num_trials) where T
+function TensorQEC.anneal_run!(config::SpinConfig{<:CuVector}, sap::SpinGlassSA{T}, betas::Vector{T}; num_trials) where T
 	zero_config, one_config = TensorQEC.get01configs(config, sap.logical_qubits, sap.logical_qubits_check)
     batched_config = map(x->x.x, repeat(config.config, 1, num_trials))
     s2q = vcat(sap.s2q..., sap.logical_qubits)
@@ -22,6 +22,10 @@ function TensorQEC.anneal_singlerun!(config::SpinConfig{<:CuVector}, sap::SpinGl
 end
 
 function _anneal_kernel!(batched_config::CuMatrix{Bool}, betas::Vector{T}, s2q::CuVector{Int32}, s2q_ptr::CuVector{Int32}, logp_vector_error::CuVector{T}, logp_vector_noerror::CuVector{T}, partitions::Vector{<:CuVector{Int32}}) where T
+    # (blockIdx() shi 当前block的索引, 
+    # blockDim() shi 当前block中thread的数量
+    # threadIdx() shi 当前thread的索引
+
     function anneal_kernel!(batched_config, beta, s2q, s2q_ptr, logp_vector_error, logp_vector_noerror, partition, maxpart)
         index = (blockIdx().x - Int32(1)) * blockDim().x + threadIdx().x
         (i, ic) = divrem(index - Int32(1), maxpart) .+ Int32(1)
