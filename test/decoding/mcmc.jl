@@ -14,8 +14,8 @@ end
 @testset "anneal" begin
     T = Float32
     d = 3
-    p_vector = fill(0.1, d*d)
-    em = IndependentDepolarizingError(T.(p_vector),T.(p_vector),T.(p_vector))
+
+    em = iid_error(T(0.1),T(0.1),T(0.1),d*d)
     tanner = CSSTannerGraph(SurfaceCode(d,d))
     Random.seed!(1234)
     error_qubits = random_error_qubits(em)
@@ -29,6 +29,7 @@ end
     @test sum(abs.(res - [0.681131953077318, 0.07999239184883748, 0.21377038136765592, 0.02510527370618872])) < 0.4
     # @show res
 
+    # p_vector = fill(0.1, d*d)
     # em = IndependentDepolarizingError(p_vector,p_vector,p_vector)
     # ct = compile(TNMAP(), tanner, em)
     # tnres = decode(ct, syd)

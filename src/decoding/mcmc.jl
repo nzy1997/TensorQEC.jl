@@ -1,14 +1,3 @@
-# abstract type AbstractSpinGlassSA end
-# struct SpinGlassSA{T} <: AbstractSpinGlassSA
-# 	tanner::CSSTannerGraph
-# 	lx::Matrix{Mod2}
-# 	lz::Matrix{Mod2}
-# 	xlogical_qubits::Vector{Vector{Int}}
-# 	zlogical_qubits::Vector{Vector{Int}}
-# 	logpx_diff::Matrix{T}
-# 	logpz_diff::Matrix{T}
-# end
-
 struct SpinGlassSA{T, VI<:AbstractVector{Int}, MM<:AbstractMatrix{Mod2}, MT<:AbstractMatrix{T}} <: CompiledDecoder
 	s2qx::VI
 	s2q_ptrx::VI
