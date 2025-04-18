@@ -100,5 +100,25 @@ function partite_vertices(g::SimpleGraph)
 end
 partite_edges(g::SimpleGraph) = partite_vertices(dual_graph(g))
 
+function togpu(sap::SpinGlassSA)
+    return SpinGlassSA(
+        CuVector{Int32}(sap.s2qx),
+        CuVector{Int32}(sap.s2q_ptrx),
+        CuVector{Int32}(sap.s2qz),
+        CuVector{Int32}(sap.s2q_ptrz),
+        CuMatrix(sap.lx),
+        CuMatrix(sap.lz),
+        CuVector{Int32}(sap.xlogical_qubits),
+        CuVector{Int32}(sap.xlogical_qubits_ptr),
+        CuVector{Int32}(sap.zlogical_qubits),
+        CuVector{Int32}(sap.zlogical_qubits_ptr),
+        CuMatrix(sap.logpx_diff),
+        CuMatrix(sap.logpz_diff),
+        sap.betas,
+        sap.num_trials,
+        sap.tanner
+    )
+end
+
 end
 

@@ -60,7 +60,7 @@ Compile the decoder to specific tanner graph and prior probability distributions
 abstract type CompiledDecoder end
 
 function compile(decoder::AbstractDecoder, tanner::AbstractTannerGraph)
-    return compile(decoder, tanner, iid_error_vector(0.05,tanner))
+    return compile(decoder, tanner, iid_error(0.05,tanner))
 end
 function compile(decoder::AbstractDecoder, tanner::AbstractTannerGraph, pvec::IndependentDepolarizingError)
     return compile(decoder, get_problem(tanner,pvec))
@@ -72,9 +72,9 @@ end
 Decode the syndrome using the decoder.
 """
 function decode(decoder::AbstractDecoder, tanner::AbstractTannerGraph, syndrome::AbstractSyndrome)
-    return decode(decoder, tanner, syndrome, uniform_error_vector(0.05,tanner))
+    return decode(decoder, tanner, syndrome, iid_error(0.05,tanner))
 end
-function decode(decoder::AbstractDecoder, tanner::AbstractTannerGraph, syndrome::AbstractSyndrome, pvec::Vector)
+function decode(decoder::AbstractDecoder, tanner::AbstractTannerGraph, syndrome::AbstractSyndrome, pvec::AbstractErrorModel)
     return decode(decoder, get_problem(tanner,pvec), syndrome)
 end
 function decode(decoder::AbstractDecoder, problem::AbstractDecodingProblem, syndrome::AbstractSyndrome)

@@ -14,9 +14,9 @@ function extract_decoding(cgdp::CSSToGeneralDecodingProblem, error_qubits::Vecto
 end
 
 # pvec=[px,py,pz], i represent x error, i+num_qubits represent y error, i+2*num_qubits represent z error
-function reduce2general(tanner::CSSTannerGraph, pvec::Vector{Vector{Float64}})
+function reduce2general(tanner::CSSTannerGraph, pvec::IndependentDepolarizingError)
     num_qubits = nq(tanner)
-    tn = TensorNetwork(DynamicEinCode([[i,i+num_qubits,i+2*num_qubits] for i in 1:num_qubits],Int[]),[single_qubit_tensor(pvec[j]...) for j in 1:num_qubits])
+    tn = TensorNetwork(DynamicEinCode([[i,i+num_qubits,i+2*num_qubits] for i in 1:num_qubits],Int[]),[single_qubit_tensor(pvec.px[j],pvec.py[j],pvec.pz[j]) for j in 1:num_qubits])
     return reduce2general(tanner,tn)
 end
 

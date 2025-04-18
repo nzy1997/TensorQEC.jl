@@ -55,7 +55,7 @@ struct CSSDecodingProblemToFlatDecodingProblem <: AbstractReductionResult
 end
 get_fdp(cfdp::CSSDecodingProblemToFlatDecodingProblem) = cfdp.fdp
 function compile(decoder::IPDecoder, sdp::CSSDecodingProblem)
-    c2g = reduce2general(sdp.tanner,[[p.px,p.py,p.pz] for p in sdp.pvec])
+    c2g = reduce2general(sdp.tanner,sdp.pvec)
     gdp2fdp = flattengdp(c2g.gdp)
     return CompiledIP(decoder, CSSDecodingProblemToFlatDecodingProblem(gdp2fdp.fdp,c2g,gdp2fdp))
 end

@@ -38,8 +38,8 @@ end
 @testset "CSSIPDecoder" begin
     Random.seed!(123)
     tanner = CSSTannerGraph(SurfaceCode(3, 3))
-    em = DepolarizingError(0.05, 0.06, 0.1)
-    ep = random_error_qubits(9, em)
+    em = iid_error(0.05, 0.06, 0.1,9)
+    ep = random_error_qubits(em)
     syn = syndrome_extraction(ep,tanner)
 
     res = decode(IPDecoder(),tanner,syn)

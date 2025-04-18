@@ -178,7 +178,7 @@ function stabilizers(::Code513)
 	return pauli_string
 end
 
-struct BivariateBicycleCode{N}
+struct BivariateBicycleCode{N} <: CSSQuantumCode
     m::Int
     n::Int
 	vc::NTuple{N,Tuple{Int,Int}}
