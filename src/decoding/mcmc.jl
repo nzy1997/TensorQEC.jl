@@ -1,26 +1,33 @@
-struct SpinGlassSA{T, VI<:AbstractVector{<:Integer}, MM<:AbstractMatrix{Mod2}, MT<:AbstractMatrix{T}} <: CompiledDecoder
-	s2qx::VI
-	s2q_ptrx::VI
-	s2qz::VI
-	s2q_ptrz::VI
-	lx::MM
-	lz::MM
-	xlogical_qubits::VI
-	xlogical_qubits_ptr::VI
-	zlogical_qubits::VI
-	zlogical_qubits_ptr::VI
-	logpx_diff::MT
-	logpz_diff::MT
+struct VecPtr{T,IT<:Integer}
+	vec::Vector{T}
+	ptr::Vector{IT}
+end
+
+struct SpinGlassSA{T, VI<:AbstractVector{<:Integer}, VT<:AbstractVector{T}} <: CompiledDecoder
+	s2q::VecPtr{IT,IT}
+	logical_ops::VecPtr{IT,IT}
+	logical_ops_check::VecPtr{IT,IT}
+	logp::VecPtr{T,IT}
+	logp2bit::VecPtr{T,IT}
+	bit2logp::VecPtr{T,IT}
 	betas::Vector{T}
 	num_trials::Int
-	tanner::CSSTannerGraph
 end
 
 
 function generate_spin_glass_sa(tanner::CSSTannerGraph, ide::IndependentDepolarizingError{T}, betas::Vector{T}, num_trials::Int) where {T}
+	qubit_num = nq(tanner)
+	s2q, s2q_ptr = _vecvec2vecptr(vcat(tanner.stgx.s2q, broadcast.(+,tanner.stgz.s2q,qubit_num)))
+
 	lx,lz = logical_operator(tanner)
 	xlogical_qubits = [findall(i->i.x,row) for row in eachrow(lx)]
 	zlogical_qubits = [findall(i->i.x,row) for row in eachrow(lz)]
+
+	logical_ops, logical_ops_ptr = _vecvec2vecptr(vcat(xlogical_qubits, broadcast.(+,zlogical_qubits,qubit_num)))
+	logical_ops_check, logical_ops_check_ptr = _vecvec2vecptr(vcat(zlogical_qubits, broadcast.(+,xlogical_qubits,qubit_num)))
+
+	_vecvec2vecptr([])
+
 	logp_xerror = log.(ide.px)
 	logp_yerror = log.(ide.py)
 	logp_zerror = log.(ide.pz)
@@ -31,8 +38,7 @@ function generate_spin_glass_sa(tanner::CSSTannerGraph, ide::IndependentDepolari
 	logp_z2y = logp_zerror - logp_yerror
 	logpx_diff = [logp_i2x;; -logp_i2x;; logp_z2y;; -logp_z2y]
 	logpz_diff = [logp_i2z;; logp_x2y;; -logp_i2z;; -logp_x2y]
-	s2qx, s2q_ptrx = _vecvec2vecptr(tanner.stgx.s2q)
-	s2qz, s2q_ptrz = _vecvec2vecptr(tanner.stgz.s2q)
+
 	xlogical_qubits,xlogical_qubits_ptr = _vecvec2vecptr(xlogical_qubits)
 	zlogical_qubits,zlogical_qubits_ptr = _vecvec2vecptr(zlogical_qubits)
 	return SpinGlassSA(s2qx, s2q_ptrx, s2qz, s2q_ptrz, lx, lz, xlogical_qubits, xlogical_qubits_ptr, zlogical_qubits, zlogical_qubits_ptr, logpx_diff, logpz_diff, betas, num_trials, tanner)
@@ -102,7 +108,6 @@ togpu(prob) = error("CUDA extension not loaded, try `using CUDA`")
 function decode(cm::SpinGlassSA, syndrome::CSSSyndrome)
 	config = CSSErrorPattern(TensorQEC._mixed_integer_programming_for_one_solution(cm.tanner, syndrome)...)
     res = anneal_run!(config, cm)
-	return res
 	_, pos = findmax(res)
 	lx = cm.lx
 	lz = cm.lz
