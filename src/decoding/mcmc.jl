@@ -1,4 +1,4 @@
-struct SpinGlassSA{T, VI<:AbstractVector{Int}, MM<:AbstractMatrix{Mod2}, MT<:AbstractMatrix{T}} <: CompiledDecoder
+struct SpinGlassSA{T, VI<:AbstractVector{<:Integer}, MM<:AbstractMatrix{Mod2}, MT<:AbstractMatrix{T}} <: CompiledDecoder
 	s2qx::VI
 	s2q_ptrx::VI
 	s2qz::VI
@@ -57,7 +57,7 @@ Perform Simulated Annealing using Metropolis updates for the run.
 
 Returns a named tuple: (; optimal_cost, optimal_configuration, p1, mostlikely_configuration, acceptance_rate, beta_acceptance_rate, valid_samples, etas).
 """
-function anneal_run!(config::CSSErrorPattern, sap::SpinGlassSA{T,VI,MM,MT}; rng = Random.Xoshiro()) where {T,VI,MM,MT}
+function anneal_run!(config::CSSErrorPattern, sap::SpinGlassSA{T,Vector{TI},MM,MT}; rng = Random.Xoshiro()) where {T,TI,MM,MT}
 	betas = sap.betas
 	num_trials = sap.num_trials
 	logical_num = length(sap.xlogical_qubits_ptr) - 1
@@ -102,6 +102,7 @@ togpu(prob) = error("CUDA extension not loaded, try `using CUDA`")
 function decode(cm::SpinGlassSA, syndrome::CSSSyndrome)
 	config = CSSErrorPattern(TensorQEC._mixed_integer_programming_for_one_solution(cm.tanner, syndrome)...)
     res = anneal_run!(config, cm)
+	return res
 	_, pos = findmax(res)
 	lx = cm.lx
 	lz = cm.lz

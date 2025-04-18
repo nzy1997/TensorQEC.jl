@@ -37,9 +37,9 @@ Fields:
 - `xerror::Vector{Mod2}`: the X errors
 - `zerror::Vector{Mod2}`: the Z errors
 """
-struct CSSErrorPattern
-    xerror::Vector{Mod2}
-    zerror::Vector{Mod2}
+struct CSSErrorPattern{VM <:AbstractVector{Mod2}}
+    xerror::VM
+    zerror::VM
 end
 
 Base.show(io::IO, ::MIME"text/plain", cep::CSSErrorPattern) = show(io, cep)

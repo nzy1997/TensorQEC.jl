@@ -3,14 +3,12 @@ module CUDAExt
 using CUDA; CUDA.allowscalar(false)
 using CUDA.GPUArrays: @kernel, get_backend, @index
 using TensorQEC
-using TensorQEC: SpinConfig, SpinGlassSA, Mod2
+using TensorQEC: SpinGlassSA, Mod2
 using TensorQEC.Graphs
 
-function TensorQEC.anneal_run!(config::SpinConfig{<:CuVector}, sap::SpinGlassSA{T}, betas::Vector{T}; num_trials) where T
-	zero_config, one_config = TensorQEC.get01configs(config, sap.logical_qubits, sap.logical_qubits_check)
+function TensorQEC.anneal_run!(config::CSSErrorPattern, sap::SpinGlassSA{T,VI,MM,MT}) where {T,VI<:CuVector,MM,MT}
     batched_config = map(x->x.x, repeat(config.config, 1, num_trials))
-    s2q = vcat(sap.s2q..., sap.logical_qubits)
-    s2q_ptr = cumsum([1, length.(sap.s2q)..., length(sap.logical_qubits)])
+
     partitions = partite_stabilizers([sap.s2q..., sap.logical_qubits])
     # assert each partition does not share any qubits
     @assert all(p -> length(union(p...)) == sum(length.(p)), partitions)
@@ -104,7 +102,7 @@ function partite_vertices(g::SimpleGraph)
 end
 partite_edges(g::SimpleGraph) = partite_vertices(dual_graph(g))
 
-function togpu(sap::SpinGlassSA)
+function TensorQEC.togpu(sap::SpinGlassSA)
     return SpinGlassSA(
         CuVector{Int32}(sap.s2qx),
         CuVector{Int32}(sap.s2q_ptrx),

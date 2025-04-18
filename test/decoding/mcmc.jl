@@ -54,6 +54,22 @@ end
 end
     
 using CUDA
+
+@testset "compile and decode" begin   
+    d = 3
+    n = 2*d^2
+    tanner = CSSTannerGraph(ToricCode(d,d))
+    em = iid_error(0.05,0.05,0.05,n)
+    ct = compile(SimulatedAnnealing(collect(0:1e-3:1.0),100,true), tanner, em)
+
+    Random.seed!(1234)
+    eq = random_error_qubits(em)
+    syd = syndrome_extraction(eq, tanner)
+    res = decode(ct, syd)
+    @test syd == syndrome_extraction(res.error_qubits, tanner)
+    @test !check_logical_error(res.error_qubits, eq, ct.lx, ct.lz)
+end
+
 @testset "anneal - CUDA" begin
     d = 21
     tanner = CSSTannerGraph(SurfaceCode(d,d))
