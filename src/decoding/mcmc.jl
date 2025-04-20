@@ -5,7 +5,7 @@ end
 getview(vptr::VecPtr, i::Integer) = view(vptr.vec, vptr.ptr[i]:vptr.ptr[i+1]-1)
 Base.length(vptr::VecPtr) = length(vptr.ptr) - 1
 
-struct SpinGlassSA{VT, VIT, T} <: CompiledDecoder
+struct SpinGlassSA{VT, VIT, IT, T} <: CompiledDecoder
 	ops::VecPtr{VIT,VIT}
 	ops_check::VecPtr{VIT,VIT}
 	logp::VecPtr{VT,VIT}
@@ -13,6 +13,7 @@ struct SpinGlassSA{VT, VIT, T} <: CompiledDecoder
 	bit2logp::VecPtr{VIT,VIT}
 	betas::Vector{T}
 	num_trials::Int
+	vecvecops::Vector{Vector{IT}}
 end
 
 
@@ -23,14 +24,15 @@ function generate_spin_glass_sa(tanner::CSSTannerGraph, ide::IndependentDepolari
 	xlogical_qubits = [findall(i->i.x,row) for row in eachrow(lx)]
 	zlogical_qubits = [findall(i->i.x,row) for row in eachrow(lz)]
 
-	ops = _vecvec2vecptr(vcat(tanner.stgx.s2q, broadcast.(+,tanner.stgz.s2q,qubit_num),xlogical_qubits, broadcast.(+,zlogical_qubits,qubit_num)), IT,IT)
+	vecvecops = vcat(tanner.stgx.s2q, broadcast.(+,tanner.stgz.s2q,qubit_num),xlogical_qubits, broadcast.(+,zlogical_qubits,qubit_num))
+	ops = _vecvec2vecptr(vecvecops, IT,IT)
 	ops_check = _vecvec2vecptr(vcat(zlogical_qubits, broadcast.(+,xlogical_qubits,qubit_num)), IT,IT)
 
 	logp = _vecvec2vecptr([[log(one(T)-px-py-pz),log(px),log(pz),log(py)] for (px,py,pz) in zip(ide.px,ide.py,ide.pz)], IT,T)
 	logp2bit = _vecvec2vecptr([[i,i+qubit_num] for i in 1:qubit_num], IT,IT)
 	bit_vec = [[i] for i in 1:qubit_num]
 	bit2logp = _vecvec2vecptr(vcat(bit_vec,bit_vec), IT,IT)
-	return SpinGlassSA(ops, ops_check, logp, logp2bit, bit2logp, betas, num_trials)
+	return SpinGlassSA(ops, ops_check, logp, logp2bit, bit2logp, betas, num_trials, vecvecops)
 end
 
 """

@@ -55,23 +55,29 @@ end
     @test !check_logical_error(res.error_qubits, eq, ct.lx, ct.lz)
 end
     
+using CUDA
 
-@testset "compile and decode" begin   
+@testset "CUDA anneal" begin   
+    T = Float32
     d = 3
-    n = 2*d^2
-    tanner = CSSTannerGraph(ToricCode(d,d))
-    em = iid_error(0.05,0.05,0.05,n)
-    ct = compile(SimulatedAnnealing(collect(0:1e-3:1.0),100,true), tanner, em)
 
+    em = iid_error(T(0.1),T(0.1),T(0.1),d*d)
+    tanner = CSSTannerGraph(SurfaceCode(d,d))
     Random.seed!(1234)
-    eq = random_error_qubits(em)
-    syd = syndrome_extraction(eq, tanner)
-    res = decode(ct, syd)
-    @test syd == syndrome_extraction(res.error_qubits, tanner)
-    @test !check_logical_error(res.error_qubits, eq, ct.lx, ct.lz)
+    error_qubits = random_error_qubits(em)
+    syd = syndrome_extraction(error_qubits, tanner)
+
+    config = CSSErrorPattern(TensorQEC._mixed_integer_programming_for_one_solution(tanner, syd)...)
+    nsweeps = 1000
+    prob = generate_spin_glass_sa(tanner, em, collect(T, 0:1e-4:1.0), nsweeps)
+    config = CUDA.CuVector(vcat(config.xerror,config.zerror))
+    prob = TensorQEC.togpu(prob)
+    res = anneal_run!(config, prob)
+
+    @test sum(abs.(res - [0.681131953077318, 0.07999239184883748, 0.21377038136765592, 0.02510527370618872])) < 0.1
 end
 
-using CUDA
+
 @testset "anneal - CUDA" begin
     d = 21
     tanner = CSSTannerGraph(SurfaceCode(d,d))

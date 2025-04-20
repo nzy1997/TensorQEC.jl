@@ -3,52 +3,69 @@ module CUDAExt
 using CUDA; CUDA.allowscalar(false)
 using CUDA.GPUArrays: @kernel, get_backend, @index
 using TensorQEC
-using TensorQEC: SpinConfig, SpinGlassSA, Mod2
+using TensorQEC: SpinGlassSA, Mod2, VecPtr, getview, read_tensor_deltaE
 using TensorQEC.Graphs
 
-function TensorQEC.anneal_singlerun!(config::SpinConfig{<:CuVector}, sap::SpinGlassSA{T}, betas::Vector{T}; num_trials) where T
-	zero_config, one_config = TensorQEC.get01configs(config, sap.logical_qubits, sap.logical_qubits_check)
-    batched_config = map(x->x.x, repeat(config.config, 1, num_trials))
-    s2q = vcat(sap.s2q..., sap.logical_qubits)
-    s2q_ptr = cumsum([1, length.(sap.s2q)..., length(sap.logical_qubits)])
-    partitions = partite_stabilizers([sap.s2q..., sap.logical_qubits])
+function TensorQEC.anneal_run!(config::CuVector{Mod2}, sap::SpinGlassSA)
+    batched_config = map(x->x.x, repeat(config, 1, sap.num_trials))
+
+    partitions = partite_stabilizers(sap.vecvecops)
     # assert each partition does not share any qubits
     @assert all(p -> length(union(p...)) == sum(length.(p)), partitions)
-    @assert sum(length, partitions) == length(sap.s2q) + 1
-
-    _anneal_kernel!(batched_config, betas, CuVector{Int32}(s2q), CuVector{Int32}(s2q_ptr), CuVector(sap.logp_vector_error), CuVector(sap.logp_vector_noerror), CuVector{Int32}.(partitions))
-    one_count = sum(reduce(⊻, batched_config[sap.logical_qubits_check, :]; dims=1, init=false))
-    return (; mostlikely = one_count / num_trials > 0.5 ? one_config : zero_config, p1 = one_count / num_trials)
+    T = eltype(sap.logp.vec)
+    _anneal_kernel!(batched_config, sap.betas, CuVector{Int32}(sap.ops.vec),CuVector{Int32}(sap.ops.ptr), CuVector{T}(sap.logp.vec),CuVector{Int32}(sap.logp.ptr), CuVector{Int32}(sap.logp2bit.vec),CuVector{Int32}(sap.logp2bit.ptr), CuVector{Int32}(sap.bit2logp.vec),CuVector{Int32}(sap.bit2logp.ptr), CuVector{Int32}.(partitions))
+    logical_num = length(sap.ops_check)
+    vec = zeros(Int,2^logical_num)
+    for trial in 1:sap.num_trials
+        possum = 1
+        for j in 1:logical_num
+            CUDA.@allowscalar possum += reduce(⊻, batched_config[getview(sap.ops_check,j), trial]; dims=1, init=false)[] ? (1 << (j-1)) : 0
+        end
+        vec[possum] += 1
+    end
+    return vec./sap.num_trials
 end
 
-function _anneal_kernel!(batched_config::CuMatrix{Bool}, betas::Vector{T}, s2q::CuVector{Int32}, s2q_ptr::CuVector{Int32}, logp_vector_error::CuVector{T}, logp_vector_noerror::CuVector{T}, partitions::Vector{<:CuVector{Int32}}) where T
-    function anneal_kernel!(batched_config, beta, s2q, s2q_ptr, logp_vector_error, logp_vector_noerror, partition, maxpart)
+function _anneal_kernel!(batched_config::CuMatrix{Bool}, betas::Vector{T}, ops_vec,ops_ptr, logp_vec,logp_ptr,logp2bit_vec,logp2bit_ptr,bit2logp_vec,bit2logp_ptr, partitions::Vector{<:CuVector{Int32}}) where T
+    function anneal_kernel!(batched_config, beta, ops_vec,ops_ptr, logp_vec,logp_ptr,logp2bit_vec,logp2bit_ptr,bit2logp_vec,bit2logp_ptr, partition, maxpart)
         index = (blockIdx().x - Int32(1)) * blockDim().x + threadIdx().x
         (i, ic) = divrem(index - Int32(1), maxpart) .+ Int32(1)
         if ic <= length(partition) && i <= size(batched_config, Int32(2))
             icheck = partition[ic]
             ΔE = zero(T)
-            @inbounds for idx in s2q_ptr[icheck]:s2q_ptr[icheck+Int32(1)]-Int32(1)
-                loc = s2q[idx]
-                ΔE += batched_config[loc, i] ? logp_vector_error[loc] - logp_vector_noerror[loc] : logp_vector_noerror[loc] - logp_vector_error[loc]
+            @inbounds for loc_index in ops_ptr[icheck]:ops_ptr[icheck+Int32(1)]-Int32(1)
+                loc = ops_vec[loc_index]
+                for j_index in bit2logp_ptr[loc]:bit2logp_ptr[loc+Int32(1)]-Int32(1)
+                    j = bit2logp_vec[j_index]
+                    possum = logp_ptr[j]
+                    possum_trans = Int32(0)
+                    for (bit_order,bit_index) in enumerate(logp2bit_ptr[j]:logp2bit_ptr[j+Int32(1)]-Int32(1))
+                        bit_num = logp2bit_vec[bit_index]
+                        batched_config[bit_num,i] && (possum += (Int32(1) << (bit_order-1)))
+                        if bit_num == loc
+                            possum_trans = batched_config[loc,i] ? -(Int32(1) << (bit_order-1)) : (Int32(1) << (bit_order-1))
+                        end
+                    end
+                    ΔE += logp_vec[possum] - logp_vec[possum + possum_trans]
+                end
             end
+            
             if CUDA.Random.rand(T) < exp(-beta * ΔE)  # accept
-                @inbounds for idx in s2q_ptr[icheck]:s2q_ptr[icheck+Int32(1)]-Int32(1)  # flip the qubits
-                    loc = s2q[idx]
+                @inbounds for loc_index in ops_ptr[icheck]:ops_ptr[icheck+Int32(1)]-Int32(1)
+                    loc = ops_vec[loc_index]
                     batched_config[loc, i] = !batched_config[loc, i]
                 end
             end
         end
     end
     maxpart = maximum(length.(partitions))
-    kernel = @cuda launch=false anneal_kernel!(batched_config, first(betas), s2q, s2q_ptr, logp_vector_error, logp_vector_noerror, first(partitions), maxpart)
+    kernel = @cuda launch=false anneal_kernel!(batched_config, first(betas), ops_vec,ops_ptr, logp_vec,logp_ptr,logp2bit_vec,logp2bit_ptr,bit2logp_vec,bit2logp_ptr, first(partitions), maxpart)
     config = launch_configuration(kernel.fun)
     threads = min(maxpart * size(batched_config, 2), config.threads)
     blocks = cld(maxpart * size(batched_config, 2), threads)
     for beta in betas
-        #for partition in partitions
         for partition in partitions
-            CUDA.@sync kernel(batched_config, beta, s2q, s2q_ptr, logp_vector_error, logp_vector_noerror, partition, maxpart; threads, blocks)
+            CUDA.@sync kernel(batched_config, beta, ops_vec,ops_ptr, logp_vec,logp_ptr,logp2bit_vec,logp2bit_ptr,bit2logp_vec,bit2logp_ptr, partition, maxpart; threads, blocks)
         end
     end
 end
@@ -100,23 +117,16 @@ function partite_vertices(g::SimpleGraph)
 end
 partite_edges(g::SimpleGraph) = partite_vertices(dual_graph(g))
 
-function TensorQEC.togpu(sap::SpinGlassSA)
+function TensorQEC.togpu(sap::SpinGlassSA{VT, VIT, IT, T}) where {VT,VIT,IT,T}
     return SpinGlassSA(
-        CuVector{Int32}(sap.s2qx),
-        CuVector{Int32}(sap.s2q_ptrx),
-        CuVector{Int32}(sap.s2qz),
-        CuVector{Int32}(sap.s2q_ptrz),
-        CuMatrix(sap.lx),
-        CuMatrix(sap.lz),
-        CuVector{Int32}(sap.xlogical_qubits),
-        CuVector{Int32}(sap.xlogical_qubits_ptr),
-        CuVector{Int32}(sap.zlogical_qubits),
-        CuVector{Int32}(sap.zlogical_qubits_ptr),
-        CuMatrix(sap.logpx_diff),
-        CuMatrix(sap.logpz_diff),
+        VecPtr(CuVector{IT}(sap.ops.vec), CuVector{IT}(sap.ops.ptr)),
+        VecPtr(CuVector{IT}(sap.ops_check.vec), CuVector{IT}(sap.ops_check.ptr)),
+        VecPtr(CuVector{T}(sap.logp.vec), CuVector{IT}(sap.logp.ptr)),
+        VecPtr(CuVector{IT}(sap.logp2bit.vec), CuVector{IT}(sap.logp2bit.ptr)),
+        VecPtr(CuVector{IT}(sap.bit2logp.vec), CuVector{IT}(sap.bit2logp.ptr)),
         sap.betas,
         sap.num_trials,
-        sap.tanner
+        sap.vecvecops
     )
 end
 
