@@ -1,47 +1,36 @@
-struct VecPtr{T,IT<:Integer}
-	vec::Vector{T}
-	ptr::Vector{IT}
+struct VecPtr{VT <: AbstractVector, VIT <: AbstractVector}
+	vec::VT
+	ptr::VIT
 end
+getview(vptr::VecPtr, i::Integer) = view(vptr.vec, vptr.ptr[i]:vptr.ptr[i+1]-1)
+Base.length(vptr::VecPtr) = length(vptr.ptr) - 1
 
-struct SpinGlassSA{T, VI<:AbstractVector{<:Integer}, VT<:AbstractVector{T}} <: CompiledDecoder
-	s2q::VecPtr{IT,IT}
-	logical_ops::VecPtr{IT,IT}
-	logical_ops_check::VecPtr{IT,IT}
-	logp::VecPtr{T,IT}
-	logp2bit::VecPtr{T,IT}
-	bit2logp::VecPtr{T,IT}
+struct SpinGlassSA{VT, VIT, T} <: CompiledDecoder
+	ops::VecPtr{VIT,VIT}
+	ops_check::VecPtr{VIT,VIT}
+	logp::VecPtr{VT,VIT}
+	logp2bit::VecPtr{VIT,VIT}
+	bit2logp::VecPtr{VIT,VIT}
 	betas::Vector{T}
 	num_trials::Int
 end
 
 
-function generate_spin_glass_sa(tanner::CSSTannerGraph, ide::IndependentDepolarizingError{T}, betas::Vector{T}, num_trials::Int) where {T}
+function generate_spin_glass_sa(tanner::CSSTannerGraph, ide::IndependentDepolarizingError, betas::Vector{T}, num_trials::Int; IT::Type{<:Integer} = Int32) where {T}
 	qubit_num = nq(tanner)
-	s2q, s2q_ptr = _vecvec2vecptr(vcat(tanner.stgx.s2q, broadcast.(+,tanner.stgz.s2q,qubit_num)))
 
 	lx,lz = logical_operator(tanner)
 	xlogical_qubits = [findall(i->i.x,row) for row in eachrow(lx)]
 	zlogical_qubits = [findall(i->i.x,row) for row in eachrow(lz)]
 
-	logical_ops, logical_ops_ptr = _vecvec2vecptr(vcat(xlogical_qubits, broadcast.(+,zlogical_qubits,qubit_num)))
-	logical_ops_check, logical_ops_check_ptr = _vecvec2vecptr(vcat(zlogical_qubits, broadcast.(+,xlogical_qubits,qubit_num)))
+	ops = _vecvec2vecptr(vcat(tanner.stgx.s2q, broadcast.(+,tanner.stgz.s2q,qubit_num),xlogical_qubits, broadcast.(+,zlogical_qubits,qubit_num)), IT,IT)
+	ops_check = _vecvec2vecptr(vcat(zlogical_qubits, broadcast.(+,xlogical_qubits,qubit_num)), IT,IT)
 
-	_vecvec2vecptr([])
-
-	logp_xerror = log.(ide.px)
-	logp_yerror = log.(ide.py)
-	logp_zerror = log.(ide.pz)
-	logp_noerror = log.(one(T) .- ide.px .- ide.py .- ide.pz)
-	logp_i2x = logp_noerror - logp_xerror
-	logp_i2z = logp_noerror - logp_zerror
-	logp_x2y = logp_xerror - logp_yerror
-	logp_z2y = logp_zerror - logp_yerror
-	logpx_diff = [logp_i2x;; -logp_i2x;; logp_z2y;; -logp_z2y]
-	logpz_diff = [logp_i2z;; logp_x2y;; -logp_i2z;; -logp_x2y]
-
-	xlogical_qubits,xlogical_qubits_ptr = _vecvec2vecptr(xlogical_qubits)
-	zlogical_qubits,zlogical_qubits_ptr = _vecvec2vecptr(zlogical_qubits)
-	return SpinGlassSA(s2qx, s2q_ptrx, s2qz, s2q_ptrz, lx, lz, xlogical_qubits, xlogical_qubits_ptr, zlogical_qubits, zlogical_qubits_ptr, logpx_diff, logpz_diff, betas, num_trials, tanner)
+	logp = _vecvec2vecptr([[log(one(T)-px-py-pz),log(px),log(pz),log(py)] for (px,py,pz) in zip(ide.px,ide.py,ide.pz)], IT,T)
+	logp2bit = _vecvec2vecptr([[i,i+qubit_num] for i in 1:qubit_num], IT,IT)
+	bit_vec = [[i] for i in 1:qubit_num]
+	bit2logp = _vecvec2vecptr(vcat(bit_vec,bit_vec), IT,IT)
+	return SpinGlassSA(ops, ops_check, logp, logp2bit, bit2logp, betas, num_trials)
 end
 
 """
@@ -63,23 +52,28 @@ Perform Simulated Annealing using Metropolis updates for the run.
 
 Returns a named tuple: (; optimal_cost, optimal_configuration, p1, mostlikely_configuration, acceptance_rate, beta_acceptance_rate, valid_samples, etas).
 """
-function anneal_run!(config::CSSErrorPattern, sap::SpinGlassSA{T,Vector{TI},MM,MT}; rng = Random.Xoshiro()) where {T,TI,MM,MT}
+function anneal_run!(config::Vector{Mod2}, sap::SpinGlassSA; rng = Random.Xoshiro())
 	betas = sap.betas
 	num_trials = sap.num_trials
-	logical_num = length(sap.xlogical_qubits_ptr) - 1
-	logical_count = fill(0.0,fill(4,logical_num)...)
+	logical_num = length(sap.ops_check)
+	# logical_count = zeros(Mod2,logical_num, num_trials)
 
-	for _ in 1:num_trials
+	vec = zeros(Int,2^logical_num)
+	for trial in 1:num_trials
 		for beta in betas
-			try_flip!(config,config.xerror, sap.s2qx, sap.s2q_ptrx, rng, beta,sap.logpx_diff,T)
-			try_flip!(config,config.zerror, sap.s2qz, sap.s2q_ptrz, rng, beta,sap.logpz_diff,T)
-			try_flip!(config,config.xerror, sap.xlogical_qubits, sap.xlogical_qubits_ptr, rng, beta,sap.logpx_diff,T)
-			try_flip!(config,config.zerror, sap.zlogical_qubits, sap.zlogical_qubits_ptr, rng, beta,sap.logpz_diff,T)
+			try_flip!(config, sap.logp, sap.logp2bit, sap.bit2logp, sap.ops, rng, beta)
 		end
 
-		logical_count[[(sum(config.xerror[sap.zlogical_qubits[sap.zlogical_qubits_ptr[i]:sap.zlogical_qubits_ptr[i+1]-1]]).x ? 2 : 1) + (sum(config.zerror[sap.xlogical_qubits[sap.xlogical_qubits_ptr[i]:sap.xlogical_qubits_ptr[i+1]-1]]).x ? 2 : 0) for i in 1:logical_num]...] += 1.0
+		# for i in 1:logical_num
+		# 	logical_count[i,trial] = sum(config[getview(sap.ops_check,i)])
+		# end
+		possum = 1
+		for j in 1:logical_num
+			possum += sum(config[getview(sap.ops_check,j)]).x ? (1 << (j-1)) : 0
+		end
+		vec[possum] += 1
 	end
-	return logical_count./num_trials
+	return vec./num_trials
 end
 
 """
@@ -119,28 +113,39 @@ function decode(cm::SpinGlassSA, syndrome::CSSSyndrome)
 	return CSSDecodingResult(true,config)
 end
 
-function _vecvec2vecptr(vecvec::Vector{Vector{T}}) where T
-	vec = vcat(vecvec...)
-    ptr = cumsum([1, length.(vecvec)...])
-	return vec, ptr
+function _vecvec2vecptr(vecvec::Vector, IT::Type{<:Integer},T2::Type)
+	vec = T2.(vcat(vecvec...))
+    ptr = IT.(cumsum([1, length.(vecvec)...]))
+	return VecPtr(vec, ptr)
 end
 
-function try_flip!(config,xerror, vec,ptr, rng, beta,logpx_diff,T)
-	for index in 1:length(ptr)-1
-		fliplocs = view(vec, ptr[index]:ptr[index+1]-1)
+function try_flip!(config, logp::VecPtr{Vector{T}, Vector{IT}}, logp2bit, bit2logp, ops, rng, beta) where {T, IT}
+	for index in 1:length(ops)
+		fliplocs = getview(ops, index)
 		ΔE = zero(T)
 		@inbounds for i in fliplocs
-			old_pos = (config.xerror[i].x ? 2 : 1) + (config.zerror[i].x ? 2 : 0)
-			ΔE += logpx_diff[i,old_pos]
+			for j in getview(bit2logp,i)
+				bit_nums = getview(logp2bit,j)
+				ΔE += read_tensor_deltaE(getview(logp,j),findfirst(==(i),bit_nums),view(config,bit_nums))
+			end
 		end
 
 		if ΔE <= 0
-			flip!(xerror, fliplocs)
+			flip!(config, fliplocs)
 		else
 			prob = @fastmath exp(-beta * ΔE)
 			if rand(rng) < prob
-				flip!(xerror, fliplocs)
+				flip!(config, fliplocs)
 			end
 		end
 	end
+end
+
+function read_tensor_deltaE(vec,i,config)
+	possum = 1
+	for j in 1:length(config)
+		possum += config[j].x ? (1 << (j-1)) : 0
+	end
+	deltaE = config[i].x ? vec[possum] - vec[possum - (1 << (i-1))] : vec[possum] - vec[possum + (1 << (i-1))]
+	return deltaE
 end

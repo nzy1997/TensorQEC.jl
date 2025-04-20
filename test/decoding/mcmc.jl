@@ -6,9 +6,11 @@ using Random
 
 @testset "vecvec2vecptr" begin
     vecvec = [[1,2,3],[4,5,6],[7,8,9]]
-    vec, ptr = _vecvec2vecptr(vecvec)
-    @test vec == [1,2,3,4,5,6,7,8,9]
-    @test ptr == [1,4,7,10]
+    vecptr = _vecvec2vecptr(vecvec, Int32,Int32)
+    @test vecptr.vec == [1,2,3,4,5,6,7,8,9]
+    @test vecptr.ptr == [1,4,7,10]
+    @test typeof(vecptr.ptr) == Vector{Int32}
+    @test typeof(vecptr.vec) == Vector{Int32}
 end
 
 @testset "anneal" begin
@@ -24,7 +26,7 @@ end
     config = CSSErrorPattern(TensorQEC._mixed_integer_programming_for_one_solution(tanner, syd)...)
     nsweeps = 100
     prob = generate_spin_glass_sa(tanner, em, collect(T, 0:1e-3:1.0), nsweeps)
-    res = anneal_run!(config, prob)
+    res = anneal_run!(vcat(config.xerror,config.zerror), prob)
 
     @test sum(abs.(res - [0.681131953077318, 0.07999239184883748, 0.21377038136765592, 0.02510527370618872])) < 0.4
     # @show res
@@ -53,7 +55,6 @@ end
     @test !check_logical_error(res.error_qubits, eq, ct.lx, ct.lz)
 end
     
-using CUDA
 
 @testset "compile and decode" begin   
     d = 3
@@ -70,6 +71,7 @@ using CUDA
     @test !check_logical_error(res.error_qubits, eq, ct.lx, ct.lz)
 end
 
+using CUDA
 @testset "anneal - CUDA" begin
     d = 21
     tanner = CSSTannerGraph(SurfaceCode(d,d))
