@@ -116,18 +116,5 @@ function partite_vertices(g::SimpleGraph)
     return [findall(==(i), coloring) for i in 1:maximum(coloring)]
 end
 partite_edges(g::SimpleGraph) = partite_vertices(dual_graph(g))
-
-function TensorQEC.togpu(sap::SpinGlassSA{VT, VIT, IT, T}) where {VT,VIT,IT,T}
-    return SpinGlassSA(
-        VecPtr(CuVector{IT}(sap.ops.vec), CuVector{IT}(sap.ops.ptr)),
-        VecPtr(CuVector{IT}(sap.ops_check.vec), CuVector{IT}(sap.ops_check.ptr)),
-        VecPtr(CuVector{T}(sap.logp.vec), CuVector{IT}(sap.logp.ptr)),
-        VecPtr(CuVector{IT}(sap.logp2bit.vec), CuVector{IT}(sap.logp2bit.ptr)),
-        VecPtr(CuVector{IT}(sap.bit2logp.vec), CuVector{IT}(sap.bit2logp.ptr)),
-        sap.betas,
-        sap.num_trials,
-        sap.vecvecops
-    )
-end
-
+TensorQEC.togpu(config::Vector{Mod2}) = CUDA.CuVector(config)
 end

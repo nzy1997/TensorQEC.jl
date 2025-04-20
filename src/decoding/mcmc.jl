@@ -5,7 +5,7 @@ end
 getview(vptr::VecPtr, i::Integer) = view(vptr.vec, vptr.ptr[i]:vptr.ptr[i+1]-1)
 Base.length(vptr::VecPtr) = length(vptr.ptr) - 1
 
-struct SpinGlassSA{VT, VIT, IT, T} <: CompiledDecoder
+struct SpinGlassSA{VT, VIT, IT, T} 
 	ops::VecPtr{VIT,VIT}
 	ops_check::VecPtr{VIT,VIT}
 	logp::VecPtr{VT,VIT}
@@ -27,12 +27,12 @@ function generate_spin_glass_sa(tanner::CSSTannerGraph, ide::IndependentDepolari
 	vecvecops = vcat(tanner.stgx.s2q, broadcast.(+,tanner.stgz.s2q,qubit_num),xlogical_qubits, broadcast.(+,zlogical_qubits,qubit_num))
 	ops = _vecvec2vecptr(vecvecops, IT,IT)
 	ops_check = _vecvec2vecptr(vcat(zlogical_qubits, broadcast.(+,xlogical_qubits,qubit_num)), IT,IT)
-
+	ops_correct = _vecvec2vecptr(vcat(xlogical_qubits, broadcast.(+,zlogical_qubits,qubit_num)), IT,IT)
 	logp = _vecvec2vecptr([[log(one(T)-px-py-pz),log(px),log(pz),log(py)] for (px,py,pz) in zip(ide.px,ide.py,ide.pz)], IT,T)
 	logp2bit = _vecvec2vecptr([[i,i+qubit_num] for i in 1:qubit_num], IT,IT)
 	bit_vec = [[i] for i in 1:qubit_num]
 	bit2logp = _vecvec2vecptr(vcat(bit_vec,bit_vec), IT,IT)
-	return SpinGlassSA(ops, ops_check, logp, logp2bit, bit2logp, betas, num_trials, vecvecops)
+	return SpinGlassSA(ops, ops_check, logp, logp2bit, bit2logp, betas, num_trials, vecvecops),ops_correct
 end
 
 """
@@ -58,7 +58,6 @@ function anneal_run!(config::Vector{Mod2}, sap::SpinGlassSA; rng = Random.Xoshir
 	betas = sap.betas
 	num_trials = sap.num_trials
 	logical_num = length(sap.ops_check)
-	# logical_count = zeros(Mod2,logical_num, num_trials)
 
 	vec = zeros(Int,2^logical_num)
 	for trial in 1:num_trials
@@ -66,9 +65,6 @@ function anneal_run!(config::Vector{Mod2}, sap::SpinGlassSA; rng = Random.Xoshir
 			try_flip!(config, sap.logp, sap.logp2bit, sap.bit2logp, sap.ops, rng, beta)
 		end
 
-		# for i in 1:logical_num
-		# 	logical_count[i,trial] = sum(config[getview(sap.ops_check,i)])
-		# end
 		possum = 1
 		for j in 1:logical_num
 			possum += sum(config[getview(sap.ops_check,j)]).x ? (1 << (j-1)) : 0
@@ -95,25 +91,32 @@ struct SimulatedAnnealing{T} <: AbstractDecoder
 	use_cuda::Bool
 end
 
-function compile(decoder::SimulatedAnnealing, problem::CSSDecodingProblem)
-	prob = generate_spin_glass_sa(problem.tanner, problem.pvec, decoder.betas, decoder.num_trials)
-	return decoder.use_cuda ? togpu(prob) : prob
+struct CompiledSpinGlassSA{VT, VIT, IT, T} <: CompiledDecoder
+	sap::SpinGlassSA{VT, VIT, IT, T}
+	tanner::CSSTannerGraph
+	use_cuda::Bool
+	ops_correct::VecPtr{VIT,VIT}
 end
-togpu(prob) = error("CUDA extension not loaded, try `using CUDA`")
 
-function decode(cm::SpinGlassSA, syndrome::CSSSyndrome)
-	config = CSSErrorPattern(TensorQEC._mixed_integer_programming_for_one_solution(cm.tanner, syndrome)...)
-    res = anneal_run!(config, cm)
-	_, pos = findmax(res)
-	lx = cm.lx
-	lz = cm.lz
-	# 1:I, 2:X, 3:Z, 4:Y
-	for i in axes(lx,1)
-		(sum(lz[i,:].* config.xerror).x && (!iszero(pos.I[i]%2))) && (config.xerror .+= lx[i,:])
-		(sum(lx[i,:].* config.zerror).x && (pos.I[i] < 3)) && (config.zerror .+= lz[i,:])
-    end
-	return CSSDecodingResult(true,config)
+function compile(decoder::SimulatedAnnealing, problem::CSSDecodingProblem)
+	prob,ops_correct = generate_spin_glass_sa(problem.tanner, problem.pvec, decoder.betas, decoder.num_trials)
+	return CompiledSpinGlassSA(prob, problem.tanner, decoder.use_cuda,ops_correct)
 end
+
+function decode(cm::CompiledSpinGlassSA, syndrome::CSSSyndrome)
+	config = CSSErrorPattern(TensorQEC._mixed_integer_programming_for_one_solution(cm.tanner, syndrome)...)
+	config = vcat(config.xerror,config.zerror)
+	cu_config = cm.use_cuda ? togpu(config) : config
+    res = anneal_run!(cu_config, cm.sap)
+	_, pos = findmax(res)
+
+	for i in 1:length(cm.sap.ops_check)
+		(reduce(+, config[getview(cm.sap.ops_check,i)]).x == (readbit(pos-1,i) == 1)) || (config[getview(cm.ops_correct,i)] .+= Mod2(1))
+    end
+	qubit_num = nq(cm.tanner)
+	return CSSDecodingResult(true,CSSErrorPattern(config[1:qubit_num],config[qubit_num+1:end]))
+end
+togpu(config) = error("CUDA extension not loaded, try `using CUDA`")
 
 function _vecvec2vecptr(vecvec::Vector, IT::Type{<:Integer},T2::Type)
 	vec = T2.(vcat(vecvec...))
