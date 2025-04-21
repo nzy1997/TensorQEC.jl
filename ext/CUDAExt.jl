@@ -8,12 +8,8 @@ using TensorQEC.Graphs
 
 function TensorQEC.anneal_run!(config::CuVector{Mod2}, sap::SpinGlassSA)
     batched_config = map(x->x.x, repeat(config, 1, sap.num_trials))
-
-    partitions = partite_stabilizers(sap.vecvecops)
-    # assert each partition does not share any qubits
-    @assert all(p -> length(union(p...)) == sum(length.(p)), partitions)
     T = eltype(sap.logp.vec)
-    _anneal_kernel!(batched_config, sap.betas, CuVector{Int32}(sap.ops.vec),CuVector{Int32}(sap.ops.ptr), CuVector{T}(sap.logp.vec),CuVector{Int32}(sap.logp.ptr), CuVector{Int32}(sap.logp2bit.vec),CuVector{Int32}(sap.logp2bit.ptr), CuVector{Int32}(sap.bit2logp.vec),CuVector{Int32}(sap.bit2logp.ptr), CuVector{Int32}.(partitions))
+    _anneal_kernel!(batched_config, sap.betas, CuVector{Int32}(sap.ops.vec),CuVector{Int32}(sap.ops.ptr), CuVector{T}(sap.logp.vec),CuVector{Int32}(sap.logp.ptr), CuVector{Int32}(sap.logp2bit.vec),CuVector{Int32}(sap.logp2bit.ptr), CuVector{Int32}(sap.bit2logp.vec),CuVector{Int32}(sap.bit2logp.ptr), CuVector{Int32}.(sap.partitions))
     logical_num = length(sap.ops_check)
     vec = zeros(Int,2^logical_num)
     for trial in 1:sap.num_trials
@@ -68,6 +64,27 @@ function _anneal_kernel!(batched_config::CuMatrix{Bool}, betas::Vector{T}, ops_v
             CUDA.@sync kernel(batched_config, beta, ops_vec,ops_ptr, logp_vec,logp_ptr,logp2bit_vec,logp2bit_ptr,bit2logp_vec,bit2logp_ptr, partition, maxpart; threads, blocks)
         end
     end
+end
+
+function TensorQEC.gpu_partite!(vecvecops::Vector{Vector{Int}},logp2bit::VecPtr)
+    dict = Pair{Int,Int}[]
+    for i in 1:length(logp2bit)
+        pos_vec = getview(logp2bit,i)
+        min_pos = minimum(pos_vec)
+        for j in pos_vec
+            if j != min_pos
+                push!(dict,j=> min_pos)
+            end
+        end
+    end
+    broadcast(x->replace!(x, dict...), vecvecops)
+
+    partitions = partite_stabilizers(vecvecops)
+
+    # assert each partition does not share any qubits
+    @assert all(p -> length(union(p...)) == sum(length.(p)), partitions)
+    @assert sum(length, partitions) == length(vecvecops)
+    return partitions
 end
 
 function partite_stabilizers(s2q::Vector{Vector{Int}})

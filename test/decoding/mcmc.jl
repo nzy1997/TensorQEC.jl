@@ -114,3 +114,23 @@ end
     # @time res = anneal_singlerun!(SpinConfig(config.config), prob, collect(T, 0:1e-6:1.0);num_trials)
     @show res
 end
+
+@testset "compile and decode" begin   
+    d = 3
+    tanner = CSSTannerGraph(ToricCode(d,d))
+    # tanner = CSSTannerGraph(SurfaceCode(d,d))
+    n = tanner.stgx.nq
+    em = iid_error(0.01,0.01,0.01,n)
+    ct = compile(SimulatedAnnealing(collect(0:1e-5:1.0),100,true), tanner, em)
+
+    Random.seed!(1234)
+    eq = random_error_qubits(em)
+    eq = CSSErrorPattern(Mod2.(fill(0,n)),Mod2.(fill(0,n)))
+    # eq.zerror[5] = Mod2(1)
+    syd = syndrome_extraction(eq, tanner)
+    res = decode(ct, syd)
+    @show res
+    @test syd == syndrome_extraction(res.error_qubits, tanner)
+    lx,lz = logical_operator(tanner)
+    @test !check_logical_error(res.error_qubits, eq, lx, lz)
+end

@@ -5,7 +5,7 @@ end
 getview(vptr::VecPtr, i::Integer) = view(vptr.vec, vptr.ptr[i]:vptr.ptr[i+1]-1)
 Base.length(vptr::VecPtr) = length(vptr.ptr) - 1
 
-struct SpinGlassSA{VT, VIT, IT, T} 
+struct SpinGlassSA{VT, VIT, T} 
 	ops::VecPtr{VIT,VIT}
 	ops_check::VecPtr{VIT,VIT}
 	logp::VecPtr{VT,VIT}
@@ -13,11 +13,11 @@ struct SpinGlassSA{VT, VIT, IT, T}
 	bit2logp::VecPtr{VIT,VIT}
 	betas::Vector{T}
 	num_trials::Int
-	vecvecops::Vector{Vector{IT}}
+	partitions::Vector{Vector{Int}}
 end
 
 
-function generate_spin_glass_sa(tanner::CSSTannerGraph, ide::IndependentDepolarizingError, betas::Vector{T}, num_trials::Int; IT::Type{<:Integer} = Int32) where {T}
+function generate_spin_glass_sa(tanner::CSSTannerGraph, ide::IndependentDepolarizingError, betas::Vector{T}, num_trials::Int,use_cuda::Bool; IT::Type{<:Integer} = Int32) where {T}
 	qubit_num = nq(tanner)
 
 	lx,lz = logical_operator(tanner)
@@ -32,8 +32,10 @@ function generate_spin_glass_sa(tanner::CSSTannerGraph, ide::IndependentDepolari
 	logp2bit = _vecvec2vecptr([[i,i+qubit_num] for i in 1:qubit_num], IT,IT)
 	bit_vec = [[i] for i in 1:qubit_num]
 	bit2logp = _vecvec2vecptr(vcat(bit_vec,bit_vec), IT,IT)
-	return SpinGlassSA(ops, ops_check, logp, logp2bit, bit2logp, betas, num_trials, vecvecops),ops_correct
+	partitions = use_cuda ? gpu_partite!(vecvecops,logp2bit) : [[0]]
+	return SpinGlassSA(ops, ops_check, logp, logp2bit, bit2logp, betas, num_trials,partitions),ops_correct
 end
+gpu_partite!(vecvecops,logp2bit) = error("CUDA extension not loaded, try `using CUDA`")
 
 """
 	anneal_run!(config, sap, betas::Vector{Float64}, num_sweep::Int)
@@ -91,15 +93,15 @@ struct SimulatedAnnealing{T} <: AbstractDecoder
 	use_cuda::Bool
 end
 
-struct CompiledSpinGlassSA{VT, VIT, IT, T} <: CompiledDecoder
-	sap::SpinGlassSA{VT, VIT, IT, T}
+struct CompiledSpinGlassSA{VT, VIT, T} <: CompiledDecoder
+	sap::SpinGlassSA{VT, VIT, T}
 	tanner::CSSTannerGraph
 	use_cuda::Bool
 	ops_correct::VecPtr{VIT,VIT}
 end
 
 function compile(decoder::SimulatedAnnealing, problem::CSSDecodingProblem)
-	prob,ops_correct = generate_spin_glass_sa(problem.tanner, problem.pvec, decoder.betas, decoder.num_trials)
+	prob,ops_correct = generate_spin_glass_sa(problem.tanner, problem.pvec, decoder.betas, decoder.num_trials,decoder.use_cuda)
 	return CompiledSpinGlassSA(prob, problem.tanner, decoder.use_cuda,ops_correct)
 end
 
