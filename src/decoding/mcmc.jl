@@ -16,7 +16,6 @@ struct SpinGlassSA{VT, VIT, T}
 	partitions::Vector{Vector{Int}}
 end
 
-
 function generate_spin_glass_sa(tanner::CSSTannerGraph, ide::IndependentDepolarizingError, betas::Vector{T}, num_trials::Int,use_cuda::Bool; IT::Type{<:Integer} = Int32) where {T}
 	qubit_num = nq(tanner)
 
@@ -91,6 +90,10 @@ struct SimulatedAnnealing{T} <: AbstractDecoder
 	betas::Vector{T}
 	num_trials::Int
 	use_cuda::Bool
+end
+Base.show(io::IO, ::MIME"text/plain", ps::SimulatedAnnealing) = show(io, ps)
+function Base.show(io::IO, ps::SimulatedAnnealing)
+	print(io, "$(ps.use_cuda ? "CUDA" : "CPU")SA")
 end
 
 struct CompiledSpinGlassSA{VT, VIT, T} <: CompiledDecoder
