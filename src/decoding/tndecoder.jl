@@ -50,6 +50,7 @@ end
 
 # nvars is the number of variables in the tensor network. 
 # |<--- xerror --->|<--- zerror --->|<--- xsyndromes --->|<--- zsyndromes --->|<--- logical x --->|<--- logical z --->|
+# |<------------------------------------------------------- nvars --------------------------------------------------->|
 function compile(decoder::TNMAP, problem::CSSDecodingProblem)
     tanner = problem.tanner
     qubit_num = nq(tanner)
@@ -58,7 +59,7 @@ function compile(decoder::TNMAP, problem::CSSDecodingProblem)
     lzs = [findall(j->j.x,lz[i,:]) for i in axes(lz, 1)]
 
     nvars = 2 * qubit_num + ns(tanner) + size(lx,1) + size(lz,1)
-    mars = [[i] for i in 2 * qubit_num + ns(tanner)+1:nvars]
+    mars = [[i for i in 2 * qubit_num + ns(tanner)+1:nvars]]
     cards = fill(2, nvars)
 
     xfactors = [Factor(((c.+ qubit_num)...,i + 2 * qubit_num),parity_check_matrix(length(c))) for (i,c) in enumerate(tanner.stgx.s2q)]
@@ -76,10 +77,10 @@ function compile(decoder::TNMAP, problem::CSSDecodingProblem)
     return CompiledTNMAPCSS(tn,tanner,lx,lz,decoder.usecuda)
 end
 
-struct TNDecodingResult
+struct TNDecodingResult{N}
     success_tag::Bool
     error_qubits::CSSErrorPattern
-    mar::Tuple{Float64,Float64}
+    mar::Array{Float64, N}
 end
 
 function decode(ct::CompiledTNMAPCSS,syn::CSSSyndrome)
@@ -90,19 +91,14 @@ function decode(ct::CompiledTNMAPCSS,syn::CSSSyndrome)
     for (i,s) in enumerate(syn.sz)
         tn.evidence[(i+2*nq(ct.tanner))+length(syn.sx)] = s.x ? 1 : 0
     end
-    start_var = ns(ct.tanner) + 2 * nq(ct.tanner)
     ex,ez = _mixed_integer_programming_for_one_solution(ct.tanner, syn)
     mar = marginals(tn; usecuda=ct.usecuda)
-    @show mar
+    mar = mar[collect(keys(mar))[1]]
+    _, pos = findmax(mar)
+    @show mar |> typeof
     for i in axes(ct.lx,1)
-        if ct.usecuda
-            (sum(ct.lz[i,:].* ex).x == (Array(mar[[start_var+i]])[2] > 0.5)) || (ex += ct.lx[i,:])
-            (sum(ct.lx[i,:].* ez).x == (Array(mar[[start_var+i+size(ct.lx,1)]])[2] > 0.5)) || (ez += ct.lz[i,:])
-            return TNDecodingResult(true,CSSErrorPattern(ex,ez),(Array(mar[[start_var+i]])[2],Array(mar[[start_var+i+size(ct.lx,1)]])[2]))
-        else
-            (sum(ct.lz[i,:].* ex).x == (mar[[start_var+i]][2] > 0.5)) || (ex += ct.lx[i,:])
-            (sum(ct.lx[i,:].* ez).x == (mar[[start_var+i+size(ct.lx,1)]][2] > 0.5)) || (ez += ct.lz[i,:])
-        end
+        (sum(ct.lz[i,:].* ex).x == (pos.I[i] == 2)) || (ex += ct.lx[i,:])
+        (sum(ct.lx[i,:].* ez).x == (pos.I[i+size(ct.lx,1)] == 2)) || (ez += ct.lz[i,:])
     end
-    return CSSDecodingResult(true,CSSErrorPattern(ex,ez))
+    return TNDecodingResult(true,CSSErrorPattern(ex,ez),mar)
 end

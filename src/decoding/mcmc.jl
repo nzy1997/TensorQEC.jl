@@ -116,7 +116,7 @@ function decode(cm::CompiledSpinGlassSA, syndrome::CSSSyndrome)
 		(reduce(+, config[getview(cm.sap.ops_check,i)]).x == (readbit(pos-1,i) == 1)) || (config[getview(cm.ops_correct,i)] .+= Mod2(1))
     end
 	qubit_num = nq(cm.tanner)
-	return CSSDecodingResult(true,CSSErrorPattern(config[1:qubit_num],config[qubit_num+1:end]))
+	return SADecodingResult(true,CSSErrorPattern(config[1:qubit_num],config[qubit_num+1:end]),res)
 end
 togpu(config) = error("CUDA extension not loaded, try `using CUDA`")
 
@@ -155,4 +155,10 @@ function read_tensor_deltaE(vec,i,config)
 	end
 	deltaE = config[i].x ? vec[possum] - vec[possum - (1 << (i-1))] : vec[possum] - vec[possum + (1 << (i-1))]
 	return deltaE
+end
+
+struct SADecodingResult{VT}
+    success_tag::Bool
+    error_qubits::CSSErrorPattern
+    mar::VT
 end
