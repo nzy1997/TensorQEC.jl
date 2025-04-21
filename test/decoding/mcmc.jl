@@ -78,6 +78,22 @@ using CUDA
     @test sum(abs.(res - [0.681131953077318, 0.07999239184883748, 0.21377038136765592, 0.02510527370618872])) < 0.1
 end
 
+@testset "compile and decode CUDA" begin   
+    d = 3
+    # tanner = CSSTannerGraph(ToricCode(d,d))
+    tanner = CSSTannerGraph(SurfaceCode(d,d))
+    n = tanner.stgx.nq
+    em = iid_error(0.05,0.05,0.05,n)
+    ct = compile(SimulatedAnnealing(collect(0:1e-3:1.0),100,true), tanner, em)
+
+    Random.seed!(1234)
+    eq = random_error_qubits(em)
+    syd = syndrome_extraction(eq, tanner)
+    res = decode(ct, syd)
+    @test syd == syndrome_extraction(res.error_qubits, tanner)
+    lx,lz = logical_operator(tanner)
+    @test !check_logical_error(res.error_qubits, eq, lx, lz)
+end
 
 @testset "anneal - CUDA" begin
     d = 21
