@@ -71,6 +71,7 @@ function anneal_run!(config::Vector{Mod2}, sap::SpinGlassSA; rng = Random.Xoshir
 			possum += sum(config[getview(sap.ops_check,j)]).x ? (1 << (j-1)) : 0
 		end
 		vec[possum] += 1
+		@show sa_energy(config, sap)
 	end
 	return vec./num_trials
 end
@@ -148,7 +149,7 @@ function try_flip!(config, logp::VecPtr{Vector{T}, Vector{IT}}, logp2bit, bit2lo
 				flip!(config, fliplocs)
 			end
 		end
-	end
+	end 
 end
 
 function read_tensor_deltaE(vec,i,config)
@@ -164,4 +165,17 @@ struct SADecodingResult{VT}
     success_tag::Bool
     error_qubits::CSSErrorPattern
     mar::VT
+end
+
+function sa_energy(config, sap::SpinGlassSA)
+	energy = 0
+	for j in 1:length(sap.logp)
+		vec = getview(sap.logp,j)
+		possum = 1 
+		for (pos,i) in enumerate(getview(sap.logp2bit,j))
+			possum += config[i].x ? (1 << (pos-1)) : 0
+		end
+		energy += vec[possum]
+	end
+	return energy
 end
