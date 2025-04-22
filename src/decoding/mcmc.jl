@@ -55,25 +55,32 @@ Perform Simulated Annealing using Metropolis updates for the run.
 
 Returns a named tuple: (; optimal_cost, optimal_configuration, p1, mostlikely_configuration, acceptance_rate, beta_acceptance_rate, valid_samples, etas).
 """
-function anneal_run!(config::Vector{Mod2}, sap::SpinGlassSA; rng = Random.Xoshiro())
+function anneal_run!(config::Vector{Mod2}, sap::SpinGlassSA,num_sweep_thermalize::Int; rng = Random.Xoshiro())
 	betas = sap.betas
 	num_trials = sap.num_trials
 	logical_num = length(sap.ops_check)
-
-	vec = zeros(Int,2^logical_num)
+	init_energy = sa_energy(config, sap)
+	vec_num = zeros(Int,2^logical_num)
 	for trial in 1:num_trials
-		for beta in betas
-			try_flip!(config, sap.logp, sap.logp2bit, sap.bit2logp, sap.ops, rng, beta)
+		vec_config = [copy(config) for _ in 1:length(betas)]
+		vec_energy = fill(init_energy,length(betas))
+		for _ in 1:num_sweep_thermalize
+			for (i,beta) in enumerate(betas)
+				vec_energy[i] = try_flip!(vec_config[i], sap.logp, sap.logp2bit, sap.bit2logp, sap.ops, rng, beta,vec_energy[i])
+				# @assert vec_energy[i] ≈ sa_energy(vec_config[i], sap) atol = 1e-6
+			end
+			for i in 1:length(betas)-1
+				vec_energy[i], vec_energy[i+1] = try_exchange!(vec_energy[i], vec_energy[i+1], betas[i], betas[i+1], vec_config[i], vec_config[i+1])
+			end
 		end
-
 		possum = 1
 		for j in 1:logical_num
-			possum += sum(config[getview(sap.ops_check,j)]).x ? (1 << (j-1)) : 0
+			possum += sum(vec_config[end][getview(sap.ops_check,j)]).x ? (1 << (j-1)) : 0
 		end
-		vec[possum] += 1
-		@show sa_energy(config, sap)
+		vec_num[possum] += 1
+		# @show sa_energy(config, sap)
 	end
-	return vec./num_trials
+	return vec_num./num_trials
 end
 
 """
@@ -130,7 +137,7 @@ function _vecvec2vecptr(vecvec::Vector, IT::Type{<:Integer},T2::Type)
 	return VecPtr(vec, ptr)
 end
 
-function try_flip!(config, logp::VecPtr{Vector{T}, Vector{IT}}, logp2bit, bit2logp, ops, rng, beta) where {T, IT}
+function try_flip!(config, logp::VecPtr{Vector{T}, Vector{IT}}, logp2bit, bit2logp, ops, rng, beta, energy) where {T, IT}
 	for index in 1:length(ops)
 		fliplocs = getview(ops, index)
 		ΔE = zero(T)
@@ -143,13 +150,16 @@ function try_flip!(config, logp::VecPtr{Vector{T}, Vector{IT}}, logp2bit, bit2lo
 
 		if ΔE <= 0
 			flip!(config, fliplocs)
+			energy -= ΔE
 		else
 			prob = @fastmath exp(-beta * ΔE)
 			if rand(rng) < prob
 				flip!(config, fliplocs)
+				energy -= ΔE
 			end
 		end
 	end 
+	return energy
 end
 
 function read_tensor_deltaE(vec,i,config)
@@ -178,4 +188,16 @@ function sa_energy(config, sap::SpinGlassSA)
 		energy += vec[possum]
 	end
 	return energy
+end
+
+function try_exchange!(energy1, energy2, beta1, beta2,config1, config2)
+	energy_diff = energy1 - energy2
+	prob = exp(-(energy_diff) * (beta1 - beta2))
+	if rand() < prob
+		temp = copy(config1)
+		config1 .= config2
+		config2 .= temp
+		energy1, energy2 = energy2, energy1
+	end
+	return energy1, energy2
 end
