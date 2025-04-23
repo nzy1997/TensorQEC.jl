@@ -198,25 +198,28 @@ function anneal_run_pt!(config::Vector{Mod2}, sap::SpinGlassSA,num_sweep_thermal
 	logical_num = length(sap.ops_check)
 	init_energy = sa_energy(config, sap)
 	vec_num = zeros(Int,2^logical_num)
-	for trial in 1:num_trials
-		vec_config = [copy(config) for _ in 1:length(betas)]
-		vec_energy = fill(init_energy,length(betas))
-		for _ in 1:num_sweep_thermalize
-			for (i,beta) in enumerate(betas)
-				vec_energy[i] = try_flip_pt!(vec_config[i], sap.logp, sap.logp2bit, sap.bit2logp, sap.ops, rng, beta,vec_energy[i])
-				# @assert vec_energy[i] ≈ sa_energy(vec_config[i], sap) atol = 1e-6
-			end
-			for i in 1:length(betas)-1
-				vec_energy[i], vec_energy[i+1] = try_exchange!(vec_energy[i], vec_energy[i+1], betas[i], betas[i+1], vec_config[i], vec_config[i+1])
-			end
+
+	vec_config = [copy(config) for _ in 1:length(betas)]
+	vec_energy = fill(init_energy,length(betas))
+	for num_sweep in 1:num_sweep_thermalize
+		for (i,beta) in enumerate(betas)
+			vec_energy[i] = try_flip_pt!(vec_config[i], sap.logp, sap.logp2bit, sap.bit2logp, sap.ops, rng, beta,vec_energy[i])
+			# @assert vec_energy[i] ≈ sa_energy(vec_config[i], sap) atol = 1e-6
 		end
-		possum = 1
-		for j in 1:logical_num
-			possum += sum(vec_config[end][getview(sap.ops_check,j)]).x ? (1 << (j-1)) : 0
+		for i in 1:length(betas)-1
+			vec_energy[i], vec_energy[i+1] = try_exchange!(vec_energy[i], vec_energy[i+1], betas[i], betas[i+1], vec_config[i], vec_config[i+1])
 		end
-		vec_num[possum] += 1
-		# @show sa_energy(config, sap)
+
+		if num_sweep_thermalize> 1000
+			possum = 1
+			for j in 1:logical_num
+				possum += sum(vec_config[end][getview(sap.ops_check,j)]).x ? (1 << (j-1)) : 0
+			end
+			vec_num[possum] += 1
+			@show num_sweep sa_energy(config, sap)
+		end
 	end
+
 	return vec_num./num_trials
 end
 
