@@ -25,7 +25,7 @@ end
 
     config = CSSErrorPattern(TensorQEC._mixed_integer_programming_for_one_solution(tanner, syd)...)
     nsweeps = 100
-    prob,_ = generate_spin_glass_sa(tanner, em, collect(T, 0:1e-3:1.0), nsweeps)
+    prob,_ = generate_spin_glass_sa(tanner, em, collect(T, 0:1e-3:1.0), nsweeps,false)
     res = anneal_run!(vcat(config.xerror,config.zerror), prob)
 
     @test sum(abs.(res - [0.681131953077318, 0.07999239184883748, 0.21377038136765592, 0.02510527370618872])) < 0.4

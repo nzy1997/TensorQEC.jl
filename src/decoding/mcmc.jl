@@ -1,16 +1,16 @@
-struct VecPtr{VT <: AbstractVector, VIT <: AbstractVector}
-	vec::VT
-	ptr::VIT
+struct VecPtr{T,IT}
+	vec::Vector{T}
+	ptr::Vector{IT}
 end
 getview(vptr::VecPtr, i::Integer) = view(vptr.vec, vptr.ptr[i]:vptr.ptr[i+1]-1)
 Base.length(vptr::VecPtr) = length(vptr.ptr) - 1
 
-struct SpinGlassSA{VT, VIT, T} 
-	ops::VecPtr{VIT,VIT}
-	ops_check::VecPtr{VIT,VIT}
-	logp::VecPtr{VT,VIT}
-	logp2bit::VecPtr{VIT,VIT}
-	bit2logp::VecPtr{VIT,VIT}
+struct SpinGlassSA{T, IT} 
+	ops::VecPtr{IT,IT}
+	ops_check::VecPtr{IT,IT}
+	logp::VecPtr{T,IT}
+	logp2bit::VecPtr{IT,IT}
+	bit2logp::VecPtr{IT,IT}
 	betas::Vector{T}
 	num_trials::Int
 	partitions::Vector{Vector{Int}}
@@ -97,11 +97,11 @@ function Base.show(io::IO, ps::SimulatedAnnealing)
 	print(io, "$(ps.use_cuda ? "CUDA" : "CPU")SA")
 end
 
-struct CompiledSpinGlassSA{VT, VIT, T} <: CompiledDecoder
-	sap::SpinGlassSA{VT, VIT, T}
+struct CompiledSpinGlassSA{T, IT} <: CompiledDecoder
+	sap::SpinGlassSA{T, IT}
 	tanner::CSSTannerGraph
 	use_cuda::Bool
-	ops_correct::VecPtr{VIT,VIT}
+	ops_correct::VecPtr{IT,IT}
 end
 
 function compile(decoder::SimulatedAnnealing, problem::CSSDecodingProblem)
@@ -130,7 +130,7 @@ function _vecvec2vecptr(vecvec::Vector, IT::Type{<:Integer},T2::Type)
 	return VecPtr(vec, ptr)
 end
 
-function try_flip!(config, logp::VecPtr{Vector{T}, Vector{IT}}, logp2bit, bit2logp, ops, rng, beta) where {T, IT}
+function try_flip!(config, logp::VecPtr{T, IT}, logp2bit, bit2logp, ops, rng, beta) where {T, IT}
 	for index in 1:length(ops)
 		fliplocs = getview(ops, index)
 		ΔE = zero(T)
