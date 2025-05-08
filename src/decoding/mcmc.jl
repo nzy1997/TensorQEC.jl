@@ -23,7 +23,8 @@ function generate_spin_glass_sa(tanner::CSSTannerGraph, ide::IndependentDepolari
 	xlogical_qubits = [findall(i->i.x,row) for row in eachrow(lx)]
 	zlogical_qubits = [findall(i->i.x,row) for row in eachrow(lz)]
 
-	vecvecops = vcat(tanner.stgx.s2q, broadcast.(+,tanner.stgz.s2q,qubit_num),xlogical_qubits, broadcast.(+,zlogical_qubits,qubit_num))
+	# vecvecops = vcat(tanner.stgx.s2q, broadcast.(+,tanner.stgz.s2q,qubit_num),xlogical_qubits, broadcast.(+,zlogical_qubits,qubit_num))
+	vecvecops = vcat(tanner.stgx.s2q, broadcast.(+,tanner.stgz.s2q,qubit_num))
 	ops = _vecvec2vecptr(vecvecops, IT,IT)
 	ops_check = _vecvec2vecptr(vcat(zlogical_qubits, broadcast.(+,xlogical_qubits,qubit_num)), IT,IT)
 	ops_correct = _vecvec2vecptr(vcat(xlogical_qubits, broadcast.(+,zlogical_qubits,qubit_num)), IT,IT)
