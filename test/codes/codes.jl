@@ -158,3 +158,17 @@ end
 	@test length(st) == 132
 	# @test code_distance(CSSTannerGraph(st)) == 12
 end
+
+@testset "Color488" begin
+	d = 5
+	st = stabilizers(Color488(d))
+	@test length(st) == 16
+	@test code_distance(CSSTannerGraph(st)) == d
+end
+
+@testset "Color666" begin
+	d = 5
+	st = stabilizers(Color666(d))
+	@test length(st) == 18
+	@test code_distance(CSSTannerGraph(st)) == d
+end

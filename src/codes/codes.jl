@@ -178,7 +178,7 @@ function stabilizers(::Code513)
 	return pauli_string
 end
 
-struct BivariateBicycleCode{N}
+struct BivariateBicycleCode{N} <: CSSQuantumCode
     m::Int
     n::Int
 	vc::NTuple{N,Tuple{Int,Int}}
@@ -239,3 +239,180 @@ end
 Construct a Toric code with `m` rows and `n` columns. 
 """
 ToricCode(m::Int,n::Int) = BivariateBicycleCode(m,n,((1,0),(0,0)), ((0,1),(0,0)))
+
+abstract type TriangularColorCode <: CSSQuantumCode end
+struct Color488 <: TriangularColorCode
+	d::Int
+end
+
+struct Color666 <: TriangularColorCode
+	d::Int
+end
+
+# The following two functions are copied from "https://github.com/QuantumSavory/QuantumClifford.jl/pull/361" a pull request to QuantumClifford.jl
+function _colorcode_get_check_matrix(c::Color488)
+    n = (c.d^2 + 2*c.d - 1) ÷ 2
+    num_checks = (n-1)÷2
+    num_layers = (c.d-1)÷2
+    checks = zeros(Bool, num_checks, n)
+    
+    i = 1
+    checks_written = 0
+    for layer in 1:num_layers
+        # Convert half 8-gons from previous layer into full 8-gons
+        num_8_gons = layer-1
+        checks_written -= num_8_gons
+        for j in 1:(num_8_gons)
+            checks[checks_written+1,i+2*layer+1+(j-1)*2] = 1
+            checks[checks_written+1,i+2*layer+j*2] = 1
+
+            offset = 0
+            if layer == num_layers && num_layers%2==0
+                offset = 1
+            end
+
+            checks[checks_written+1,(2*layer+1)+i+2*layer+1+(j-1)*2 - offset] = 1
+            checks[checks_written+1,(2*layer+1)+i+2*layer+j*2 - offset] = 1
+
+            checks_written += 1
+        end
+
+        # red 4-gons
+        for j in 0:(layer-1)
+            checks[checks_written+1,i+j*2] = 1
+            checks[checks_written+1,i+1+j*2] = 1
+            checks[checks_written+1,i+2*layer+j*2] = 1
+            checks[checks_written+1,i+2*layer+1+j*2] = 1
+            checks_written += 1
+        end
+
+        if layer%2 == 1
+            # green half 8-gons on left side
+            checks[checks_written+1,i] = 1
+            checks[checks_written+1,i+2*layer] = 1
+            checks[checks_written+1,i+4*layer] = 1
+            checks[checks_written+1,i+4*layer+1] = 1
+            checks_written += 1
+        else
+            # blue half 8-gon on right side
+            checks[checks_written+1,i+1+(layer-1)*2] = 1
+            checks[checks_written+1,i+2*layer+1+(layer-1)*2] = 1
+
+            # when d=5,9,13,... the final row qubits is indexed slightly differently.
+            offset = 0
+            if layer == num_layers
+                offset = 1
+            end
+
+            checks[checks_written+1,(i+4*layer)+layer*2-offset] = 1
+            checks[checks_written+1,(i+4*layer)+1+layer*2-offset] = 1
+            checks_written += 1
+        end
+
+        # blue/green half 8-gons on the bottom
+        for j in 0:(layer-1)
+            checks[checks_written+1,i+2*layer+j*2] = 1
+            checks[checks_written+1,i+2*layer+1+j*2] = 1
+
+            offset = 0
+            if layer == num_layers && num_layers%2==0
+                offset = 1
+            end
+
+            checks[checks_written+1,(2*layer+1)+i+2*layer+j*2 - offset] = 1
+            checks[checks_written+1,(2*layer+1)+i+2*layer+1+j*2 - offset] = 1
+
+            checks_written += 1
+        end
+
+        i += 4*layer  
+    end
+    return checks
+end
+
+function _colorcode_get_check_matrix(c::Color666) 
+    n = (3*c.d^2 + 1) ÷ 4
+    num_checks = (n-1)÷2
+    num_layers = (c.d-1)÷2
+    checks = zeros(Bool, num_checks, n)
+
+    i = 1
+    checks_written = 0
+    for layer in 1:num_layers
+        # extend half 6-gons from last iteration to full hexagons
+        num_6_gons = layer-1
+        checks_written -= num_6_gons
+        for j in 1:(num_6_gons)
+            init_pos = i + 2*(j-1)
+            checks[checks_written+1,init_pos+2*(layer-1)+1] = 1
+            checks[checks_written+1,init_pos+2*(layer-1)+2] = 1
+            checks_written+=1
+        end
+
+        # red trapezoid
+        checks[checks_written+1,i] = 1
+        checks[checks_written+1,i+(layer-1)*2+1] = 1
+        checks[checks_written+1,i+2+4*(layer-1)] = 1
+        checks[checks_written+1,i+2+4*(layer-1)+1] = 1
+        checks_written += 1
+
+        # blue trapezoid
+        checks[checks_written+1,i+1+4*(layer-1)] = 1
+        checks[checks_written+1,i+1+4*(layer-1)+layer*2] = 1
+        checks[checks_written+1,i+5+8*(layer-1)] = 1
+        checks[checks_written+1,i+5+8*(layer-1)+1] = 1
+        checks_written += 1
+
+        # red hexagons
+        for j in 1:(layer-1)
+            checks[checks_written+1,i+(j-1)*2+1] = 1
+            checks[checks_written+1,i+(j-1)*2+2] = 1
+            checks[checks_written+1,i+(j-1)*2+2+2*(layer-1)] = 1
+            checks[checks_written+1,i+(j-1)*2+2+2*(layer-1)+1] = 1
+            checks[checks_written+1,i+(j-1)*2+2+2*(layer-1)+layer*2] = 1
+            checks[checks_written+1,i+(j-1)*2+2+2*(layer-1)+layer*2+1] = 1
+
+            checks_written += 1
+        end
+
+        # blue hexagons
+        for j in 1:(layer-1)
+            init_pos = i+(j-1)*2+(layer-1)*2+1
+            checks[checks_written+1, init_pos] = 1
+            checks[checks_written+1, init_pos+1] = 1 
+            checks[checks_written+1, init_pos+2*layer] = 1 
+            checks[checks_written+1, init_pos+2*layer+1] = 1 
+            checks[checks_written+1, init_pos+4*layer] = 1 
+            checks[checks_written+1, init_pos+4*layer+1] = 1 
+
+            checks_written += 1
+        end
+
+        # green half 6gons
+        for j in 0:(layer-1)
+            init_pos = i+2*j+2+4*(layer-1)
+            checks[checks_written+1,init_pos] = 1
+            checks[checks_written+1,init_pos+1] = 1
+            checks[checks_written+1,init_pos+2*layer] = 1
+            checks[checks_written+1,init_pos+2*layer+1] = 1
+            checks_written += 1
+        end
+
+        i += 4+6*(layer-1)
+    end
+
+    return checks
+end
+
+function stabilizers(c::TriangularColorCode)
+	checks = _colorcode_get_check_matrix(c)
+	nq = size(checks,2)
+	pauli_string = PauliString{nq}[]
+	for i in axes(checks,1)
+		push!(pauli_string, paulistring(nq, 2, findall(checks[i,:]) ))
+	end
+	for i in axes(checks,1)
+		push!(pauli_string, paulistring(nq, 4, findall(checks[i,:]) ))
+	end
+	return pauli_string
+end
