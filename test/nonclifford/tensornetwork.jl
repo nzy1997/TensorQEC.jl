@@ -35,7 +35,7 @@ end
 	for ci in CartesianIndices((fill(4, 2)...,))
 		ps = [Yao.BitBasis._onehot(Float64, 4, ci.I[i]) for i in 1:2]
 		tn = TensorQEC.simple_circuit2tensornetworks(yaoqc, ps)
-        @test length(tn.vars) == 6
+        @test tn.nvars == 6
 		p1 = probability(tn)
 		p2 = yaopauli[ci.I..., :, :]
 		@test p1 ≈ p2
