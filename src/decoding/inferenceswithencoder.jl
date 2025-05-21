@@ -115,3 +115,17 @@ function inference(measure_outcome::Vector{Int}, code::CSSBimatrix, qc::ChainBlo
 	ps_ec_phy = pauli_string_map_iter(correction_pauli_string(nqubits(qc), syn_dict, pinf), qc)
 	return ps_ec_phy
 end
+
+
+function marginal_logical_error(cl::CliffordNetwork{T}, syn::Dict{Int,Bool}, p::Vector{Vector{Float64}})where T
+	n = length(p)
+	ps = Dict([i=>BoundarySpec((p[i]...,), false) for i in 1:n])
+	qs = Dict([i=>BoundarySpec((ones(T,4)...,), true) for i in 1:n])
+	for (k, v) in syn
+		qs[k] = BoundarySpec((v ?  (0.0,1.0,1.0,0.0) : (1.0,0.0,0.0,1.0) ),false)
+	end
+	tn = generate_tensor_network(cl, ps, qs)
+	return tn
+	mp = marginals(tn)
+	return Dict([k => mp[[cl.mapped_qubits[k]]] for k in 1:n])
+end

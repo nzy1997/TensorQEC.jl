@@ -38,8 +38,8 @@ end
 @testset "CSSIPDecoder" begin
     Random.seed!(123)
     tanner = CSSTannerGraph(SurfaceCode(3, 3))
-    em = DepolarizingError(0.05, 0.06, 0.1)
-    ep = random_error_qubits(9, em)
+    em = iid_error(0.05, 0.06, 0.1,9)
+    ep = random_error_qubits(em)
     syn = syndrome_extraction(ep,tanner)
 
     res = decode(IPDecoder(),tanner,syn)
@@ -49,4 +49,20 @@ end
     ct = compile(IPDecoder(), tanner)
     res = decode(ct, syn)
     @test syn == syndrome_extraction(res.error_qubits, tanner)
+end
+
+@testset "_mixed_integer_programming_for_one_solution" begin
+    d = 3
+    n = d^2
+    tanner = CSSTannerGraph(SurfaceCode(d,d))
+    error_qubits = random_error_qubits(n, FlipError(0.2))
+    syd = syndrome_extraction(error_qubits, tanner.stgz)
+    res = TensorQEC._mixed_integer_programming_for_one_solution(tanner.stgz.H, syd.s)
+    @test syd == syndrome_extraction(res, tanner.stgz)
+
+    error_qubits = random_error_qubits(n, DepolarizingError(0.1,0.1,0.1))
+    syd = syndrome_extraction(error_qubits, tanner)
+    xe,ze = TensorQEC._mixed_integer_programming_for_one_solution(tanner, syd)
+    res = TensorQEC.CSSErrorPattern(xe, ze)
+    @test syd == syndrome_extraction(res, tanner)
 end

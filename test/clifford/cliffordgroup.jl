@@ -68,7 +68,6 @@ end
 
 @testset "annotate_history" begin
 	st = stabilizers(SteaneCode())
-	table = make_table(st, 1)
 	qcen, data_qubits, code = encode_stabilizers(st) 
     qcm ,st_pos  = measure_circuit_steane(data_qubits[1],st)
 	ps0 = paulistring(27,3,6) 

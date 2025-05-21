@@ -19,7 +19,23 @@ struct CompiledBP <: CompiledDecoder
     osd::Bool
 end
 
-function compile(decoder::AbstractBPDecoder, problem::ClassicalDecodingProblem)
+struct CompiledCSSBP <: CompiledDecoder
+   cbx::CompiledBP
+   cbz::CompiledBP
+end
+
+function compile(decoder::AbstractBPDecoder, problem::CSSDecodingProblem)
+    cbx = compile(decoder, SimpleDecodingProblem(problem.tanner.stgx, fill(0.05,problem.tanner.stgx.nq)))
+    cbz = compile(decoder, SimpleDecodingProblem(problem.tanner.stgz, fill(0.05,problem.tanner.stgz.nq)))
+    return CompiledCSSBP(cbx,cbz)
+end
+function decode(cb::CompiledCSSBP,syndrome::CSSSyndrome)
+    bp_resx = decode(cb.cbz,SimpleSyndrome(syndrome.sz))
+    bp_resz = decode(cb.cbx,SimpleSyndrome(syndrome.sx))
+    return CSSDecodingResult(bp_resx.success_tag && bp_resz.success_tag, CSSErrorPattern(bp_resx.error_qubits,bp_resz.error_qubits))
+end
+
+function compile(decoder::AbstractBPDecoder, problem::SimpleDecodingProblem)
     mu = [log((1-problem.pvec[i])/problem.pvec[i]) for i in 1:problem.tanner.nq]
     mq2s = Dict([(i,j) => mu[i] for i in 1:problem.tanner.nq for j in problem.tanner.q2s[i] ])
     ms2q = Dict([(s,i) => 0.0 for s in 1:problem.tanner.ns for i in problem.tanner.s2q[s] ])

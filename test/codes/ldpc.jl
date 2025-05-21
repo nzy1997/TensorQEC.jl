@@ -14,6 +14,13 @@ using TensorQEC.LinearAlgebra
     @test tanner.H == Mod2[1 1 1 1 0; 0 1 1 1 1]
     @test count(x->x.x, tanner.H) == sum(length.(tanner.q2s))
     @test sum(length.(tanner.q2s)) == sum(length.(tanner.s2q))
+
+    H = Mod2[1 1 1 1 0; 0 1 1 1 1]
+    tanner = SimpleTannerGraph(H)
+    @test tanner.q2s == [[1],[1,2],[1,2],[1,2],[2]]
+    @test tanner.s2q == [[1,2,3,4],[2,3,4,5]]
+    @test tanner.ns == 2
+    @test tanner.H == Mod2[1 1 1 1 0; 0 1 1 1 1]
 end
 
 @testset "dual_graph" begin 
@@ -71,14 +78,4 @@ end
     H = Bool[1 1 1; 0 1 1; 0 0 1]
     q = mod2matrix_inverse(H)
     @test q * H == Matrix{Bool}(I,3,3)
-end
-
-
-@testset "check_logical_error" begin
-    st = stabilizers(SurfaceCode(3, 3))
-    tannerxz = CSSTannerGraph(st)
-    tannerz = tannerxz.stgz
-    tannerx = tannerxz.stgx
-    @test !TensorQEC.check_logical_error(Mod2[0,0,0,0,0,0,0,0,0],Mod2[1,1,1,0,0,0,0,0,0],tannerx.H)
-    @test TensorQEC.check_logical_error(Mod2[0,0,0,0,0,0,0,0,0],Mod2[1,1,0,1,1,0,0,0,0],tannerx.H)
 end

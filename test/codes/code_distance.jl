@@ -1,6 +1,7 @@
 using Test
 using TensorQEC
-using TensorQEC: row_echelon_form,null_space,logical_oprator
+using TensorQEC: row_echelon_form,null_space,logical_operator, same_qubit_order
+using Random
 
 @testset "classical_code_distance" begin
     H = [0 0 0 1 1 1 1;0 1 1 0 0 1 1; 1 0 1 0 1 0 1]
@@ -49,16 +50,16 @@ end
     rank = length(pivots)
     @test rank == 4
 end
-@testset "logical_oprator" begin
+@testset "logical_operator" begin
     tannerxz = CSSTannerGraph(SurfaceCode(3, 3))
-    lx,lz = logical_oprator(tannerxz)
-    @test lx == Bool[0 0 0 0 0 0 1 1 1]
-    @test lz == Bool[1 0 0 0 1 0 0 0 1]
+    lx,lz = logical_operator(tannerxz)
+    @test lx == Mod2[0 0 0 0 0 0 1 1 1]
+    @test lz == Mod2[1 0 0 0 1 0 0 0 1]
 end
 
 @testset "code_distance" begin
     tannerxz = CSSTannerGraph(SurfaceCode(3, 3))
-    lx,lz = logical_oprator(tannerxz)
+    lx,lz = logical_operator(tannerxz)
     @test code_distance(Int.(tannerxz.stgz.H),Int.(lz)) == 3
     @test code_distance(Int.(tannerxz.stgx.H),Int.(lx)) == 3
 
@@ -69,10 +70,14 @@ end
     @test code_distance(tannerxz) == 2
 end
 
-@testset "random_ldpc" begin
-    Random.seed!(678)
-    r34ldpc1= random_ldpc(3,4,12)
-    r34ldpc2= random_ldpc(3,4,12)
-    pgraph = product_graph(r34ldpc1, r34ldpc2)
-    @show code_distance(pgraph)
+@testset "same_qubit_order" begin
+    tannerxz = CSSTannerGraph(ToricCode(3, 3))
+    lx,lz = logical_operator(tannerxz)
+    lz_new = zeros(Mod2, size(lx))
+    lz_new[1,:] = lz[2,:]
+    lz_new[2,:] = lz[1,:]
+
+    lx,lz = same_qubit_order(lx,lz_new)
+    @test sum(lx[1,:].*lz[1,:]).x
+    @test sum(lx[2,:].*lz[2,:]).x
 end
