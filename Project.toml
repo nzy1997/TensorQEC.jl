@@ -4,7 +4,6 @@ authors = ["Zhongyi Ni"]
 version = "1.0.0"
 
 [deps]
-BitBasis = "50ba71b6-fa0f-514d-ae9a-0916efc90dcf"
 Combinatorics = "861a8166-3701-5b0c-9a16-15d98fcdc6aa"
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
@@ -14,41 +13,23 @@ LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 OMEinsum = "ebe7aa44-baf0-506c-a96f-8464559b3922"
 Optimisers = "3bd65402-5787-11e9-1adc-39752487f4e2"
 PrettyTables = "08abe8d2-0d0c-5749-adfa-8a2ac140af0d"
-Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 SCIP = "82193955-e24f-5292-bf16-6f2c5261a85f"
 SimpleWeightedGraphs = "47aef6b3-ad0c-573a-a1e2-d07658019622"
 TensorInference = "c2297e78-99bd-40ad-871d-f50e56b81012"
 Yao = "5872b779-8223-5990-8dd0-5abbb0748c8c"
 
-[weakdeps]
-CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
-
-[extensions]
-CUDAExt = "CUDA"
-
 [compat]
-BitBasis = "0.9"
-CUDA = "5"
 Combinatorics = "1"
 DelimitedFiles = "1"
-Distributed = "1"
+Distributed = "1.11"
 Graphs = "1"
-JuMP = "1"
+JuMP = "1.24.0"
 LinearAlgebra = "1"
-OMEinsum = "0.8"
+OMEinsum = "0.8.2"
 Optimisers = "0.4"
-PrettyTables = "2"
-Random = "1"
-SCIP = "0.12"
-SimpleWeightedGraphs = "1"
-TensorInference = "0.4,0.5"
+PrettyTables = "2.3"
+SCIP = "0.12.3"
+SimpleWeightedGraphs = "1.5.0"
+TensorInference = "0.6"
 Yao = "0.9"
-julia = "1.10"
-
-[extras]
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
-Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
-
-
-[targets]
-test = ["Test", "CUDA", "Random"]
+julia = "1"

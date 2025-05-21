@@ -69,7 +69,7 @@ export IndependentFlipError, IndependentDepolarizingError, random_error_qubits,S
 @const_gate CCZ::ComplexF64 = diagm([1, 1,1,1,1,1,1,-1])
 
 # decoder
-export BPOSD,BPDecoder,IPDecoder,MatchingDecoder,IPMatchingSolver,TNMAP,SimulatedAnnealing
+export BPOSD,BPDecoder,IPDecoder,MatchingDecoder,IPMatchingSolver,TNMAP
 
 # decoding
 export decode,reduce2general,extract_decoding,general_syndrome,DecodingResult,CSSDecodingResult,compile,SimpleDecodingProblem
@@ -118,6 +118,4 @@ include("decoding/bposd.jl")
 include("decoding/tndecoder.jl")
 include("decoding/ipdecoder.jl")
 include("decoding/matching.jl")
-
-include("decoding/mcmc.jl")
 end
