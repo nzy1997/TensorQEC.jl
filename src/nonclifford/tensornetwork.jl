@@ -85,12 +85,10 @@ function generate_tensor_network(cl::CliffordNetwork{T}, ps::Dict{Int, BoundaryS
 		nvars = _add_boundary!(cl.mapped_qubits, v, k, factors, cards, mars, nvars)
 	end
 	return TensorNetworkModel(
-		1:nvars,
-		cards,
-		factors;
+		UAIModel(nvars, cards, factors);
 		# openvars are open indices in the tensor network
 		openvars = cl.mapped_qubits[setdiff(1:nqubits(cl), keys(qs))] ∪ cl.physical_qubits[setdiff(1:nqubits(cl), keys(ps))],
-		mars = mars
+		unity_tensors_labels = mars
 	)
 end
 function _add_boundary!(openvars::AbstractVector, v::BoundarySpec{T}, k::Int, factors::Vector{Factor{T}}, cards::Vector{Int}, mars::Vector{Vector{Int}}, nvars::Int) where T
