@@ -19,7 +19,7 @@ struct CompiledBP <: CompiledDecoder
     osd::Bool
 end
 
-function compile(decoder::AbstractBPDecoder, problem::SimpleDecodingProblem)
+function compile(decoder::AbstractBPDecoder, problem::ClassicalDecodingProblem)
     mu = [log((1-problem.pvec[i])/problem.pvec[i]) for i in 1:problem.tanner.nq]
     mq2s = Dict([(i,j) => mu[i] for i in 1:problem.tanner.nq for j in problem.tanner.q2s[i] ])
     ms2q = Dict([(s,i) => 0.0 for s in 1:problem.tanner.ns for i in problem.tanner.s2q[s] ])

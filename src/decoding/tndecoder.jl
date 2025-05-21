@@ -41,7 +41,7 @@ function compile(decoder::TNMAP, problem::GeneralDecodingProblem)
     tn = TensorNetworkModel(uai; evidence=Dict([i+problem.tanner.nq => 0 for i in 1:problem.tanner.ns]), optimizer=decoder.optimizer)
     return CompiledTNMAP(tn, problem.tanner.nq)
 end
-function compile(decoder::TNMAP, problem::SimpleDecodingProblem)
+function compile(decoder::TNMAP, problem::ClassicalDecodingProblem)
     code = DynamicEinCode([[i] for i in 1:problem.tanner.nq],Int[])
     tensors= [[1-p,p] for p in problem.pvec]
     ptn = TensorNetwork(code,tensors)

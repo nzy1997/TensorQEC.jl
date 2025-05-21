@@ -2,7 +2,7 @@ using Test
 using TensorQEC
 using Random
 
-@testset "decode SimpleDecodingProblem" begin
+@testset "decode ClassicalDecodingProblem" begin
     tanner = CSSTannerGraph(SurfaceCode(3,3)).stgz
     error_qubits = Mod2[0,0,0,1,0,0,0,0,0]
     syn = syndrome_extraction(error_qubits, tanner)
@@ -23,6 +23,6 @@ end
     for decoder in [IPDecoder(),TNMAP()]
         ct = compile(decoder, tanner)
         res = decode(ct, syn)
-        @test res isa CSSDecodingResult
+        @test res isa DecodingResult
     end
 end

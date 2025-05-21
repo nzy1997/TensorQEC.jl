@@ -150,7 +150,7 @@ struct CompiledMatching{ET} <: CompiledDecoder
     fwg::FWSWeightedGraph
 end
 
-function compile(decoder::MatchingDecoder, prob::SimpleDecodingProblem)
+function compile(decoder::MatchingDecoder, prob::ClassicalDecodingProblem)
     fwg = tanner2fwswg(prob.tanner,prob.pvec)
     return CompiledMatching(decoder.solver,prob.tanner.nq,fwg)
 end

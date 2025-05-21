@@ -6,18 +6,18 @@ The abstract type for a decoding problem.
 abstract type AbstractDecodingProblem end
 
 """ 
-    SimpleDecodingProblem(tanner::SimpleTannerGraph, pvec::Vector{Float64})
+    ClassicalDecodingProblem(tanner::SimpleTannerGraph, pvec::Vector{Float64})
 
-A simple decoding problem.
+A classical decoding problem.
 Fields:
 - `tanner::SimpleTannerGraph`: the Tanner graph
 - `pvec::Vector{Float64}`: the independent probability distributions on each bit
 """
-struct SimpleDecodingProblem <: AbstractDecodingProblem
+struct ClassicalDecodingProblem <: AbstractDecodingProblem
     tanner::SimpleTannerGraph
     pvec::Vector{Float64}
 end
-get_problem(tanner::SimpleTannerGraph,pvec::Vector{Float64}) = SimpleDecodingProblem(tanner,pvec)
+get_problem(tanner::SimpleTannerGraph,pvec::Vector{Float64}) = ClassicalDecodingProblem(tanner,pvec)
 """ 
     CSSDecodingProblem(tanner::CSSTannerGraph, pvec::Vector{Float64})
 
@@ -82,18 +82,13 @@ function decode(decoder::AbstractDecoder, problem::AbstractDecodingProblem, synd
     return decode(ct, syndrome)
 end
 
-struct DecodingResult
+struct DecodingResult{ET}
     success_tag::Bool
-    error_qubits::Vector{Mod2}
+    error_qubits::ET
 end
 
-struct CSSDecodingResult
-    success_tag::Bool
-    error_qubits::CSSErrorPattern
-end
-
-Base.show(io::IO, ::MIME"text/plain", cdr::CSSDecodingResult) = show(io, cdr)
-function Base.show(io::IO, cdr::CSSDecodingResult)
+Base.show(io::IO, ::MIME"text/plain", cdr::DecodingResult) = show(io, cdr)
+function Base.show(io::IO, cdr::DecodingResult)
     println(io, cdr.success_tag ? "Success" : "Failure")
     println(io, "$(cdr.error_qubits)")
 end
@@ -101,7 +96,7 @@ end
 function decode(decoder::AbstractDecoder, problem::CSSDecodingProblem, syndrome::CSSSyndrome)
     resz = decode(decoder,problem.tanner.stgx,SimpleSyndrome(syndrome.sx),[em.pz + em.py for em in problem.pvec])
     resx = decode(decoder,problem.tanner.stgz,SimpleSyndrome(syndrome.sz),[em.px + em.py for em in problem.pvec])
-    return CSSDecodingResult(resx.success_tag && resz.success_tag,CSSErrorPattern(resx.error_qubits,resz.error_qubits))
+    return DecodingResult(resx.success_tag && resz.success_tag,CSSErrorPattern(resx.error_qubits,resz.error_qubits))
 end
 
 abstract type AbstractReductionResult end

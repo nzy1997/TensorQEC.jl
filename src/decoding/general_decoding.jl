@@ -10,7 +10,7 @@ end
 
 function extract_decoding(cgdp::CSSToGeneralDecodingProblem, error_qubits::Vector{Mod2})
     num_qubits = cgdp.qubit_num
-    return CSSDecodingResult(true, CSSErrorPattern(error_qubits[1:num_qubits] .+  error_qubits[(num_qubits+1):2*num_qubits] , error_qubits[(2*num_qubits+1):3*num_qubits] .+  error_qubits[(num_qubits+1):2*num_qubits]))
+    return DecodingResult(true, CSSErrorPattern(error_qubits[1:num_qubits] .+  error_qubits[(num_qubits+1):2*num_qubits] , error_qubits[(2*num_qubits+1):3*num_qubits] .+  error_qubits[(num_qubits+1):2*num_qubits]))
 end
 
 function reduce2general(tanner::CSSTannerGraph, pvec::Vector{Vector{Float64}})

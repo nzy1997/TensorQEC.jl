@@ -70,7 +70,7 @@ export FlipError, DepolarizingError, random_error_qubits
 export BPOSD,BPDecoder,IPDecoder,MatchingDecoder,IPMatchingSolver,TNMAP
 
 # decoding
-export decode,reduce2general,extract_decoding,general_syndrome,DecodingResult,CSSDecodingResult,compile
+export decode,reduce2general,extract_decoding,general_syndrome,DecodingResult,compile
 
 # threshold
 export multi_round_qec
