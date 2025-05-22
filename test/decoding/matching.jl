@@ -6,8 +6,8 @@ using Random
     Random.seed!(123)
     d = 3
     tanner = CSSTannerGraph(SurfaceCode(d, d)).stgx
-    em = FlipError(0.1)
-    error_qubits =  random_error_qubits(d*d, em)
+    em = iid_error(0.05,d*d)
+    error_qubits =  random_error_qubits(em)
     syn = syndrome_extraction(error_qubits,tanner)
 
     fwg = TensorQEC.tanner2fwswg(tanner,[0.1,fill(0.2,d*d-1)...])
@@ -23,8 +23,8 @@ end
     Random.seed!(3245)
     d = 7
     tanner = CSSTannerGraph(SurfaceCode(d, d)).stgx
-    em = FlipError(0.1)
-    error_qubits =  random_error_qubits(d*d, em)
+    em = iid_error(0.05,d*d)
+    error_qubits =  random_error_qubits(em)
     syn = syndrome_extraction(error_qubits,tanner)
     decoder = MatchingDecoder(IPMatchingSolver())
     ans = decode(decoder,tanner,syn)
@@ -42,8 +42,8 @@ end
     ct = compile(MatchingDecoder(IPMatchingSolver()),tanner.stgz)
 
     Random.seed!(123)
-    em = FlipError(0.05)
-    ep = random_error_qubits(d*d, em)
+    em = iid_error(0.05,d*d)
+    ep = random_error_qubits(em)
     syn = syndrome_extraction(ep,tanner.stgz)
     
     res = decode(ct,syn)

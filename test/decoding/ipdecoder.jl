@@ -14,11 +14,11 @@ using Random
     res = decode(decoder,tanner.stgz,syd)
     @test syd == syndrome_extraction(res.error_qubits, tanner.stgz)
 
-    res = decode(decoder,tanner.stgz,syd,0.02*collect(1:9))
+    res = decode(decoder,tanner.stgz,syd,IndependentFlipError(0.02*collect(1:9)))
     @test syd == syndrome_extraction(res.error_qubits, tanner.stgz)
     @test res.error_qubits == Mod2[0,0,0,0,0,0,1,0,0]
 
-    res = decode(decoder,tanner.stgz,syd,0.02*collect(9:-1:1))
+    res = decode(decoder,tanner.stgz,syd,IndependentFlipError(0.02*collect(9:-1:1)))
     @test syd == syndrome_extraction(res.error_qubits, tanner.stgz)
     @test res.error_qubits == Mod2[0,0,0,1,0,0,0,0,0]
 end
@@ -27,8 +27,8 @@ end
     Random.seed!(245)
     r34ldpc = random_ldpc(4,3,120)
     # plot_graph(r34ldpc)
-    em = FlipError(0.1)
-    error_qubits =  random_error_qubits(120, em)
+    em = iid_error(0.1,120)
+    error_qubits =  random_error_qubits(em)
     syd = syndrome_extraction(error_qubits, r34ldpc)
     res = decode(IPDecoder(),r34ldpc,syd)
 
@@ -55,12 +55,12 @@ end
     d = 3
     n = d^2
     tanner = CSSTannerGraph(SurfaceCode(d,d))
-    error_qubits = random_error_qubits(n, FlipError(0.2))
+    error_qubits = random_error_qubits(iid_error(0.2,n))
     syd = syndrome_extraction(error_qubits, tanner.stgz)
     res = TensorQEC._mixed_integer_programming_for_one_solution(tanner.stgz.H, syd.s)
     @test syd == syndrome_extraction(res, tanner.stgz)
 
-    error_qubits = random_error_qubits(n, DepolarizingError(0.1,0.1,0.1))
+    error_qubits = random_error_qubits(iid_error(0.1,0.1,0.1,n))
     syd = syndrome_extraction(error_qubits, tanner)
     xe,ze = TensorQEC._mixed_integer_programming_for_one_solution(tanner, syd)
     res = TensorQEC.CSSErrorPattern(xe, ze)

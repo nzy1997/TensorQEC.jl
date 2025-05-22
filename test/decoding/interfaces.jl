@@ -13,11 +13,11 @@ using Random
     end
 end
 
-@testset "decodeCSSDecodingProblem" begin
+@testset "decodeIndependentDepolarizingDecodingProblem" begin
     Random.seed!(123)
     tanner = CSSTannerGraph(SurfaceCode(3, 3))
-    em = DepolarizingError(0.05, 0.06, 0.1)
-    ep = random_error_qubits(9, em)
+    em = iid_error(0.05,0.06,0.1,9)
+    ep = random_error_qubits(em)
     syn = syndrome_extraction(ep,tanner)
 
     for decoder in [IPDecoder(),TNMAP()]

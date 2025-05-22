@@ -107,9 +107,9 @@ end
 function decode(ct::CompiledTable{INTs,INT}, syndrome::CSSSyndrome) where {INTs,INT}
 	syn = syndrome2lluint(syndrome, INTs)
 	if haskey(ct.table.table, syn)
-		return CSSDecodingResult(true,lluint2error(ct.table.table[syn], ct.table.num_qubits))
+		return DecodingResult(true,lluint2error(ct.table.table[syn], ct.table.num_qubits))
 	else
-		return CSSDecodingResult(false, CSSErrorPattern(zeros(Mod2, ct.table.num_qubits), zeros(Mod2, ct.table.num_qubits)))
+		return DecodingResult(false, CSSErrorPattern(zeros(Mod2, ct.table.num_qubits), zeros(Mod2, ct.table.num_qubits)))
 	end
 end
 
@@ -130,15 +130,6 @@ function load_table(filename::String, num_qubits::Int, num_st::Int)
 	return TruthTable(table, num_qubits, num_st)
 end
 
-# struct DepolarizingDistribution <:AbstractSyndromeConflict 
-# 	pvec::Vector{DepolarizingError}
-# end
-
-# struct TNDistribution <:AbstractSyndromeConflict 
-# 	ptn::TensorNetwork # probability distributions
-# 	qubit_num::Int
-# end
-
 # p1 is the old one
 function conflict_syndrome(cep1::Tuple{INT, INT}, cep2::Tuple{INT, INT},sc::AbstractSyndromeConflict) where {INT}
 	p1 = get_probability(sc, cep1)
@@ -146,40 +137,22 @@ function conflict_syndrome(cep1::Tuple{INT, INT}, cep2::Tuple{INT, INT},sc::Abst
 	return p1 < p2
 end
 
-function get_probability(sc::IndependentDepolarizingError, cep::Tuple{INT, INT}) where {INT}
-	p = 1.0
-	for (i,pm) in enumerate(sc.pvec)
-		if iszero(readbit(cep[1], i)) 
-			# no x error
-			p = p * (iszero(readbit(cep[2], i)) ? (1-pm.px-pm.py-pm.pz) : pm.pz)
-		else
-			# x error
-			p = p * (iszero(readbit(cep[2], i)) ? pm.px : pm.py)
-		end
-	end
-	return p
+struct DistributionError{DT} <:AbstractSyndromeConflict 
+	dis::DT
 end
 
-function get_probability(sc::TNDistribution, cep::Tuple{INT, INT}) where {INT}
+get_probability(de::DistributionError, cep::Tuple) = get_probability(de.dis, cep)
+function get_probability(pm::IndependentDepolarizingError, cep::Tuple{INT, INT}) where {INT}
 	p = 1.0
-	for (tensor, code) in zip(sc.ptn.tensors, sc.ptn.code.ixs)
-		pos = ones(Int,length(code))
-		for i in 1:length(code) ÷ 3
-			if iszero(readbit(cep[1], code[3*i-2])) 
-				# no x error
-				if !iszero(readbit(cep[2], code[3*i-2]))
-					pos[3*i] = 2
-				end
-			else
-				# x error
-				if iszero(readbit(cep[2], code[3*i-2]))
-					pos[3*i-2] = 2
-				else
-					pos[3*i-1] = 2
-				end
-			end
+	qubit_num = length(cep[1])
+	for i in 1:qubit_num
+		if iszero(readbit(cep[1], i)) 
+			# no x error
+			p = p * (iszero(readbit(cep[2], i)) ? (1-pm.px[i]-pm.py[i]-pm.pz[i]) : pm.pz[i])
+		else
+			# x error
+			p = p * (iszero(readbit(cep[2], i)) ? pm.px[i] : pm.py[i])
 		end
-		p = p * tensor[pos...]
 	end
 	return p
 end

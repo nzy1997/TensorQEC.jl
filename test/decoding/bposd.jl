@@ -41,8 +41,8 @@ end
     Random.seed!(123)
     d = 3
     tanner = CSSTannerGraph(SurfaceCode(d, d))
-    em = FlipError(0.05)
-    ep = random_error_qubits(d*d, em)
+    em = iid_error(0.05,d*d)
+    ep = random_error_qubits(em)
     syn = syndrome_extraction(ep,tanner.stgz)
 
     res = decode(BPDecoder(100,false),tanner.stgz,syn)
@@ -56,8 +56,8 @@ end
     Random.seed!(123)
     d = 3
     tanner = CSSTannerGraph(SurfaceCode(d, d))
-    em = FlipError(0.05)
-    ep = random_error_qubits(d*d, em)
+    em = iid_error(0.05,d*d)
+    ep = random_error_qubits(em)
     syn = syndrome_extraction(ep,tanner.stgz)
 
     ct = compile(BPDecoder(100,false),tanner.stgz)
@@ -67,4 +67,21 @@ end
     ct = compile(BPDecoder(),tanner.stgz)
     res = decode(ct,syn)
     @test (syn == syndrome_extraction(res.error_qubits, tanner.stgz))
+end
+
+@testset "CSS compile and decode" begin
+    Random.seed!(123)
+    d = 3
+    tanner = CSSTannerGraph(SurfaceCode(d, d))
+    em = iid_error(0.05,0.05,0.05,d*d)
+    ep = random_error_qubits(em)
+    syn = syndrome_extraction(ep,tanner)
+
+    ct = compile(BPDecoder(100,false),tanner)
+    res = decode(ct,syn)
+    @test !res.success_tag || (syn == syndrome_extraction(res.error_qubits, tanner))
+
+    ct = compile(BPDecoder(),tanner)
+    res = decode(ct,syn)
+    @test (syn == syndrome_extraction(res.error_qubits, tanner))
 end

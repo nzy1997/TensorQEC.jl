@@ -26,8 +26,8 @@ end
 @testset "decode" begin
     Random.seed!(123)
     tanner = CSSTannerGraph(SurfaceCode(3, 3))
-    em = DepolarizingError(0.05, 0.06, 0.1)
-    ep = random_error_qubits(9, em)
+    em = iid_error(0.05,0.06,0.1,9)
+    ep = random_error_qubits(em)
     syn = syndrome_extraction(ep,tanner)
     tb = make_table(tanner,4,TensorQEC.UniformError())
     ct = TensorQEC.CompiledTable(tb)
@@ -39,8 +39,8 @@ end
     filename = "test_table.txt"
     Random.seed!(123)
     tanner = CSSTannerGraph(SurfaceCode(9, 9))
-    em = DepolarizingError(0.01, 0.01, 0.01)
-    ep = random_error_qubits(81, em)
+    em = iid_error(0.01,0.01,0.01,81)
+    ep = random_error_qubits(em)
     syn = syndrome_extraction(ep,tanner)
 
     tb = make_table(tanner,1,TensorQEC.UniformError())
@@ -69,40 +69,9 @@ end
 
 @testset "DepolarizingDistribution" begin
     tanner = CSSTannerGraph(SurfaceCode(3, 3))
-    tb = make_table(tanner,4,TensorQEC.DepolarizingDistribution(fill(DepolarizingError(0.3, 0.3, 0.3), 9)))
+    tb = make_table(tanner,4, TensorQEC.DistributionError(iid_error(0.3,0.3,0.3,9)))
     INT =BitBasis.LongLongUInt{1}
     @test tb.table[zero(INT)] != (zero(INT),zero(INT))
-
-    syn = TensorQEC.CSSSyndrome(Mod2[0, 0, 1, 1], Mod2[1, 0, 0, 1])
-    ep = TensorQEC.lluint2error(tb.table[INT(156)],9)
-    @test syn == syndrome_extraction(ep, tanner)
-end
-
-@testset "DepolarizingDistribution" begin
-    tanner = CSSTannerGraph(SurfaceCode(3, 3))
-    tb = make_table(tanner,4,TensorQEC.DepolarizingDistribution(fill(DepolarizingError(0.3, 0.3, 0.3), 9)))
-    INT =BitBasis.LongLongUInt{1}
-    @test tb.table[zero(INT)] != (zero(INT),zero(INT))
-
-    syn = TensorQEC.CSSSyndrome(Mod2[0, 0, 1, 1], Mod2[1, 0, 0, 1])
-    ep = TensorQEC.lluint2error(tb.table[INT(156)],9)
-    @test syn == syndrome_extraction(ep, tanner)
-end
-
-@testset "TNDistribution" begin
-    num_qubits = 9
-    code = DynamicEinCode([[[i,i+num_qubits,i+2*num_qubits] for i in [1,2,3,5,6,8,9]]...,vcat([[i,i+num_qubits,i+2*num_qubits] for i in [4,7]]...)],Int[])
-    a = rand(2,2,2,2,2,2)
-    a = a./sum(a)
-    tensors= [[TensorQEC.single_qubit_tensor(0.01,0.01,0.01) for j in [1,2,3,5,6,8,9]]...,a]
-    tn = TensorNetwork(code,tensors)
-    td = TensorQEC.TNDistribution(tn,9)
-    INT = BitBasis.LongLongUInt{1}
-
-    @test TensorQEC.get_probability(td,(INT(72),INT(8))) ≈ a[1,2,1,2,1,1] * 0.97^7 atol = 1e-8
-
-    tanner = CSSTannerGraph(SurfaceCode(3, 3))
-    tb = make_table(tanner,4,TensorQEC.TNDistribution(tn,9))
 
     syn = TensorQEC.CSSSyndrome(Mod2[0, 0, 1, 1], Mod2[1, 0, 0, 1])
     ep = TensorQEC.lluint2error(tb.table[INT(156)],9)

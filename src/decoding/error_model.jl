@@ -2,10 +2,6 @@ abstract type AbstractErrorModel end
 abstract type AbstractClassicalErrorModel <: AbstractErrorModel end
 abstract type AbstractQuantumErrorModel <: AbstractErrorModel end
 
-struct TNDistribution <:AbstractQuantumErrorModel 
-	ptn::TensorNetwork # probability distributions
-end
-
 struct IndependentFlipError{T} <: AbstractClassicalErrorModel
     p::Vector{T}
 end
