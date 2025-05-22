@@ -61,16 +61,16 @@ end
 
 
 """
-	correction_circuit(table::Dict{Int,Int}, st_pos::Vector{Int},num_qubits::Int,num_st::Int,num_data_qubits::Int)
+	correction_circuit(table::Dict{Int,Int}, num_qubits::Int, num_st::Int, st_pos::AbstractVector{Int}, total_qubits::Int)
 
 Generate the error correction circuit by embedding the truth table into the quantum circuit.
 
 ### Arguments
 - `table`: The truth table for error correction.
-- `st_pos`: The indices of ancilla qubits that measure stabilizers.
-- `num_qubits`: The total number of qubits in the circuit.
+- `num_qubits`: The number of qubits in the circuit.
 - `num_st`: The number of stabilizers.
-- `num_data_qubits`: The number of data qubits.
+- `st_pos`: The indices of ancilla qubits that measure stabilizers.
+- `total_qubits`: The total number of qubits in the circuit.
 
 ### Returns
 - `qc`: The error correction circuit.
