@@ -95,12 +95,6 @@ function Base.show(io::IO, cdr::DecodingResult)
     println(io, "$(cdr.error_qubits)")
 end
 
-# function decode(decoder::AbstractDecoder, problem::IndependentDepolarizingDecodingProblem, syndrome::CSSSyndrome)
-#     resz = decode(decoder,problem.tanner.stgx,SimpleSyndrome(syndrome.sx),[em.pz + em.py for em in problem.pvec])
-#     resx = decode(decoder,problem.tanner.stgz,SimpleSyndrome(syndrome.sz),[em.px + em.py for em in problem.pvec])
-#     return DecodingResult(resx.success_tag && resz.success_tag,CSSErrorPattern(resx.error_qubits,resz.error_qubits))
-# end
-
 abstract type AbstractReductionResult end
 
 # Compile IndependentDepolarizingDecodingProblem and ClassicalDecodingProblem to GeneralDecodingProblem for a general decoder

@@ -26,34 +26,14 @@ struct CompiledIP <: CompiledDecoder
 end
 
 get_fdp(g::TensorQEC.GeneralDecodingProblemToFlatDecodingProblem) = g.fdp
-# struct ClassicalDecodingProblemToFlatDecodingProblem <: AbstractReductionResult
-#     fdp::FlatDecodingProblem
-# end
-# get_fdp(cfdp::ClassicalDecodingProblemToFlatDecodingProblem) = cfdp.fdp
-# extract_decoding(re::ClassicalDecodingProblemToFlatDecodingProblem, error_qubits::Vector{Mod2}) = DecodingResult(true, error_qubits)
-
 function compile(decoder::IPDecoder, gdp::GeneralDecodingProblem)
     gdp2fdp = flattengdp(gdp)
     return CompiledIP(decoder, gdp2fdp)
 end
 
-# function compile(decoder::IPDecoder, sdp::ClassicalDecodingProblem)
-#     fdp = FlatDecodingProblem(sdp.tanner, [[i] for i in 1:sdp.tanner.nq], [[p] for p in sdp.pvec])
-#     return CompiledIP(decoder, ClassicalDecodingProblemToFlatDecodingProblem(fdp))
-# end
-
-# function decode(ci::CompiledIP, syndrome::CSSSyndrome)
-#     return decode(ci,SimpleSyndrome([syndrome.sx...,syndrome.sz...]))
-# end
 function decode(ci::CompiledIP, syndrome::SimpleSyndrome)
     return extract_decoding(ci.reduction,_mixed_integer_programming(ci.decoder,get_fdp(ci.reduction), syndrome.s))
 end
-
-
-
-# function extract_decoding(cfdp::IndependentDepolarizingDecodingProblemToFlatDecodingProblem, error_qubits::Vector{Mod2})
-#     return extract_decoding(cfdp.c2g,extract_decoding(cfdp.gdp2fdp,error_qubits).error_qubits)
-# end
 
 function _mixed_integer_programming(decoder::IPDecoder, fdp::FlatDecodingProblem, syndrome::Vector{Mod2})
     H = fdp.tanner.H

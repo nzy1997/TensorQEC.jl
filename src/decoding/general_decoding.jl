@@ -11,7 +11,6 @@ end
 # pvec=[px,py,pz], i represent x error, i+num_qubits represent z error
 function reduce2general(tanner::CSSTannerGraph, pvec::IndependentDepolarizingError)
     num_qubits = nq(tanner)
-    # tn = TensorNetwork(DynamicEinCode([[i,i+num_qubits] for i in 1:num_qubits],Int[]),[[1-pvec.px[j]-pvec.py[j]-pvec.pz[j] pvec.pz[j];pvec.px[j] pvec.py[j]] for j in 1:num_qubits])
     tn = TensorNetwork(DynamicEinCode([[i,i+num_qubits] for i in 1:num_qubits],Int[]),[single_qubit_tensor(pvec.px[j],pvec.py[j],pvec.pz[j]) for j in 1:num_qubits])
     return reduce2general(tanner, tn)
 end
