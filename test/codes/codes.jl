@@ -157,6 +157,16 @@ end
 	st = stabilizers(BivariateBicycleCode(6,12, ((3,0),(0,1),(0,2)), ((0,3),(1,0),(2,0))))
 	@test length(st) == 132
 	# @test code_distance(CSSTannerGraph(st)) == 12
+	tanner = CSSTannerGraph(st)
+	lx,lz = logical_operator(tanner)
+	for i in 1:11
+		push!(st,paulistring(144,4,findall(i->i.x,lz[i,:])))
+	end
+	tanner = CSSTannerGraph(st)
+	# @test code_distance(tanner) == 12
+	lx,lz = logical_operator(tanner)
+	@test size(lx,1) == 1
+	@test size(lz,1) == 1
 end
 
 @testset "Color488" begin

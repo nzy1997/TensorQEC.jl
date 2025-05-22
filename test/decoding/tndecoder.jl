@@ -17,8 +17,8 @@ end
     Random.seed!(123)
     d = 3
     tanner = CSSTannerGraph(SurfaceCode(d, d))
-    em = FlipError(0.05)
-    ep = random_error_qubits(d*d, em)
+    em = iid_error(0.05,d*d)
+    ep = random_error_qubits(em)
     syn = syndrome_extraction(ep,tanner.stgz)
 
     decoder = TNMAP()
@@ -33,8 +33,8 @@ end
     ct = compile(TNMAP(),tanner.stgz)
 
     Random.seed!(123)
-    em = FlipError(0.05)
-    ep = random_error_qubits(d*d, em)
+    em = iid_error(0.05,d*d)
+    ep = random_error_qubits(em)
     syn = syndrome_extraction(ep,tanner.stgz)
     
     res = decode(ct,syn)
@@ -48,8 +48,8 @@ end
     ct = compile(TNMAP(),tanner)
 
     Random.seed!(123)
-    em = DepolarizingError(0.05)
-    ep = random_error_qubits(d*d, em)
+    em = iid_error(0.05,0.05,0.05,d*d)
+    ep = random_error_qubits(em)
     syn = syndrome_extraction(ep,tanner)
     
     res = decode(ct,syn)

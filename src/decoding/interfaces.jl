@@ -6,31 +6,31 @@ The abstract type for a decoding problem.
 abstract type AbstractDecodingProblem end
 
 """ 
-    SimpleDecodingProblem(tanner::SimpleTannerGraph, pvec::Vector{Float64})
+    ClassicalDecodingProblem(tanner::SimpleTannerGraph, pvec::Vector{Float64})
 
-A simple decoding problem.
+A classical decoding problem.
 Fields:
 - `tanner::SimpleTannerGraph`: the Tanner graph
 - `pvec::Vector{Float64}`: the independent probability distributions on each bit
 """
-struct SimpleDecodingProblem <: AbstractDecodingProblem
+struct ClassicalDecodingProblem <: AbstractDecodingProblem
     tanner::SimpleTannerGraph
     pvec::Vector{Float64}
 end
-get_problem(tanner::SimpleTannerGraph,pvec::Vector{Float64}) = SimpleDecodingProblem(tanner,pvec)
+get_problem(tanner::SimpleTannerGraph,pvec::IndependentFlipError) = ClassicalDecodingProblem(tanner,pvec.p)
 """ 
-    CSSDecodingProblem(tanner::CSSTannerGraph, pvec::Vector{Float64})
+    IndependentDepolarizingDecodingProblem(tanner::CSSTannerGraph, pvec::IndependentDepolarizingError)
 
-A CSS decoding problem.
+A decoding problem with independent depolarizing error model.
 Fields:
 - `tanner::CSSTannerGraph`: the Tanner graph
-- `pvec::Vector{DepolarizingError}`: the independent probability distributions on each qubit
+- `pvec::IndependentDepolarizingError`: the independent probability distributions on each qubit
 """
-struct CSSDecodingProblem <: AbstractDecodingProblem
+struct IndependentDepolarizingDecodingProblem <: AbstractDecodingProblem
     tanner::CSSTannerGraph
-    pvec::Vector{DepolarizingError}
+    pvec::IndependentDepolarizingError
 end
-get_problem(tanner::CSSTannerGraph,pvec::Vector{DepolarizingError}) = CSSDecodingProblem(tanner,pvec)
+get_problem(tanner::CSSTannerGraph,pvec::IndependentDepolarizingError) = IndependentDepolarizingDecodingProblem(tanner,pvec)
 
 """
     GeneralDecodingProblem(tanner::SimpleTannerGraph, ptn::TensorNetwork)
@@ -51,6 +51,8 @@ end
 The abstract type for a decoder.
 """
 abstract type AbstractDecoder end
+abstract type AbstractClassicalDecoder <: AbstractDecoder end
+abstract type AbstractGeneralDecoder <: AbstractDecoder end
 
 """
     CompiledDecoder
@@ -60,9 +62,9 @@ Compile the decoder to specific tanner graph and prior probability distributions
 abstract type CompiledDecoder end
 
 function compile(decoder::AbstractDecoder, tanner::AbstractTannerGraph)
-    return compile(decoder, tanner, uniform_error_vector(0.05,tanner))
+    return compile(decoder, tanner, iid_error(0.05,tanner))
 end
-function compile(decoder::AbstractDecoder, tanner::AbstractTannerGraph, pvec::Vector)
+function compile(decoder::AbstractDecoder, tanner::AbstractTannerGraph, pvec::AbstractErrorModel)
     return compile(decoder, get_problem(tanner,pvec))
 end
 
@@ -72,9 +74,9 @@ end
 Decode the syndrome using the decoder.
 """
 function decode(decoder::AbstractDecoder, tanner::AbstractTannerGraph, syndrome::AbstractSyndrome)
-    return decode(decoder, tanner, syndrome, uniform_error_vector(0.05,tanner))
+    return decode(decoder, tanner, syndrome, iid_error(0.05,tanner))
 end
-function decode(decoder::AbstractDecoder, tanner::AbstractTannerGraph, syndrome::AbstractSyndrome, pvec::Vector)
+function decode(decoder::AbstractDecoder, tanner::AbstractTannerGraph, syndrome::AbstractSyndrome, pvec::AbstractErrorModel)
     return decode(decoder, get_problem(tanner,pvec), syndrome)
 end
 function decode(decoder::AbstractDecoder, problem::AbstractDecodingProblem, syndrome::AbstractSyndrome)
@@ -82,26 +84,55 @@ function decode(decoder::AbstractDecoder, problem::AbstractDecodingProblem, synd
     return decode(ct, syndrome)
 end
 
-struct DecodingResult
+struct DecodingResult{ET}
     success_tag::Bool
-    error_qubits::Vector{Mod2}
+    error_qubits::ET
 end
 
-struct CSSDecodingResult
-    success_tag::Bool
-    error_qubits::CSSErrorPattern
-end
-
-Base.show(io::IO, ::MIME"text/plain", cdr::CSSDecodingResult) = show(io, cdr)
-function Base.show(io::IO, cdr::CSSDecodingResult)
+Base.show(io::IO, ::MIME"text/plain", cdr::DecodingResult) = show(io, cdr)
+function Base.show(io::IO, cdr::DecodingResult)
     println(io, cdr.success_tag ? "Success" : "Failure")
     println(io, "$(cdr.error_qubits)")
 end
 
-function decode(decoder::AbstractDecoder, problem::CSSDecodingProblem, syndrome::CSSSyndrome)
-    resz = decode(decoder,problem.tanner.stgx,SimpleSyndrome(syndrome.sx),[em.pz + em.py for em in problem.pvec])
-    resx = decode(decoder,problem.tanner.stgz,SimpleSyndrome(syndrome.sz),[em.px + em.py for em in problem.pvec])
-    return CSSDecodingResult(resx.success_tag && resz.success_tag,CSSErrorPattern(resx.error_qubits,resz.error_qubits))
+abstract type AbstractReductionResult end
+
+# Compile IndependentDepolarizingDecodingProblem and ClassicalDecodingProblem to GeneralDecodingProblem for a general decoder
+struct CompiledGeneralDecoder{CDT,RT} <: CompiledDecoder
+    cd::CDT
+    reduction::RT
 end
 
-abstract type AbstractReductionResult end
+function compile(decoder::AbstractGeneralDecoder, iddp::IndependentDepolarizingDecodingProblem)
+    gdp, c2g = reduce2general(iddp.tanner,iddp.pvec)
+    cd = compile(decoder, gdp)
+    return CompiledGeneralDecoder(cd, c2g)
+end
+
+function decode(cd::CompiledGeneralDecoder, syndrome::CSSSyndrome)
+    return extract_decoding(cd.reduction, decode(cd.cd, SimpleSyndrome([syndrome.sx...,syndrome.sz...])).error_qubits)
+end
+
+function compile(decoder::AbstractGeneralDecoder, cdp::ClassicalDecodingProblem)
+    gdp = GeneralDecodingProblem(cdp.tanner, TensorNetwork(DynamicEinCode([[i] for i in 1:cdp.tanner.nq],Int[]),[[1-p, p] for p in cdp.pvec]))
+    return compile(decoder, gdp)
+end
+
+# Compile IndependentDepolarizingDecodingProblem to ClassicalDecodingProblem for a classical decoder
+struct CompiledClassicalDecoder{CT1,CT2} <: CompiledDecoder
+    ccx::CT1
+    ccz::CT2
+end
+
+function compile(decoder::AbstractClassicalDecoder, problem::IndependentDepolarizingDecodingProblem)
+    qubit_num = nq(problem.tanner)
+    cbx = compile(decoder, ClassicalDecodingProblem(problem.tanner.stgx, [problem.pvec.pz[j] + problem.pvec.py[j] for j in 1:qubit_num]))
+    cbz = compile(decoder, ClassicalDecodingProblem(problem.tanner.stgz, [problem.pvec.px[j] + problem.pvec.py[j] for j in 1:qubit_num]))
+    return CompiledClassicalDecoder(cbx,cbz)
+end
+
+function decode(cb::CompiledClassicalDecoder,syndrome::CSSSyndrome)
+    bp_resx = decode(cb.ccz,SimpleSyndrome(syndrome.sz))
+    bp_resz = decode(cb.ccx,SimpleSyndrome(syndrome.sx))
+    return DecodingResult(bp_resx.success_tag && bp_resz.success_tag, CSSErrorPattern(bp_resx.error_qubits,bp_resz.error_qubits))
+end

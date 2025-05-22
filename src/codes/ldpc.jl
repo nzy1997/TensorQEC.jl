@@ -36,6 +36,12 @@ function SimpleTannerGraph(nq::Int, sts::Vector{Vector{Int}})
     end
     return SimpleTannerGraph(nq, ns, q2s, sts, H)
 end
+function SimpleTannerGraph(H::Matrix{Mod2})
+    ns = size(H, 1)
+    nq = size(H, 2)
+    sts = [findall(x-> x.x, H[i, :]) for i in 1:ns]
+    return SimpleTannerGraph(nq, sts)
+end
 
 """
     CSSCSSTannerGraph(stgx::SimpleTannerGraph, stgz::SimpleTannerGraph)
@@ -54,6 +60,8 @@ struct CSSTannerGraph <: AbstractTannerGraph
 end
 nq(stg::SimpleTannerGraph) = stg.nq
 nq(stg::CSSTannerGraph) = stg.stgx.nq
+ns(stg::SimpleTannerGraph) = stg.ns
+ns(stg::CSSTannerGraph) = ns(stg.stgx) + ns(stg.stgz)
 function dual_graph(tanner::SimpleTannerGraph)
     return SimpleTannerGraph( tanner.ns,  tanner.nq, tanner.s2q, tanner.q2s, transpose(tanner.H))
 end
@@ -122,8 +130,4 @@ function random_ldpc(n1::Int,n2::Int,nq::Int)
         qvec = setdiff(qvec, findall(x -> x==n2,qcount))
     end
     return SimpleTannerGraph(nq, sts)
-end
-
-function check_logical_error(errored_qubits1::Vector{Mod2}, errored_qubits2::Vector{Mod2}, H)
-    return !check_linear_indepent([a.x for a in [H;transpose(errored_qubits1+errored_qubits2)]])
 end

@@ -7,7 +7,7 @@ A decoder that uses matching algorithm.
 Fields:
 - `solver::T`: the matching solver
 """
-struct MatchingDecoder{T<:MatchingSolver} <: AbstractDecoder 
+struct MatchingDecoder{T<:MatchingSolver} <: AbstractClassicalDecoder 
     solver::T
 end
 struct IPMatchingSolver <: MatchingSolver end
@@ -89,7 +89,7 @@ function FWSWGtoMWB(fwg::FWSWeightedGraph,syndrome::Vector{Mod2})
     return MatchingWithBoundary(view(fwg.dists,syndrome_vertex,syndrome_vertex))
 end
 
-function extract_decoding(fwg::FWSWeightedGraph{T},  edge_vec::Vector{Vector{Int}},qubit_num::Int) where T
+function extract_decoding(fwg::FWSWeightedGraph{T},  edge_vec::Vector,qubit_num::Int) where T
     edge_vec_long = fill(Mod2(0), qubit_num)
     for edge in edge_vec
         vec = fwg.error_path[edge[1],edge[2]]
@@ -150,7 +150,7 @@ struct CompiledMatching{ET} <: CompiledDecoder
     fwg::FWSWeightedGraph
 end
 
-function compile(decoder::MatchingDecoder, prob::SimpleDecodingProblem)
+function compile(decoder::MatchingDecoder, prob::ClassicalDecodingProblem)
     fwg = tanner2fwswg(prob.tanner,prob.pvec)
     return CompiledMatching(decoder.solver,prob.tanner.nq,fwg)
 end

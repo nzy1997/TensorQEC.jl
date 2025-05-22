@@ -4,7 +4,7 @@ function multi_round_qec(tanner::CSSTannerGraph,decoder::AbstractDecoder,em::Abs
     logical_error = 0
     ct = compile(decoder, tanner)
     for i in 1:rounds
-        ep = random_error_qubits(nq(tanner), em)
+        ep = random_error_qubits(em)
         synd = syndrome_extraction(ep, tanner)
         res = decode(ct, synd)
         resx = check_logical_error(ep.xerror, res.error_qubits.xerror, tanner.stgx.H)
@@ -23,7 +23,7 @@ function multi_round_qec(tanner::SimpleTannerGraph,decoder::AbstractDecoder,em::
     ct = compile(decoder, tanner)
 
     for i in 1:rounds
-        ex = random_error_qubits(nq(tanner), em)
+        ex = random_error_qubits(em)
         sydz = syndrome_extraction(ex, tanner)
         res = decode(ct, sydz)
         check_logical_error(ex, res.error_qubits, tanner_check.H) || (logical_xerror += 1)

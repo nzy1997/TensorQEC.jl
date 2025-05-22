@@ -37,8 +37,8 @@ end
     include("decoding/measurement.jl")
 end
 
-@testset "table make" begin
-    include("decoding/tablemake.jl")
+@testset "truthtable" begin
+    include("decoding/truthtable.jl")
 end
 
 @testset "simulation" begin
@@ -95,4 +95,8 @@ end
 
 @testset "tndecoder" begin
     include("decoding/tndecoder.jl")
+end
+
+@testset "correction" begin
+    include("nonclifford/correction.jl")
 end

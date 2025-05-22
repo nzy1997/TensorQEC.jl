@@ -1,16 +1,11 @@
 """
-    IPDecoder <: AbstractDecoder
+    IPDecoder <: AbstractGeneralDecoder
 
 An integer programming decoder.
 """
-Base.@kwdef struct IPDecoder <: AbstractDecoder 
+Base.@kwdef struct IPDecoder <: AbstractGeneralDecoder 
     optimizer = SCIP.Optimizer
     verbose::Bool = false
-end
-
-struct CompiledIP <: CompiledDecoder
-    decoder::IPDecoder
-    reduction::AbstractReductionResult
 end
 
 struct FlatDecodingProblem
@@ -24,48 +19,24 @@ struct GeneralDecodingProblemToFlatDecodingProblem <: AbstractReductionResult
     dict::Dict{Int,Vector{Int}}
     qubit_num::Int
 end
-get_fdp(g::TensorQEC.GeneralDecodingProblemToFlatDecodingProblem) = g.fdp
-struct SimpleDecodingProblemToFlatDecodingProblem <: AbstractReductionResult
-    fdp::FlatDecodingProblem
-end
-get_fdp(cfdp::SimpleDecodingProblemToFlatDecodingProblem) = cfdp.fdp
-extract_decoding(re::SimpleDecodingProblemToFlatDecodingProblem, error_qubits::Vector{Mod2}) = DecodingResult(true, error_qubits)
 
+struct CompiledIP <: CompiledDecoder
+    decoder::IPDecoder
+    reduction::GeneralDecodingProblemToFlatDecodingProblem
+end
+
+get_fdp(g::TensorQEC.GeneralDecodingProblemToFlatDecodingProblem) = g.fdp
 function compile(decoder::IPDecoder, gdp::GeneralDecodingProblem)
     gdp2fdp = flattengdp(gdp)
     return CompiledIP(decoder, gdp2fdp)
 end
 
-function compile(decoder::IPDecoder, sdp::SimpleDecodingProblem)
-    fdp = FlatDecodingProblem(sdp.tanner, [[i] for i in 1:sdp.tanner.nq], [[p] for p in sdp.pvec])
-    return CompiledIP(decoder, SimpleDecodingProblemToFlatDecodingProblem(fdp))
-end
-
-function decode(ci::CompiledIP, syndrome::CSSSyndrome)
-    return decode(ci,SimpleSyndrome([syndrome.sx...,syndrome.sz...]))
-end
 function decode(ci::CompiledIP, syndrome::SimpleSyndrome)
     return extract_decoding(ci.reduction,_mixed_integer_programming(ci.decoder,get_fdp(ci.reduction), syndrome.s))
 end
 
-struct CSSDecodingProblemToFlatDecodingProblem <: AbstractReductionResult
-    fdp::FlatDecodingProblem
-    c2g::CSSToGeneralDecodingProblem
-    gdp2fdp::GeneralDecodingProblemToFlatDecodingProblem
-end
-get_fdp(cfdp::CSSDecodingProblemToFlatDecodingProblem) = cfdp.fdp
-function compile(decoder::IPDecoder, sdp::CSSDecodingProblem)
-    c2g = reduce2general(sdp.tanner,[[p.px,p.py,p.pz] for p in sdp.pvec])
-    gdp2fdp = flattengdp(c2g.gdp)
-    return CompiledIP(decoder, CSSDecodingProblemToFlatDecodingProblem(gdp2fdp.fdp,c2g,gdp2fdp))
-end
-
-function extract_decoding(cfdp::CSSDecodingProblemToFlatDecodingProblem, error_qubits::Vector{Mod2})
-    return extract_decoding(cfdp.c2g,extract_decoding(cfdp.gdp2fdp,error_qubits).error_qubits)
-end
-
 function _mixed_integer_programming(decoder::IPDecoder, fdp::FlatDecodingProblem, syndrome::Vector{Mod2})
-    H = [a.x for a in fdp.tanner.H]
+    H = fdp.tanner.H
     m,n = size(H)
     model = Model(decoder.optimizer)
     !decoder.verbose && set_silent(model)
@@ -74,7 +45,7 @@ function _mixed_integer_programming(decoder::IPDecoder, fdp::FlatDecodingProblem
     @variable(model, 0 <= k[i = 1:m], Int)
     
     for i in 1:m
-        @constraint(model, sum(z[j] for j in 1:n if H[i,j] == 1) == 2 * k[i] + (syndrome[i].x ? 1 : 0))
+        @constraint(model, sum(z[j] for j in 1:n if H[i,j].x) == 2 * k[i] + (syndrome[i].x ? 1 : 0))
     end
 
     obj = 0.0
@@ -106,6 +77,10 @@ function flattengdp(gdp::GeneralDecodingProblem)
 
     dict = Dict{Int,Vector{Int}}()
     for (j,tensor) in enumerate(gdp.ptn.tensors)
+        if tensor isa Vector
+            pvec[j] = [tensor[2]]
+            continue
+        end
         nonzero_pos = findall(!iszero, tensor)
         pvec_temp = Vector{Float64}()
         for i in 1:length(code[j])
@@ -156,4 +131,25 @@ function _setmod2(vec::Vector{Int})
         end
     end
     return vans
+end
+
+function _mixed_integer_programming_for_one_solution(H::Matrix{Mod2}, syndrome::Vector{Mod2})
+    m,n = size(H)
+    model = Model(SCIP.Optimizer)
+    set_silent(model)
+
+    @variable(model, 0 <= z[i = 1:n] <= 1, Int)
+    @variable(model, 0 <= k[i = 1:m], Int)
+    
+    for i in 1:m
+        @constraint(model, sum(z[j] for j in 1:n if H[i,j].x) == 2 * k[i] + (syndrome[i].x ? 1 : 0))
+    end
+
+    optimize!(model)
+    @assert is_solved_and_feasible(model) "The problem is infeasible!"
+    return Mod2.(value.(z) .> 0.5)
+end
+
+function _mixed_integer_programming_for_one_solution(tanner::CSSTannerGraph, syndrome::CSSSyndrome)
+    return _mixed_integer_programming_for_one_solution(tanner.stgz.H, syndrome.sz), _mixed_integer_programming_for_one_solution(tanner.stgx.H, syndrome.sx)
 end

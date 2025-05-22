@@ -51,12 +51,12 @@ vizcircuit(qcen)
 qcm,st_pos  = measure_circuit_steane(data_qubits[1],st;qcen)
 vizcircuit(qcm)
 
-# Then we generate truth table for the error correction by [`make_table`](@ref). For more detials on truth table, please check [Inference with Truth Table](@ref).
-table = make_table(st, 1;error_type = "Z")
+# Then we generate correction dictionary for the error correction by [`correction_dict`](@ref).
+table = correction_dict(st, 1;et = "Z")
 
-# Now we use [`correct_circuit`](@ref) to generate the measurement-free correction circuit by encoding the truth table on the quantum circuit directly.
+# Now we use [`correction_circuit`](@ref) to generate the measurement-free correction circuit by encoding the truth table on the quantum circuit directly.
 num_qubits = nqubits(qcm)
-qccr = correct_circuit(table, 22:24, num_qubits)
+qccr = correction_circuit(table, num_qubits, 3, 25:27, 27)
 vizcircuit(qccr)
 
 # ## Circuit Simulation with Tensor Networks
