@@ -5,7 +5,7 @@ abstract type MatchingSolver end
 
 A decoder that uses matching algorithm.
 Fields:
-- `solver::T`: the matching solver
+- `solver::T`: the solver to solve the matching problem.
 """
 struct MatchingDecoder{T<:MatchingSolver} <: AbstractClassicalDecoder 
     solver::T

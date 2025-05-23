@@ -61,6 +61,11 @@ Compile the decoder to specific tanner graph and prior probability distributions
 """
 abstract type CompiledDecoder end
 
+"""
+    compile(decoder::AbstractDecoder, tanner::AbstractTannerGraph)
+
+Compile the decoder to specific tanner graph and prior probability distributions.
+"""
 function compile(decoder::AbstractDecoder, tanner::AbstractTannerGraph)
     return compile(decoder, tanner, iid_error(0.05,tanner))
 end

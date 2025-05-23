@@ -107,6 +107,11 @@ function coordinate_transform(i::Int, j::Int,nq12::Int,ns2::Int)
     return (i-1)*ns2+j+nq12
 end
 
+"""
+    product_graph(tanner1::SimpleTannerGraph, tanner2::SimpleTannerGraph)
+
+Construct the hyper-graph product code of two simple tanner graphs.
+"""
 function product_graph(tanner1::SimpleTannerGraph, tanner2::SimpleTannerGraph)
     nq = tanner1.nq*tanner2.nq+tanner1.ns*tanner2.ns
     stxs = [[[[coordinate_transform(i, k, tanner2.nq) for k in tanner2.s2q[j]]..., [coordinate_transform(k, j,  tanner1.nq*tanner2.nq, tanner2.ns) for k in tanner1.q2s[i]]...]  for i in 1:tanner1.nq, j in 1:tanner2.ns]...]
@@ -114,6 +119,19 @@ function product_graph(tanner1::SimpleTannerGraph, tanner2::SimpleTannerGraph)
     return CSSTannerGraph(nq, stxs, stzs)
 end
 
+"""
+    random_ldpc(n1::Int,n2::Int,nq::Int)
+
+Construct a random LDPC code with given connectivity numbers.
+
+Input:
+- `n1`: the number of stabilizers that each qubit is checked by.
+- `n2`: the number of qubits that each stabilizer contains.
+- `nq`: the number of qubits in the code.
+
+Output:
+- `tanner`: the tanner graph of the LDPC code.
+"""
 function random_ldpc(n1::Int,n2::Int,nq::Int)
     ns = nq*n2/n1
     qcount = zeros(nq)
