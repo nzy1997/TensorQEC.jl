@@ -41,4 +41,5 @@ makedocs(;
 deploydocs(;
     repo="github.com/nzy1997/TensorQEC.jl",
     devbranch="main",
+    push_preview=true,
 )
