@@ -57,7 +57,6 @@ jobs:
           version: '1'
       - uses: julia-actions/cache@v2
       - name: Configure doc environment
-        shell: julia --project=docs --color=yes {0}
         run: make init init-docs
       - uses: julia-actions/julia-buildpkg@v1
       - name: Build and deploy documentation
