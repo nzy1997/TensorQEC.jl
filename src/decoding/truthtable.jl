@@ -37,6 +37,19 @@ end
 abstract type AbstractSyndromeConflict end
 struct UniformError <:AbstractSyndromeConflict end
 
+"""
+    make_table(tanner::CSSTannerGraph, d::Int, sc::AbstractSyndromeConflict)
+
+Generate a truth table for error correction from a CSS Tanner graph.
+
+### Arguments
+- `tanner`: The CSS Tanner graph representing the stabilizer code
+- `d`: The maximum number of errors to consider
+- `sc`: The syndrome conflict resolution strategy
+
+### Returns
+A `TruthTable` containing the mapping from syndromes to error patterns.
+"""
 function make_table(tanner::CSSTannerGraph,d::Int, sc::AbstractSyndromeConflict)
 	N = nq(tanner)
 	num_st = ns(tanner)
@@ -113,10 +126,32 @@ function decode(ct::CompiledTable{INTs,INT}, syndrome::CSSSyndrome) where {INTs,
 	end
 end
 
+"""
+    save_table(tb::TruthTable, filename::String)
+
+Save a truth table to a file.
+
+### Arguments
+- `tb`: The truth table to save
+- `filename`: The name of the file to save to
+"""
 function save_table(tb::TruthTable, filename::String)
 	writedlm(filename,vcat.(broadcast(x->collect(x.content) ,collect(keys(tb.table))),broadcast(x->[x[1].content...,x[2].content...] ,collect(values(tb.table)))))
 end
 
+"""
+    load_table(filename::String, num_qubits::Int, num_st::Int)
+
+Load a truth table from a file.
+
+### Arguments
+- `filename`: The name of the file to load from
+- `num_qubits`: The number of qubits in the code
+- `num_st`: The number of stabilizers in the code
+
+### Returns
+A `TruthTable` loaded from the file.
+"""
 function load_table(filename::String, num_qubits::Int, num_st::Int)
 	INT = BitBasis.longinttype(num_qubits, 2)
 	INTs = BitBasis.longinttype(num_st,2)

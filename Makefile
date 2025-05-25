@@ -34,4 +34,4 @@ threshold:
 clean:
 	rm -rf docs/build
 
-.PHONY: init test
+.PHONY: init test init-docs init-examples update update-docs update-examples servedocs threshold clean

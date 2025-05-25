@@ -1,15 +1,28 @@
+"""
+    AbstractTannerGraph
+
+Abstract type for Tanner graphs, which is a bipartite graph that represents a classical linear code.
+"""
 abstract type AbstractTannerGraph end
+
+"""
+    AbstractSyndrome
+
+Abstract type for syndrome, which is basically a vector of bits.
+"""
 abstract type AbstractSyndrome end
+
 """
     SimpleTannerGraph(nq::Int, ns::Int, q2s::Vector{Vector{Int}}, s2q::Vector{Vector{Int}}, H::Matrix{Mod2})
 
 Tanner graph for a classical linear code.
-Fields:
-    nq: number of qubits
-    ns: number of stabilizers
-    q2s: a list of lists, q2s[i] is the list of stabilizers that contain qubit i
-    s2q: a list of lists, s2q[i] is the list of qubits that stabilizer i contains
-    H: the parity check matrix
+
+### Fields
+- nq: number of qubits
+- ns: number of stabilizers
+- q2s: a list of lists, q2s[i] is the list of stabilizers that contain qubit i
+- s2q: a list of lists, s2q[i] is the list of qubits that stabilizer i contains
+- H: the parity check matrix, H[i,j] = 1 means that the i-th stabilizer contains the j-th qubit
 """
 struct SimpleTannerGraph <: AbstractTannerGraph
     nq::Int
@@ -23,9 +36,10 @@ end
     SimpleTannerGraph(nq::Int, sts::Vector{Vector{Int}})
 
 Construct a Tanner graph from a list of stabilizers.
-Input:
-    nq: number of qubits
-    sts: a list of parity checks, each parity check is a list of bits.
+
+### Arguments
+- nq: number of qubits
+- sts: a list of parity checks, each parity check is a list of bits.
 """
 function SimpleTannerGraph(nq::Int, sts::Vector{Vector{Int}})
     ns = length(sts)
@@ -50,9 +64,10 @@ end
     CSSTannerGraph(cqc::CSSQuantumCode)
 
 Two tanner graph for a CSS code, one for X stabilizers and one for Z stabilizers.
-Fields:
-    stgx: Tanner graph for X stabilizers
-    stgz: Tanner graph for Z stabilizers
+
+### Fields
+- stgx: Tanner graph for X stabilizers
+- stgz: Tanner graph for Z stabilizers
 """
 struct CSSTannerGraph <: AbstractTannerGraph
     stgx::SimpleTannerGraph
