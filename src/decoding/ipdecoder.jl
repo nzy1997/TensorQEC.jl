@@ -1,13 +1,30 @@
 """
     IPDecoder <: AbstractGeneralDecoder
 
-An integer programming decoder.
+An integer programming based decoder.
+
+### Note
+TBW
+
+### Keyword Arguments
+- `optimizer = SCIP.Optimizer`: The optimizer to use for solving the integer programming problem
+- `verbose::Bool = false`: Whether to print the verbose output
 """
 Base.@kwdef struct IPDecoder <: AbstractGeneralDecoder 
-    optimizer = SCIP.Optimizer
-    verbose::Bool = false
+    optimizer = SCIP.Optimizer   # The optimizer to use for solving the integer programming problem
+    verbose::Bool = false        # Whether to print the verbose output
 end
 
+"""
+    FlatDecodingProblem
+
+TBW
+
+### Fields
+- `tanner::SimpleTannerGraph`: The Tanner graph
+- `code::Vector{Vector{Int}}`: TBW
+- `pvec::Vector{Vector{Float64}}`: The probability vector
+"""
 struct FlatDecodingProblem
     tanner::SimpleTannerGraph
     code::Vector{Vector{Int}}

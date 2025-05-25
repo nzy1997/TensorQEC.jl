@@ -38,3 +38,9 @@ To update, just type `up` in the package mode.
 ## Contribute
 
 Suggestions and Comments in the [_Issues_](https://github.com/nzy1997/TensorQEC.jl/issues) are welcome.
+
+Contributions to the documentation are welcome. To build the documentation, please run:
+```
+make init init-docs  # or make update-docs
+make servedocs
+```
