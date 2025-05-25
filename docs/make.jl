@@ -31,7 +31,10 @@ makedocs(;
             "Inference with Tensor Network" => "generated/inference.md",
             "Coherent Error Simulation" => "generated/coherent.md",
             "Measurement-Free QEC" => "generated/simulation.md",
-            "Mixed-Integer Programming Decoder" => "generated/ipdecoder.md",
+            "Decoders" => [
+                "Mixed-Integer Programming Decoder" => "generated/ipdecoder.md",
+                # MORE
+            ],
             "Performance Tips" => "performancetips.md",
         ],
         "Manual" => "man.md",
