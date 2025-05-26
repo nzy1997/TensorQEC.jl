@@ -4,7 +4,7 @@ abstract type MatchingSolver end
     MatchingDecoder{T<:MatchingSolver} <: AbstractDecoder
 
 A decoder that uses matching algorithm.
-Fields:
+### Fields:
 - `solver::T`: the solver to solve the matching problem.
 """
 struct MatchingDecoder{T<:MatchingSolver} <: AbstractClassicalDecoder 
@@ -151,7 +151,7 @@ struct CompiledMatching{ET} <: CompiledDecoder
 end
 
 function compile(decoder::MatchingDecoder, prob::ClassicalDecodingProblem)
-    fwg = tanner2fwswg(prob.tanner,prob.pvec)
+    fwg = tanner2fwswg(prob.tanner,prob.pvec.p)
     return CompiledMatching(decoder.solver,prob.tanner.nq,fwg)
 end
 

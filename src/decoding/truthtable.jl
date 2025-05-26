@@ -191,3 +191,20 @@ function get_probability(pm::IndependentDepolarizingError, cep::Tuple{INT, INT})
 	end
 	return p
 end
+
+"""
+    TableDecoder(d::Int)
+
+A decoder that uses a truth table to decode.
+
+### Arguments
+- `d`: The maximum number of errors to consider
+"""
+struct TableDecoder <: AbstractGeneralDecoder 
+	d::Int
+end
+
+function compile(decoder::TableDecoder, problem::IndependentDepolarizingDecodingProblem)
+	table = make_table(problem.tanner, decoder.d, DistributionError(problem.pvec))
+	return CompiledTable(table)
+end

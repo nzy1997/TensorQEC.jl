@@ -2,12 +2,35 @@ abstract type AbstractErrorModel end
 abstract type AbstractClassicalErrorModel <: AbstractErrorModel end
 abstract type AbstractQuantumErrorModel <: AbstractErrorModel end
 
+"""
+    IndependentFlipError(p::Vector{T})
+
+Independent flip error model.
+
+### Fields:
+- `p::Vector{T}`: the probability of each qubit flipping.
+"""
 struct IndependentFlipError{T} <: AbstractClassicalErrorModel
     p::Vector{T}
 end
+""""
+    iid_error(p::T,n::Int) where T <: Real
+
+Generate an independent and identically distributed flip error model.
+"""
 iid_error(p::T,n::Int) where T <: Real = IndependentFlipError(fill(p,n))
 iid_error(p,tanner::SimpleTannerGraph) = iid_error(p,nq(tanner))
 
+"""
+    IndependentDepolarizingError(px::Vector{T}, py::Vector{T}, pz::Vector{T})
+
+Independent depolarizing error model.
+
+### Fields:
+- `px::Vector{T}`: the probability of each qubit depolarizing in X direction.
+- `py::Vector{T}`: the probability of each qubit depolarizing in Y direction.
+- `pz::Vector{T}`: the probability of each qubit depolarizing in Z direction.
+"""
 struct IndependentDepolarizingError{T} <: AbstractQuantumErrorModel
     px::Vector{T}
     py::Vector{T}
@@ -100,6 +123,19 @@ function syndrome_extraction(error_patterns::CSSErrorPattern, tanner::CSSTannerG
     return CSSSyndrome(syndrome_extraction(error_patterns.zerror, tanner.stgx).s, syndrome_extraction(error_patterns.xerror, tanner.stgz).s)
 end
 
+""" 
+    check_logical_error(errored_qubits1::Vector{Mod2}, errored_qubits2::Vector{Mod2}, lz::Matrix{Mod2})
+    check_logical_error(errored_qubits1::CSSErrorPattern, errored_qubits2::CSSErrorPattern, lx::Matrix{Mod2}, lz::Matrix{Mod2})
+
+Check if there is a logical error.
+### Input:
+- `errored_qubits1`: the first error pattern.
+- `errored_qubits2`: the second error pattern.
+- `lz`: the logical operator for Z stabilizers.
+
+### Output:
+- `logical_error`: true if there is a logical error, false otherwise.
+"""
 function check_logical_error(errored_qubits1::Vector{Mod2}, errored_qubits2::Vector{Mod2}, lz::Matrix{Mod2})
     return any(i->sum(lz[i,:].*(errored_qubits1-errored_qubits2)).x, 1:size(lz,1))
 end

@@ -4,6 +4,15 @@ struct BPResult
     error_perm::Vector{Int}
 end
 
+"""
+    BPDecoder(bp_max_iter::Int = 100, osd::Bool = true)
+
+Belief propagation decoder.
+
+### Fields:
+- `bp_max_iter::Int`: the maximum number of iterations.
+- `osd::Bool`: whether to use osd.
+"""
 Base.@kwdef struct BPDecoder <: AbstractClassicalDecoder
     bp_max_iter::Int = 100
     osd::Bool = true
@@ -19,7 +28,7 @@ struct CompiledBP <: CompiledDecoder
 end
 
 function compile(decoder::BPDecoder, problem::ClassicalDecodingProblem)
-    mu = [log((1-problem.pvec[i])/problem.pvec[i]) for i in 1:problem.tanner.nq]
+    mu = [log((1-problem.pvec.p[i])/problem.pvec.p[i]) for i in 1:problem.tanner.nq]
     mq2s = Dict([(i,j) => mu[i] for i in 1:problem.tanner.nq for j in problem.tanner.q2s[i] ])
     ms2q = Dict([(s,i) => 0.0 for s in 1:problem.tanner.ns for i in problem.tanner.s2q[s] ])
     return CompiledBP(problem.tanner, decoder.bp_max_iter,mq2s,ms2q,mu, decoder.osd)

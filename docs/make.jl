@@ -32,8 +32,9 @@ makedocs(;
             "Coherent Error Simulation" => "generated/coherent.md",
             "Measurement-Free QEC" => "generated/simulation.md",
             "Decoders" => [
+                "Error Model and Syndrome Extraction" => "generated/error_model.md",
+                "Decoder Interface" => "generated/decoder.md",
                 "Mixed-Integer Programming Decoder" => "generated/ipdecoder.md",
-                # MORE
             ],
             "Performance Tips" => "performancetips.md",
         ],
