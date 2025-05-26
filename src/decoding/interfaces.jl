@@ -80,8 +80,18 @@ end
 
 """
     decode(decoder::AbstractDecoder, problem::AbstractDecodingProblem, syndrome::AbstractSyndrome)
+    decode(compiled_decoder::CompiledDecoder, syndrome::AbstractSyndrome)
 
 Decode the syndrome using the decoder.
+
+### Input:
+- `decoder::AbstractDecoder`: the decoder.
+- `problem::AbstractDecodingProblem`: the decoding problem.
+- `syndrome::AbstractSyndrome`: the syndrome.
+- `compiled_decoder::CompiledDecoder`: the compiled decoder.
+
+### Output:
+- `decoding_result::DecodingResult`: the decoding result.
 """
 function decode(decoder::AbstractDecoder, tanner::AbstractTannerGraph, syndrome::AbstractSyndrome)
     return decode(decoder, tanner, syndrome, iid_error(0.05,tanner))

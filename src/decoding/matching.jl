@@ -12,12 +12,22 @@ struct MatchingDecoder{T<:MatchingSolver} <: AbstractClassicalDecoder
 end
 struct IPMatchingSolver <: MatchingSolver end
 
-# The last element is boundary
+"""
+    FWSWeightedGraph{T}
+
+A weighted graph that uses the Floyd-Warshall algorithm to find the shortest path. The last vertex stands for the boundary.
+
+### Fields:
+- `edges::Vector{SimpleWeightedEdge{Int,T}}`: the edges of the graph.
+- `v2e::Vector{Vector{Int}}`: the vertex to edge mapping.
+- `dists::Matrix{T}`: the distance matrix.
+- `error_path::Matrix{Vector{Int}}`: the path matrix that stores the shortest path between each pair of vertices.
+"""
 struct FWSWeightedGraph{T}
     edges::Vector{SimpleWeightedEdge{Int,T}}
     v2e::Vector{Vector{Int}}
     dists::Matrix{T}
-    error_path:: Matrix{Vector{Int}}
+    error_path::Matrix{Vector{Int}}
 end
 Graphs.nv(fwg::FWSWeightedGraph) = length(fwg.v2e)
 
@@ -79,7 +89,14 @@ function min_add_edge!(g, s, d, w,edge_mat,i)
     end
 end
 
-# The last element is boundary
+"""
+    MatchingWithBoundary{MT <: AbstractMatrix}
+
+A matching problem with a boundary. Only -1 stabilizers are considered as vertices. +1 stabilizers are removed.
+
+### Fields:
+- `adj_mat::MT`: the adjacency matrix of the graph.
+"""
 struct MatchingWithBoundary{MT <: AbstractMatrix}
     adj_mat::MT
 end
