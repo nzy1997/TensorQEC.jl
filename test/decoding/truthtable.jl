@@ -77,3 +77,14 @@ end
     ep = TensorQEC.lluint2error(tb.table[INT(156)],9)
     @test syn == syndrome_extraction(ep, tanner)
 end
+
+@testset "compile" begin
+    tanner = CSSTannerGraph(SurfaceCode(3, 3))
+    problem = TensorQEC.IndependentDepolarizingDecodingProblem(tanner,iid_error(0.05,0.05,0.05,9))
+    decoder = TableDecoder(3)
+    compiled = compile(decoder, problem)
+    error_qubits = random_error_qubits(iid_error(0.05,0.05,0.05,9))
+    syn = syndrome_extraction(error_qubits, tanner)
+    res = decode(compiled, syn)
+    @test syn == syndrome_extraction(res.error_qubits, tanner)
+end

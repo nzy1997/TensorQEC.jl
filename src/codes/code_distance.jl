@@ -63,6 +63,18 @@ function logical_operator(Hx::Matrix{Bool}, Hz::Matrix{Bool})
     return Mod2.(lz)
 end
 
+"""
+    logical_operator(tanner::CSSTannerGraph)
+
+Calculate the logical operators of a CSS code.
+
+Input:
+- `tanner`: the tanner graph of the CSS code.
+
+Output:
+- `lx`: the logical operator for X stabilizers.
+- `lz`: the logical operator for Z stabilizers.
+"""
 function logical_operator(tanner::CSSTannerGraph)
     lz = logical_operator([a.x for a in tanner.stgx.H], [a.x for a in tanner.stgz.H])
     lx = logical_operator([a.x for a in tanner.stgz.H], [a.x for a in tanner.stgx.H])
@@ -113,6 +125,17 @@ function code_distance(Hz::Matrix{Int},lz::Matrix{Int}; verbose = false,ipsolver
     return  objective_value(model)
 end
 
+"""
+    code_distance(tanner::CSSTannerGraph)
+
+Calculate the code distance of a CSS code.
+
+Input:
+- `tanner`: the tanner graph of the CSS code.
+
+Output:
+- `d`: the distance of the code.
+"""
 function code_distance(tanner::CSSTannerGraph)
     lx,lz = logical_operator(tanner)
     dx = code_distance(Int.(tanner.stgz.H), Int.(lz))

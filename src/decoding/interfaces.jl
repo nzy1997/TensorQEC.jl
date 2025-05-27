@@ -6,18 +6,23 @@ The abstract type for a decoding problem.
 abstract type AbstractDecodingProblem end
 
 """ 
-    ClassicalDecodingProblem(tanner::SimpleTannerGraph, pvec::Vector{Float64})
+    ClassicalDecodingProblem(tanner::SimpleTannerGraph, pvec::IndependentFlipError
 
 A classical decoding problem.
 Fields:
 - `tanner::SimpleTannerGraph`: the Tanner graph
-- `pvec::Vector{Float64}`: the independent probability distributions on each bit
+- `pvec::IndependentFlipError`: the independent probability distributions on each bit
 """
 struct ClassicalDecodingProblem <: AbstractDecodingProblem
     tanner::SimpleTannerGraph
-    pvec::Vector{Float64}
+    pvec::IndependentFlipError
 end
-get_problem(tanner::SimpleTannerGraph,pvec::IndependentFlipError) = ClassicalDecodingProblem(tanner,pvec.p)
+
+function ClassicalDecodingProblem(tanner::SimpleTannerGraph, pvec::Vector)
+    return ClassicalDecodingProblem(tanner, IndependentFlipError(pvec))
+end
+
+get_problem(tanner::SimpleTannerGraph,pvec::IndependentFlipError) = ClassicalDecodingProblem(tanner,pvec)
 """ 
     IndependentDepolarizingDecodingProblem(tanner::CSSTannerGraph, pvec::IndependentDepolarizingError)
 
@@ -61,6 +66,11 @@ Compile the decoder to specific tanner graph and prior probability distributions
 """
 abstract type CompiledDecoder end
 
+"""
+    compile(decoder::AbstractDecoder, tanner::AbstractTannerGraph)
+
+Compile the decoder to specific tanner graph and prior probability distributions.
+"""
 function compile(decoder::AbstractDecoder, tanner::AbstractTannerGraph)
     return compile(decoder, tanner, iid_error(0.05,tanner))
 end
@@ -70,8 +80,18 @@ end
 
 """
     decode(decoder::AbstractDecoder, problem::AbstractDecodingProblem, syndrome::AbstractSyndrome)
+    decode(compiled_decoder::CompiledDecoder, syndrome::AbstractSyndrome)
 
 Decode the syndrome using the decoder.
+
+### Input:
+- `decoder::AbstractDecoder`: the decoder.
+- `problem::AbstractDecodingProblem`: the decoding problem.
+- `syndrome::AbstractSyndrome`: the syndrome.
+- `compiled_decoder::CompiledDecoder`: the compiled decoder.
+
+### Output:
+- `decoding_result::DecodingResult`: the decoding result.
 """
 function decode(decoder::AbstractDecoder, tanner::AbstractTannerGraph, syndrome::AbstractSyndrome)
     return decode(decoder, tanner, syndrome, iid_error(0.05,tanner))
@@ -84,6 +104,15 @@ function decode(decoder::AbstractDecoder, problem::AbstractDecodingProblem, synd
     return decode(ct, syndrome)
 end
 
+"""
+    DecodingResult(success_tag::Bool, error_qubits::ET)
+
+The result of decoding.
+
+### Fields:
+- `success_tag::Bool`: whether the decoding is successful.
+- `error_qubits::ET`: the error qubits.
+"""
 struct DecodingResult{ET}
     success_tag::Bool
     error_qubits::ET
@@ -114,7 +143,7 @@ function decode(cd::CompiledGeneralDecoder, syndrome::CSSSyndrome)
 end
 
 function compile(decoder::AbstractGeneralDecoder, cdp::ClassicalDecodingProblem)
-    gdp = GeneralDecodingProblem(cdp.tanner, TensorNetwork(DynamicEinCode([[i] for i in 1:cdp.tanner.nq],Int[]),[[1-p, p] for p in cdp.pvec]))
+    gdp = GeneralDecodingProblem(cdp.tanner, TensorNetwork(DynamicEinCode([[i] for i in 1:cdp.tanner.nq],Int[]),[[1-p, p] for p in cdp.pvec.p]))
     return compile(decoder, gdp)
 end
 

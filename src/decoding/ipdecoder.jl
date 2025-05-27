@@ -3,9 +3,6 @@
 
 An integer programming based decoder.
 
-### Note
-TBW
-
 ### Keyword Arguments
 - `optimizer = SCIP.Optimizer`: The optimizer to use for solving the integer programming problem
 - `verbose::Bool = false`: Whether to print the verbose output
@@ -18,11 +15,11 @@ end
 """
     FlatDecodingProblem
 
-TBW
+Integer programming decoder can not directly apply to a tensor network probability distribution. We need to use auxiliary variables to represent each non-zero element of every tensor. The `FlatDecodingProblem` is a representation of the probability distribution in a flat form.
 
 ### Fields
 - `tanner::SimpleTannerGraph`: The Tanner graph
-- `code::Vector{Vector{Int}}`: TBW
+- `code::Vector{Vector{Int}}`: The tensor code of the probability distribution
 - `pvec::Vector{Vector{Float64}}`: The probability vector
 """
 struct FlatDecodingProblem
