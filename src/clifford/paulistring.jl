@@ -43,8 +43,21 @@ Yao.chsubblocks(::PauliString, blocks) = PauliString(blocks...)
 Yao.ishermitian(::PauliString) = true
 Yao.isreflexive(::PauliString) = true
 Yao.isunitary(::PauliString) = true
+
+"""
+    iscommute(a::PauliString, b::PauliString)
+
+Returns `true` if two Pauli strings commute, i.e. ``a b = b a``.
+"""
 Yao.iscommute(a::PauliString{N}, b::PauliString{N}) where N = _coeff(a, b) ∈ (0, 2)
+
+"""
+    isanticommute(a::PauliString, b::PauliString)
+
+Returns `true` if two Pauli strings anticommute, i.e. ``a b + b a = 0``.
+"""
 isanticommute(a::PauliString{N}, b::PauliString{N}) where N = _coeff(a, b) ∈ (1, 3)
+
 # the pauli string coefficient of the multiplication of a and b
 function _coeff(a::PauliString, b::PauliString)
     c = 0

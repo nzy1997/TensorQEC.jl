@@ -26,8 +26,8 @@ makedocs(;
     pages=[
         "Home" => "index.md",
         "Topics" => [
+            "Pauli Basis and Clifford group" => "clifford.md",
             "QEC Codes" => "generated/codes.md",
-            "Pauli Basis and Clifford group" => "generated/clifford.md",
             "Inference with Tensor Network" => "generated/inference.md",
             "Coherent Error Simulation" => "generated/coherent.md",
             "Measurement-Free QEC" => "generated/simulation.md",
