@@ -4,7 +4,7 @@ struct Tableau{N}
 end
 
 function new_tableau(n::Int)
-    return Tableau([PauliGroupElement(0,paulistring(n,2,i)) for i in 1:n], [PauliGroupElement(0,paulistring(n,4,i)) for i in 1:n])
+    return Tableau([PauliGroupElement(0,PauliString(n, i => Pauli(1))) for i in 1:n], [PauliGroupElement(0,PauliString(n, i => Pauli(3))) for i in 1:n])
 end
 
 Base.show(io::IO, ::MIME"text/plain", tab::Tableau) = show(io, tab)

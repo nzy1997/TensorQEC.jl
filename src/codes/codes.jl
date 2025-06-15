@@ -40,24 +40,24 @@ function stabilizers(sc::SurfaceCode)
 	pauli_string = PauliString{m*n}[]
 	for i in 1:m-1, j in 1:n-1
 		if mod(i+j, 2) == 0
-			push!(pauli_string, paulistring(m*n, 2, (qubit_config[i, j], qubit_config[i+1, j], qubit_config[i, j+1], qubit_config[i+1, j+1])))
+			push!(pauli_string, PauliString(m*n, (qubit_config[i, j], qubit_config[i+1, j], qubit_config[i, j+1], qubit_config[i+1, j+1])=>Pauli(1)))
 		end
 	end
 	for i in 1:m÷2
-		push!(pauli_string, paulistring(m*n, 2, (qubit_config[2*i-1+mod(n+1,2), n], qubit_config[2*i+mod(n+1,2), n])))
+		push!(pauli_string, PauliString(m*n, (qubit_config[2*i-1+mod(n+1,2), n], qubit_config[2*i+mod(n+1,2), n])=>Pauli(1)))
 		if 2*i+1 <= m
-			push!(pauli_string, paulistring(m*n, 2, (qubit_config[2*i, 1], qubit_config[2*i+1, 1])))
+			push!(pauli_string, PauliString(m*n, (qubit_config[2*i, 1], qubit_config[2*i+1, 1])=>Pauli(1)))
 		end
 	end
 	for i in 1:m-1, j in 1:n-1
 		if mod(i+j, 2) == 1
-			push!(pauli_string, paulistring(m*n, 4, (qubit_config[i, j], qubit_config[i+1, j], qubit_config[i, j+1], qubit_config[i+1, j+1])))
+			push!(pauli_string, PauliString(m*n, (qubit_config[i, j], qubit_config[i+1, j], qubit_config[i, j+1], qubit_config[i+1, j+1])=>Pauli(3)))
 		end
 	end
 	for j in 1:n÷2
-		push!(pauli_string, paulistring(m*n, 4, (qubit_config[1, 2*j-1], qubit_config[1, 2*j])))
+		push!(pauli_string, PauliString(m*n, (qubit_config[1, 2*j-1], qubit_config[1, 2*j])=>Pauli(3)))
 		if 2*j+1 <= n
-			push!(pauli_string, paulistring(m*n, 4, (qubit_config[m, 2*j-1+mod(m,2)], qubit_config[m, 2*j+mod(m,2)])))
+			push!(pauli_string, PauliString(m*n, (qubit_config[m, 2*j-1+mod(m,2)], qubit_config[m, 2*j+mod(m,2)])=>Pauli(3)))
 		end
 	end
 	return pauli_string
@@ -73,18 +73,18 @@ struct ShorCode  <: CSSQuantumCode end
 function stabilizers(::ShorCode; linearly_independent::Bool = true)
 	nq = 9
 	pauli_string = PauliString{nq}[]
-	push!(pauli_string, paulistring(nq, 2, (1,2,3,4,5,6)))
-	push!(pauli_string, paulistring(nq, 2, (1, 2, 3, 7,8,9)))
-	linearly_independent || push!(pauli_string,paulistring(nq, 2, (4, 5, 6, 7, 8, 9)))
-	push!(pauli_string, paulistring(nq, 4, (1, 2)))
-	push!(pauli_string, paulistring(nq, 4, (1, 3)))
-	linearly_independent || push!(pauli_string, paulistring(nq, 4, (2, 3)))
-	push!(pauli_string, paulistring(nq, 4, (4, 5)))
-	push!(pauli_string, paulistring(nq, 4, (4,6)))
-	linearly_independent || push!(pauli_string, paulistring(nq, 4, (5, 6)))
-	push!(pauli_string, paulistring(nq, 4, (7,8)))
-	push!(pauli_string, paulistring(nq, 4, (7, 9)))
-	linearly_independent || push!(pauli_string, paulistring(nq, 4, (8, 9)))
+	push!(pauli_string, PauliString(nq, (1,2,3,4,5,6)=>Pauli(1)))
+	push!(pauli_string, PauliString(nq, (1, 2, 3, 7,8,9)=>Pauli(1)))
+	linearly_independent || push!(pauli_string, PauliString(nq, (4, 5, 6, 7, 8, 9)=>Pauli(1)))
+	push!(pauli_string, PauliString(nq, (1, 2)=>Pauli(3)))
+	push!(pauli_string, PauliString(nq, (1, 3)=>Pauli(3)))
+	linearly_independent || push!(pauli_string, PauliString(nq, (2, 3)=>Pauli(3)))
+	push!(pauli_string, PauliString(nq, (4, 5)=>Pauli(3)))
+	push!(pauli_string, PauliString(nq, (4,6)=>Pauli(3)))
+	linearly_independent || push!(pauli_string, PauliString(nq, (5, 6)=>Pauli(3)))
+	push!(pauli_string, PauliString(nq, (7,8)=>Pauli(3)))
+	push!(pauli_string, PauliString(nq, (7, 9)=>Pauli(3)))
+	linearly_independent || push!(pauli_string, PauliString(nq, (8, 9)=>Pauli(3)))
 	return pauli_string
 end
 
@@ -117,11 +117,11 @@ struct Code832  <: CSSQuantumCode end
 function stabilizers(::Code832)
 	nq = 8
 	pauli_string = PauliString{nq}[]
-	push!(pauli_string, PauliString(fill(2, 8)...))
-	push!(pauli_string, PauliString(fill(4, 8)...))
-	push!(pauli_string, paulistring(nq, 4, (1,3,5,7)))
-	push!(pauli_string, paulistring(nq, 4, (1,2,3,4)))
-	push!(pauli_string, paulistring(nq, 4, (1,2,5,6)))
+	push!(pauli_string, PauliString(fill(Pauli(1), 8)...))
+	push!(pauli_string, PauliString(fill(Pauli(3), 8)...))
+	push!(pauli_string, PauliString(nq, (1,3,5,7) => Pauli(3)))
+	push!(pauli_string, PauliString(nq, (1,2,3,4) => Pauli(1)))
+	push!(pauli_string, PauliString(nq, (1,2,5,6) => Pauli(1)))
 	return pauli_string
 end
 
@@ -135,8 +135,8 @@ struct Code422  <: CSSQuantumCode end
 function stabilizers(::Code422)
 	nq = 4
 	pauli_string = PauliString{nq}[]
-	push!(pauli_string, PauliString(fill(2, 4)...))
-	push!(pauli_string, PauliString(fill(4, 4)...))
+	push!(pauli_string, PauliString(fill(Pauli(1), 4)...))
+	push!(pauli_string, PauliString(fill(Pauli(3), 4)...))
 	return pauli_string
 end
 
@@ -150,14 +150,14 @@ struct Code1573  <: CSSQuantumCode end
 function stabilizers(::Code1573)
 	nq = 15
 	pauli_string = PauliString{nq}[]
-	push!(pauli_string, paulistring(nq, 2, 8:15))
-	push!(pauli_string, paulistring(nq, 2, (4:7) ∪ (12:15)))
-	push!(pauli_string, paulistring(nq, 2, (2,3,6,7,10,11,14,15)))
-	push!(pauli_string, paulistring(nq, 2, 1:2:15))
-	push!(pauli_string, paulistring(nq, 4, 8:15))
-	push!(pauli_string, paulistring(nq, 4, (4:7) ∪ (12:15)))
-	push!(pauli_string, paulistring(nq, 4, (2,3,6,7,10,11,14,15)))
-	push!(pauli_string, paulistring(nq, 4, 1:2:15))
+	push!(pauli_string, PauliString(nq, 8:15 => Pauli(1)))
+	push!(pauli_string, PauliString(nq, (4:7) ∪ (12:15) => Pauli(1)))
+	push!(pauli_string, PauliString(nq, (2,3,6,7,10,11,14,15) => Pauli(1)))
+	push!(pauli_string, PauliString(nq, 1:2:15 => Pauli(1)))
+	push!(pauli_string, PauliString(nq, 8:15 => Pauli(3)))
+	push!(pauli_string, PauliString(nq, (4:7) ∪ (12:15) => Pauli(3)))
+	push!(pauli_string, PauliString(nq, (2,3,6,7,10,11,14,15) => Pauli(3)))
+	push!(pauli_string, PauliString(nq, 1:2:15 => Pauli(3)))
 	return pauli_string
 end
 
@@ -170,11 +170,12 @@ struct Code513  <: QuantumCode end
 
 function stabilizers(::Code513)
 	nq = 5
+    i, x, y, z = Pauli(0), Pauli(1), Pauli(2), Pauli(3)
 	pauli_string = PauliString{nq}[]
-	push!(pauli_string, PauliString((2,4,4,2,1)))
-	push!(pauli_string, PauliString((1,2,4,4,2)))
-	push!(pauli_string, PauliString((2,1,2,4,4)))
-	push!(pauli_string, PauliString((4,2,1,2,4)))
+	push!(pauli_string, PauliString((x,z,z,x,i)))
+	push!(pauli_string, PauliString((i,x,z,z,x)))
+	push!(pauli_string, PauliString((x,i,x,z,z)))
+	push!(pauli_string, PauliString((z,x,i,x,z)))
 	return pauli_string
 end
 
@@ -204,7 +205,7 @@ function stabilizers(bb::BivariateBicycleCode{N};rm_linear_dependency::Bool = tr
 		for (s,t) in bb.vc
 			push!(st, he[mod1(i+s, m), mod1(j+t, n)])
 		end
-		push!(output, paulistring(nq, 2, st))
+		push!(output, PauliString(nq, st => Pauli(1)))
 	end
 	# Z stabilizers
 	for j in 1:n, i in 1:m	
@@ -215,7 +216,7 @@ function stabilizers(bb::BivariateBicycleCode{N};rm_linear_dependency::Bool = tr
 		for (s,t) in bb.hd
 			push!(st, he[mod1(i-s, m), mod1(j-t, n)])
 		end
-		push!(output, paulistring(nq, 4, st))
+		push!(output, PauliString(nq, st => Pauli(3)))
 	end
 	if rm_linear_dependency
 		output = remove_linear_dependency(output)
@@ -409,10 +410,10 @@ function stabilizers(c::TriangularColorCode)
 	nq = size(checks,2)
 	pauli_string = PauliString{nq}[]
 	for i in axes(checks,1)
-		push!(pauli_string, paulistring(nq, 2, findall(checks[i,:]) ))
+		push!(pauli_string, PauliString(nq, findall(checks[i,:]) => Pauli(1)))
 	end
 	for i in axes(checks,1)
-		push!(pauli_string, paulistring(nq, 4, findall(checks[i,:]) ))
+		push!(pauli_string, PauliString(nq, findall(checks[i,:]) => Pauli(3)))
 	end
 	return pauli_string
 end

@@ -38,17 +38,18 @@ end
 	@test ps2 == PauliString((i, z))
 
 	pmcn = TensorQEC.to_perm_matrix(Int8, Int, TensorQEC.pauli_repr(ConstGate.CNOT))
-	ps = PauliString((2, 1, 3, 2))
+	ps = PauliString((x, i, y, x))
 	ps2, val = TensorQEC.perm_of_paulistring(ps, [4, 2]=>pmcn)
 	@test ps2.operators == (x, x, y, x)
 
-	ps = PauliString((2, 4, 3, 2))
+	ps = PauliString((x, z, y, x))
 	ps2, val = TensorQEC.perm_of_paulistring(ps, [3, 2]=>pmcn)
 	@test ps2.operators == (x, y, x, x)
 end
 
 @testset "perm_of_pauligroup" begin
-	ps = PauliString(2,3,4,3,2,1)
+    i, x, y, z = Pauli(0), Pauli(1), Pauli(2), Pauli(3)
+	ps = PauliString((x, y, z, y, x, i))
 	pg = PauliGroupElement(1, ps)
 	pm = TensorQEC.to_perm_matrix(Int8, Int, pauli_repr(ConstGate.CNOT))
 
@@ -58,8 +59,9 @@ end
 end
 
 @testset "clifford_simulate" begin
+    i, x, y, z = Pauli(0), Pauli(1), Pauli(2), Pauli(3)
 	qc = chain(put(5, 1 => H), control(5, 1, 2 => Z), control(5, 3, 4 => X), control(5, 5, 3 => X), put(5, 1 => X))
-	ps = PauliString((4, 3, 1, 3, 2))
+	ps = PauliString((z, y, i, y, x))
 	
 	res = clifford_simulate(ps, qc)
 	ps2 = res.output

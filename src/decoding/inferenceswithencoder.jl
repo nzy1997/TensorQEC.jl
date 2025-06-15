@@ -79,19 +79,19 @@ Generate the error Pauli string in the coding space. To correct the error, we st
 - `ps`: The error Pauli string in the coding space.
 """
 function correction_pauli_string(qubit_num::Int, syn::Dict{Int, Bool}, prob::Dict{Int, Vector{Float64}})
-	ps = ones(Int, qubit_num)
+	ps = fill(Pauli(0), qubit_num)
 	for (k, v) in prob
 		if k ∈ keys(syn)
 			if syn[k] #syn[k] is true, measure outcome is -1, use X or Y
-				ps[k] = (findmax(v)[2]) == 1 ? 2 : 3
+				ps[k] = (findmax(v)[2]) == 1 ? Pauli(1) : Pauli(2)
 			elseif findmax(v)[2] == 2
-				ps[k] = 4
+				ps[k] = Pauli(3)
 			end
 		else
-            ps[k] = [1,2,3,4][findmax(v)[2]]
+            ps[k] = Pauli(findmax(v)[2] - 1)
 		end
 	end
-	return PauliString(ps[1:end]...)
+	return PauliString(ps...)
 end
 
 """

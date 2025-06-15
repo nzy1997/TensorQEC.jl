@@ -48,8 +48,8 @@ end
 
 function bimatrix2stabilizers(bimat::CSSBimatrix)
 	n = Yao.nqubits(bimat)
-	xs = [paulistring(n, 2, bimat.ordering[findall(isone, bimat.matrix[i, 1:n])]) for i in 1:bimat.xcodenum]
-	zs = [paulistring(n, 4, bimat.ordering[findall(isone, bimat.matrix[i, n+1:end])]) for i in bimat.xcodenum+1:size(bimat.matrix, 1)]
+	xs = [PauliString(n, bimat.ordering[findall(isone, bimat.matrix[i, 1:n])] => Pauli(1)) for i in 1:bimat.xcodenum]
+	zs = [PauliString(n, bimat.ordering[findall(isone, bimat.matrix[i, n+1:end])] => Pauli(3)) for i in bimat.xcodenum+1:size(bimat.matrix, 1)]
 	return vcat(xs, zs)
 end
 
