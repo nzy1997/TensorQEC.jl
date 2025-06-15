@@ -1,13 +1,20 @@
 # we redefine the pauli gates to avoid the Yao.jl dependency
 """
-    Pauli
+    AbstractPauli{N}
+
+An abstract type for Pauli operators, where `N` is the number of qubits.
+"""
+abstract type AbstractPauli{N} end
+
+"""
+    Pauli <: AbstractPauli{1}
 
 A Pauli operator, i.e. ``I``, ``X``, ``Y``, or ``Z``.
 
 ### Fields
 - `id::Int`: the id of the Pauli operator, which is 0 for ``I``, 1 for ``X``, 2 for ``Y``, or 3 for ``Z``.
 """
-struct Pauli
+struct Pauli <: AbstractPauli{1}
     id::Int
     function Pauli(id::Int)
         @assert 0 <= id <= 3 "Invalid Pauli operator id: $id (not in range 0-3)"
@@ -58,7 +65,7 @@ For example, the Pauli string `XYZ` has matrix representation `Z ⊗ Y ⊗ X`.
 ### Arguments
 - `pairs::Pair...`: the pairs of locations and Pauli operators.
 """
-struct PauliString{N}
+struct PauliString{N} <: AbstractPauli{N}
     operators::NTuple{N, Pauli}
     function PauliString(operators::NTuple{N, Pauli}) where N
         return new{N}(operators)
@@ -103,7 +110,7 @@ end
 function YaoAPI.iscommute(a::PauliString{N}, b::PauliString{N}) where N
     c = 0
     for (idx, idy) in zip(a.operators, b.operators)
-        coeff, idz = _mul(idx.id, idy.id)
+        coeff, _ = _mul(idx, idy)
         c = _mul_coeff(coeff, c)
     end
     return c ∈ (0, 2)
@@ -126,14 +133,6 @@ function YaoAPI.mat(::Type{T}, ps::PauliString) where T
     return reduce(kron, sparse.(YaoAPI.mat.(T, ps.operators[end:-1:1])))
 end
 
-# algebra
-function Base.:(*)(a::PauliString{N}, b::PauliString{N}) where {N}
-    return PauliGroupElement(0, a) * PauliGroupElement(0, b)
-end
-Base.:(*)(a::Number, b::PauliString) = SumOfPaulis([a=>b])
-Base.:(*)(a::PauliString, b::Number) = SumOfPaulis([b=>a])
-Base.:(/)(a::PauliString, b::Number) = SumOfPaulis([1/b=>a])
-
 """
     PauliGroupElement{N}
 
@@ -143,7 +142,7 @@ A Pauli group element is a Pauli string with a phase factor of `im^k` where `k` 
 - `coeff::Int`: the coefficient of the Pauli string, i.e. `im^{coeff}`. It should be in range 0-3.
 - `ps::PauliString{N}`: the Pauli string.
 """
-struct PauliGroupElement{N}
+struct PauliGroupElement{N} <: AbstractPauli{N}
     coeff::Int
     ps::PauliString{N}
     function PauliGroupElement(coeff::Int, ps::PauliString{N}) where N
@@ -161,11 +160,12 @@ Base.length(pg::PauliGroupElement) = length(pg.ps)
 function Base.:(*)(a::PauliGroupElement{N}, b::PauliGroupElement{N}) where {N}
     cc = _mul_coeff(a.coeff, b.coeff)
     pc = map(a.ps.operators, b.ps.operators) do x, y
-        coeff, idz = _mul(x.id, y.id)
+        coeff, idz = _mul(x, y)
         (coeff, idz)
     end
-    return PauliGroupElement(mapreduce(x -> x[1], _mul_coeff, pc, init=cc), PauliString(ntuple(i->Pauli(pc[i][2]), Val{N}())))
+    return PauliGroupElement(mapreduce(x -> x[1], _mul_coeff, pc, init=cc), PauliString(ntuple(i->pc[i][2], Val{N}())))
 end
+Base.one(::Type{PauliGroupElement{N}}) where N = PauliGroupElement(0, PauliString(ntuple(i->Pauli(0), Val{N}())))
 
 # Visualization
 Base.show(io::IO, ::MIME"text/plain", ps::PauliGroupElement) = show(io, ps)
@@ -187,7 +187,7 @@ end
 function YaoAPI.iscommute(a::PauliGroupElement{N}, b::PauliGroupElement{N}) where N
     c = 0
     for (idx, idy) in zip(a.ps.operators, b.ps.operators)
-        coeff, _ = _mul(idx.id, idy.id)
+        coeff, _ = _mul(idx, idy)
         c = _mul_coeff(coeff, c)
     end
     return c ∈ (0, 2)
@@ -209,8 +209,31 @@ A sum of Pauli strings is a linear combination of Pauli strings, e.g. ``c_1 P_1 
 ### Fields
 - `items::Vector{Pair{T, PauliString{N}}}`: the vector of pairs of coefficients and Pauli strings.
 """
-struct SumOfPaulis{T<:Number, N}
+struct SumOfPaulis{T<:Number, N} <: AbstractPauli{N}
 	items::Vector{Pair{T, PauliString{N}}}
+end
+SumOfPaulis(p::Pauli) = SumOfPaulis(Int, p)
+SumOfPaulis(::Type{T}, p::Pauli) where T = SumOfPaulis([one(T)=>PauliString(p)])
+SumOfPaulis(p::PauliString) = SumOfPaulis(Int, p)
+SumOfPaulis(::Type{T}, p::PauliString) where T = SumOfPaulis([one(T)=>p])
+SumOfPaulis(p::SumOfPaulis) = p
+
+"""
+    sumofpaulis(items::Vector{Pair{T, PauliString{N}}}) where {T, N}
+
+Returns a sum of Pauli strings from a vector of pairs of coefficients and Pauli strings.
+Unlike `SumOfPaulis`, it will merge the same Pauli strings and sum up the coefficients.
+"""
+function sumofpaulis(items::Vector{Pair{T, PauliString{N}}}) where {T, N}
+    res = Dict{PauliString{N}, T}()
+    for (c, p) in items
+        if haskey(res, p)
+            res[p] += c
+        else
+            res[p] = c
+        end
+    end
+    return SumOfPaulis([c=>p for (p, c) in res])
 end
 
 """
@@ -227,6 +250,109 @@ function SumOfPaulis(m::AbstractMatrix; atol=0)
 	coeffs = pauli_decomposition(m)
 	return SumOfPaulis([coeffs[ci]=>PauliString(Pauli.(ci.I .- 1)) for ci in CartesianIndices(coeffs) if !isapprox(coeffs[ci], 0; atol=atol)] |> vec)
 end
+
+Base.show(io::IO, ::MIME"text/plain", sp::SumOfPaulis) = show(io, sp)
+function Base.show(io::IO, sp::SumOfPaulis)
+    for (i, (c, p)) in enumerate(sp.items)
+        print(io, c, " * ", p)
+        if i < length(sp.items)
+            print(io, " + ")
+        end
+    end
+end
+function Base.:(==)(a::SumOfPaulis{T1, N}, b::SumOfPaulis{T2, N}) where {T1, T2, N}
+    length(a.items) == length(b.items) || return false
+    items1 = sort(a.items, by=x->x.second)
+    items2 = sort(b.items, by=x->x.second)
+    return all(x.first == y.first && x.second == y.second for (x, y) in zip(items1, items2))
+end
+function Base.isapprox(a::SumOfPaulis{T1, N}, b::SumOfPaulis{T2, N}; kwargs...) where {T1, T2, N}
+    length(a.items) == length(b.items) || return false
+    items1 = sort(a.items, by=x->x.second)
+    items2 = sort(b.items, by=x->x.second)
+    return all(isapprox(x.first, y.first; kwargs...) && x.second == y.second for (x, y) in zip(items1, items2))
+end
+
+
+function Base.:(*)(a::SumOfPaulis{T1, N}, b::SumOfPaulis{T2, N}) where {T1, T2, N}
+    return sumofpaulis([((coeff, p) = _mul(p1, p2); im^coeff * c1*c2=>p) for (c1, p1) in a.items for (c2, p2) in b.items])
+end
+Base.one(::Type{SumOfPaulis{T, N}}) where {T, N} = SumOfPaulis([one(T)=>PauliString(ntuple(i->Pauli(0), Val{N}()))])
+
+function Base.:(+)(a::SumOfPaulis{T1, N}, b::SumOfPaulis{T2, N}) where {T1, T2, N}
+    return sumofpaulis(vcat(a.items, b.items))
+end
+Base.:(-)(a::SumOfPaulis{T, N}) where {T, N} = SumOfPaulis([-c=>p for (c, p) in a.items])
+Base.:(-)(a::SumOfPaulis{T1, N}, b::SumOfPaulis{T2, N}) where {T1, T2, N} = a + (-b)
+Base.zero(::Type{SumOfPaulis{T, N}}) where {T, N} = SumOfPaulis(Pair{T, PauliString{N}}[])
+
+YaoAPI.mat(sp::SumOfPaulis) = YaoAPI.mat(ComplexF64, sp)
+YaoAPI.mat(::Type{T}, sp::SumOfPaulis) where T = sum([c * mat(T, p) for (c, p) in sp.items])
+
+# algebra
+function Base.:(*)(a::Pauli, b::Pauli)
+    coeff, idz = _mul(a, b)
+    return SumOfPaulis([im^coeff=>PauliString((idz,))])
+end
+function _mul(a::Pauli, b::Pauli)
+    idx, idy = a.id, b.id
+    if idx == idy
+        return (0, Pauli(0))
+    elseif idx == 0
+        return (0, Pauli(idy))
+    elseif idy == 0
+        return (0, Pauli(idx))
+    elseif idx == 1 && idy == 2
+        return (1, Pauli(3))
+    elseif idx == 2 && idy == 1
+        return (3, Pauli(3))
+    elseif idx == 1 && idy == 3
+        return (3, Pauli(2))
+    elseif idx == 3 && idy == 1
+        return (1, Pauli(2))
+    elseif idx == 2 && idy == 3
+        return (1, Pauli(1))
+    else # idx == 3 && idy == 2
+        return (3, Pauli(1))
+    end
+end
+function Base.:(*)(a::PauliString{N}, b::PauliString{N}) where {N}
+    coeff, ps = _mul(a, b)
+    return SumOfPaulis([im^coeff=>ps])
+end
+function _mul(a::PauliString{N}, b::PauliString{N}) where {N}
+    res = PauliGroupElement(0, a) * PauliGroupElement(0, b)
+    return (res.coeff, res.ps)
+end
+
+function Base.:(*)(a::AbstractPauli, b::AbstractPauli)
+    return SumOfPaulis(a) * SumOfPaulis(b)
+end
+Base.:(*)(a::Number, b::AbstractPauli) = SumOfPaulis([a * c => p for (c, p) in SumOfPaulis(b).items])
+Base.:(*)(a::AbstractPauli, b::Number) = b * a
+Base.:(/)(a::AbstractPauli, b::Number) = a * inv(b)
+
+function Base.:(+)(a::AbstractPauli{N}, b::AbstractPauli{N}) where {N}
+    return SumOfPaulis(a) + SumOfPaulis(b)
+end
+function Base.:(-)(a::AbstractPauli{N}, b::AbstractPauli{N}) where {N}
+    return SumOfPaulis(a) - SumOfPaulis(b)
+end
+function Base.:(-)(a::AbstractPauli{N}) where {N}
+    return -SumOfPaulis(a)
+end
+
+# YaoAPI
+"""
+    yaoblock(x::Pauli)
+
+Returns the Yao block corresponding to a Pauli operator.
+"""
+yaoblock(x::Pauli) = x.id == 0 ? I2 : x.id == 1 ? X : x.id == 2 ? Y : Z
+yaoblock(x::PauliString) = kron(yaoblock.(x.operators)...)
+yaoblock(x::PauliGroupElement) = im^x.coeff * yaoblock(x.ps)
+yaoblock(x::SumOfPaulis) = sum([c * yaoblock(p) for (c, p) in x.items])
+
 function SumOfPaulis(dm::DensityMatrix)
     res = SumOfPaulis(dm.state)
     # convert the coefficients to real numbers.
@@ -234,7 +360,8 @@ function SumOfPaulis(dm::DensityMatrix)
 end
 SumOfPaulis(reg::ArrayReg) = SumOfPaulis(density_matrix(reg))
 
-YaoAPI.mat(::Type{T}, sp::SumOfPaulis) where T = mat(T, sum([c * mat(T, p) for (c, p) in sp.items]))
+# used for multiplication of phase factors
+_mul_coeff(a::Int, b::Int) = (a + b) % 4
 
 # macro
 macro P_str(str::String)
@@ -254,44 +381,3 @@ macro P_str(str::String)
     end
     return PauliString(paulis...)
 end
-
-# algebra
-function Base.:(*)(idx::Pauli, idy::Pauli)
-    idx, idy = idx.id, idy.id
-    coeff, idz = _mul(idx, idy)
-    return PauliGroupElement(coeff, PauliString((Pauli(idz),)))
-end
-function _mul(idx::Int, idy::Int)
-    if idx == idy
-        return (0, 0)
-    elseif idx == 0
-        return (0, idy)
-    elseif idy == 0
-        return (0, idx)
-    elseif idx == 1 && idy == 2
-        return (1, 3)
-    elseif idx == 2 && idy == 1
-        return (3, 3)
-    elseif idx == 1 && idy == 3
-        return (3, 2)
-    elseif idx == 3 && idy == 1
-        return (1, 2)
-    elseif idx == 2 && idy == 3
-        return (1, 1)
-    else # idx == 3 && idy == 2
-        return (3, 1)
-    end
-end
-
-"""
-    yaoblock(x::Pauli)
-
-Returns the Yao block corresponding to a Pauli operator.
-"""
-yaoblock(x::Pauli) = x.id == 0 ? I2 : x.id == 1 ? X : x.id == 2 ? Y : Z
-yaoblock(x::PauliString) = kron(yaoblock.(x.operators)...)
-yaoblock(x::PauliGroupElement) = im^x.coeff * yaoblock(x.ps)
-yaoblock(x::SumOfPaulis) = sum([c * yaoblock(p) for (c, p) in x.items])
-
-# used for multiplication of phase factors
-_mul_coeff(a::Int, b::Int) = (a + b) % 4

@@ -20,7 +20,8 @@ end
     @test findfirst(x -> x == y, g) == 2
     @test g == PauliString((Pauli(0), Pauli(2), Pauli(3)))
     @test occupied_locs(yaoblock(g)) == (2, 3)
-    @test g * g == PauliGroupElement(0, PauliString(i, i, i))
+    @test g * g == SumOfPaulis([1=>PauliString(i, i, i)])
+    @test g * g ≈ SumOfPaulis([1=>PauliString(i, i, i)])
 
     # properties (faster implementation)
     @test ishermitian(g) == ishermitian(mat(g)) == true
@@ -108,4 +109,22 @@ end
     @test P"IIII" == PauliString(i, i, i, i)
     @test P"XYZI" == PauliString(x, y, z, i)
     @test_throws ErrorException P"IXYZC"
+end
+
+@testset "algebra" begin
+    i, x, y, z = Pauli(0), Pauli(1), Pauli(2), Pauli(3)
+    ops = [x, PauliString(x, z, x), SumOfPaulis([0.6=>PauliString(x, z, x), 0.8=>PauliString(y, z, y)])]
+    for a in ops
+        @test mat(-a) ≈ -mat(a)
+        @test mat(2 * a) ≈ 2 * mat(a)
+        @test mat(a * 2) ≈ mat(a) * 2
+        @test mat(a / 2) ≈ mat(a) / 2
+        for b in ops
+            if (a isa Pauli && b isa Pauli) || (!(a isa Pauli) && !(b isa Pauli))
+                @test mat(a + b) ≈ mat(a) + mat(b)
+                @test mat(a - b) ≈ mat(a) - mat(b)
+                @test mat(a * b) ≈ mat(a) * mat(b)
+            end
+        end
+    end
 end
