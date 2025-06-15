@@ -1,11 +1,25 @@
 using TensorQEC.Yao, TensorQEC
 using Test
 
+@testset "Pauli" begin
+    I, X, Y, Z = Pauli(0), Pauli(1), Pauli(2), Pauli(3)
+    for i in 0:3
+        @test mat(Pauli(i)) ≈ mat(yaoblock(Pauli(i)))
+        for j in 0:3
+            @info "Testing $(Pauli(i)) * $(Pauli(j)) -> $(Pauli(i) * Pauli(j))"
+            @test mat(Pauli(i) * Pauli(j)) ≈ mat(Pauli(i)) * mat(Pauli(j))
+        end
+    end
+    @test_throws AssertionError Pauli(4)
+end
+
 @testset "paulistring" begin
+    i, x, y, z = Pauli(0), Pauli(1), Pauli(2), Pauli(3)
     # constructor
-    g = PauliString((1, 3, 4))
-    @test g == PauliString(1, 3, 4)
-    @test occupied_locs(g) == (2, 3)
+    g = PauliString(i, y, z)
+    @test g == PauliString((Pauli(0), Pauli(2), Pauli(3)))
+    @test occupied_locs(yaoblock(g)) == (2, 3)
+    @test g * g == PauliGroupElement(0, PauliString(i, i, i))
 
     # properties (faster implementation)
     @test ishermitian(g) == ishermitian(mat(g)) == true
@@ -14,70 +28,62 @@ using Test
 
     # iterable iterfaces
     @test length(g) == 3
-    @test g[1] == I2
-    @test g[end] == Z
-    @test [g...] == [I2, Y, Z] == [g[i] for i in eachindex(g)]
-    @test collect(g) == [I2, Y, Z]
+    @test yaoblock(g[1]) == I2
+    @test yaoblock(g[end]) == Z
+    @test [g...] == [g[i] for i in eachindex(g)]
+    @test collect(g) == [i, y, z]
+    @test collect(yaoblock.(g)) == [I2, Y, Z]
 
     # apply and mat
     r = rand_state(3)
-    @test apply!(copy(r), g) ≈ apply!(copy(r), kron(I2, Y, Z))
+    @test apply!(copy(r), yaoblock(g)) ≈ apply!(copy(r), kron(I2, Y, Z))
 	reg = rand_state(4)
-	g = PauliString((1, 2, 3, 4))
-	@test nqubits(g) == 4
-	r1 = apply(reg, g)
+	g = PauliString(i, x, y, z)
+	@test length(g) == 4
+	r1 = apply(reg, yaoblock(g))
 	r2 = apply(reg, kron(I2, X, Y, Z))
 	@test r1 ≈ r2
 	@test mat(g) ≈ mat(kron(I2, X, Y, Z))
-    g = PauliString(X, Y, I2, Z)
-    @test mat(g) ≈ mat(kron(X, Y, I2, Z))
-    @test cache_key(g) == hash(g.ids)
-
-    # subblocks
-    subblocks(g) == (X, Y, I2, Z)
-    @test chsubblocks(g, (Z, Y, I2, Z)) == PauliString(Z, Y, I2, Z)
+    g = PauliString(x, y, i, z)
+    @test mat(yaoblock(g)) ≈ mat(kron(X, Y, I2, Z))
 
     # printing
-    g = PauliString((1, 3, 4))
+    g = PauliString(i, y, z)
     print(g)
-    print(chain(g, put(3, 3=>PauliString(2))))
-
-    # others
-    @test Yao.YaoBlocks.Optimise.to_basictypes(g) == chain([put(3, 2=>Y), put(3, 3=>Z)])
+    print(chain(g, put(3, 3=>yaoblock(PauliString(y)))))
 
     # iscommute and isanticommute
-    g = PauliString(X, Y, Z, I2)
-    @test iscommute(g, PauliString(I2, Z, X, I2))
-    @test isanticommute(g, PauliString(I2, I2, X, I2))
+    g = PauliString(x, y, z, i)
+    @test iscommute(g, PauliString(i, z, x, i))
+    @test isanticommute(g, PauliString(i, i, x, i))
 end
 
 @testset "Sum of Paulis" begin
     reg = rand_state(6)
-    p1 = PauliString((1, 2, 3))
-    p2 = PauliString((4, 4, 3))
+    i, x, y, z = Pauli(0), Pauli(1), Pauli(2), Pauli(3)
+    p1 = PauliString(i, x, y)
+    p2 = PauliString(z, z, y)
     sp = SumOfPaulis([0.6=>p1, 0.8=>p2])
-    @test mat(sp) ≈ 0.6 * mat(p1) + 0.8 * mat(p2)
+    @test mat(yaoblock(sp)) ≈ 0.6 * mat(yaoblock(p1)) + 0.8 * mat(yaoblock(p2))
 
-    p3 = chsubblocks(p1, (X, Y, Z))
-    sp2 = chsubblocks(sp, [p3, p1])
-    @test mat(sp2) ≈ 0.6 * mat(p3) + 0.8 * mat(p1)
     reg = rand_state(3)
-    @test apply(reg, sp2) ≈ 0.6 * apply(reg, p3) + 0.8 * apply(reg, p1)
+    @test apply(reg, yaoblock(sp)) ≈ 0.6 * apply(reg, yaoblock(p1)) + 0.8 * apply(reg, yaoblock(p2))
 
     # convert to sum of paulis
     reg = rand_state(6)
     dm = density_matrix(reg, 1:3)
     sp = SumOfPaulis(dm)
-    @test dm.state ≈ mat(sp)
+    @test dm.state ≈ mat(yaoblock(sp))
 end
 
 @testset "pauli group" begin
-    g = PauliGroupElement(3, PauliString(X, Y, Z))
-    h = PauliGroupElement(1, PauliString(Y, I2, Z))
-    i = PauliGroupElement(2, PauliString(Z, Y, X))
-    @test g * h == PauliGroupElement(1, PauliString(Z, Y, I2))
-    @test g * g == PauliGroupElement(2, PauliString(I2, I2, I2))
-    @test h * g == PauliGroupElement(3, PauliString(Z, Y, I2))
+    i2, x, y, z = Pauli(0), Pauli(1), Pauli(2), Pauli(3)
+    g = PauliGroupElement(3, PauliString(x, y, z))
+    h = PauliGroupElement(1, PauliString(y, i2, z))
+    i = PauliGroupElement(2, PauliString(z, y, x))
+    @test g * h == PauliGroupElement(1, PauliString(z, y, i2))
+    @test g * g == PauliGroupElement(2, PauliString(i2, i2, i2))
+    @test h * g == PauliGroupElement(3, PauliString(z, y, i2))
     @test isunitary(g)
     @test isunitary(h)
     @test isunitary(i)
@@ -96,8 +102,9 @@ end
 end
 
 @testset "macro" begin
-    @test P"IXYZ" == PauliString(1, 2, 3, 4)
-    @test P"IIII" == PauliString(1, 1, 1, 1)
-    @test P"XYZI" == PauliString(2, 3, 4, 1)
+    i, x, y, z = Pauli(0), Pauli(1), Pauli(2), Pauli(3)
+    @test P"IXYZ" == PauliString(i, x, y, z)
+    @test P"IIII" == PauliString(i, i, i, i)
+    @test P"XYZI" == PauliString(x, y, z, i)
     @test_throws ErrorException P"IXYZC"
 end

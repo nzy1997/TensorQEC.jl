@@ -2,10 +2,11 @@ module TensorQEC
 
 using TensorInference
 using TensorInference: Factor
-using Yao
+using Yao, Yao.YaoAPI
 using Yao.ConstGate: PauliGate
 using Base.Iterators: product
 using LinearAlgebra
+using SparseArrays: sparse
 using Combinatorics
 using DelimitedFiles
 using OMEinsum
@@ -24,7 +25,7 @@ import Yao.YaoArrayRegister.LuxurySparse
 
 # pauli basis
 export pauli_basis, pauli_decomposition, pauli_mapping
-export SumOfPaulis, @P_str
+export Pauli, SumOfPaulis, @P_str, yaoblock
 
 # Mod
 export Mod2
@@ -32,7 +33,7 @@ export Mod2
 # tensor network
 export clifford_network, CliffordNetwork, generate_tensor_network, circuit2tensornetworks
 export ExtraTensor, UNITY4, PXY, PIZ, PXY_UNITY2, PIZ_UNITY2
-export PauliString, PauliGroupElement, isanticommute,paulistring
+export PauliString, PauliGroupElement, isanticommute
 
 # inference
 export syndrome_inference, measure_syndrome!,correction_pauli_string, generate_syndrome_dict,pauli_string_map_iter, inference, transformed_syndrome_dict

@@ -17,7 +17,7 @@
 Generate the n-qubit Pauli basis.
 """
 function pauli_basis(nqubits::Int)
-	return [PauliString{nqubits}(ci.I) for ci in CartesianIndices(ntuple(_ -> 4, nqubits))]
+	return [PauliString(ntuple(i->Pauli(ci[i]-1), nqubits)) for ci in CartesianIndices(ntuple(_ -> 4, nqubits))]
 end
 
 """
@@ -46,7 +46,7 @@ pauli_mapping(::Type{T}, m::AbstractBlock) where T = pauli_mapping(mat(T, m))
 pauli_mapping(m::AbstractBlock) = pauli_mapping(ComplexF64, m)
 
 function pauli_group(n::Int)
-    return [coeff => PauliString(ci.I) for coeff in 0:3, ci in CartesianIndices(ntuple(_ -> 4, n))]
+    return [coeff => PauliString(ntuple(i->Pauli(ci[i]-1), n)) for coeff in 0:3, ci in CartesianIndices(ntuple(_ -> 4, n))]
 end
 
 pauli_repr(m::AbstractBlock) = pauli_repr(mat(m))
@@ -61,13 +61,13 @@ end
 Map the Pauli string `ps` by a quantum circuit `qc`. Return the mapped Pauli string.
 """
 function pauli_string_map_iter(ps::PauliString{N}, qc::ChainBlock) where N
-       if length(qc)==0
-               return ps
-       end
-       block=convert_to_put(qc[1])
-       return pauli_string_map_iter(pauli_string_map(ps,pauli_mapping(mat(ComplexF64,block.content)),[block.locs...]),qc[2:end])
+    if length(qc)==0
+        return ps
+    end
+    block=convert_to_put(qc[1])
+    return pauli_string_map_iter(pauli_string_map(ps, pauli_mapping(mat(ComplexF64,block.content)),[block.locs...]),qc[2:end])
 end
 function pauli_string_map(ps::PauliString{N}, paulimapping::Array, qubits::Vector{Int}) where N
-    c=findall(!iszero, paulimapping[fill(:,length(size(paulimapping)) ÷ 2)...,ps.ids[qubits]...])[1]
-    return PauliString(([k ∈ qubits ? c[findfirst(==(k),qubits)] : ps.ids[k] for k in 1:N]...,))
+    c = findall(!iszero, paulimapping[fill(:,length(size(paulimapping)) ÷ 2)..., map(k->ps.operators[k].id + 1, qubits)...])[1]
+    return PauliString(([Pauli(k ∈ qubits ? c[findfirst(==(k),qubits)]-1 : ps.operators[k].id) for k in 1:N]...,))
 end
