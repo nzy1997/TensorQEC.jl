@@ -29,7 +29,7 @@ end
 @testset "tensor network mapping - 1 gate" begin
 	# create a circuit and convert it to the pauli basis
 	yaoqc = chain(cnot(2, 1, 2), put(1=>T), put(2=>H), put(2=>rand_unitary(2)), cnot(2, 1, 2))
-	yaopauli = pauli_mapping(mat(ComplexF64, yaoqc))
+	yaopauli = reshape(pauli_repr(mat(ComplexF64, yaoqc)), 4, 4, 4, 4)
 
 	# tensor network mapping of a quantum circuit
 	for ci in CartesianIndices((fill(4, 2)...,))
@@ -51,7 +51,7 @@ end
 @testset "tensor network mapping" begin
 	# create a circuit and convert it to the pauli basis
 	yaoqc = chain(cnot(3, 1, 2), put(3, 1=>X), cnot(3, 3, 2))
-	yaopauli = pauli_mapping(mat(ComplexF64, yaoqc))
+	yaopauli = reshape(pauli_repr(mat(ComplexF64, yaoqc)), 4, 4, 4, 4, 4, 4)
 
 	# tensor network mapping of a quantum circuit
 	for ci in CartesianIndices((fill(4, 3)...,))
@@ -70,11 +70,11 @@ end
 	# step 1: pauli decomposition of rho0
 	reg = rand_state(6)
 	dm = density_matrix(reg, 1:3)
-	sp = densitymatrix2sumofpaulis(dm)
+	sp = SumOfPaulis(dm)
     ps1, ps2 = sp.items[6].second, sp.items[2].second
     res1 = expect(ps1, cl, ps2)[]
-    dm2 = DensityMatrix(Matrix{ComplexF64}(ps2))
+    dm2 = DensityMatrix(Matrix{ComplexF64}(yaoblock(ps2)))
     dm2f = apply(dm2, qc)
-    res2 = Yao.expect(ps1, dm2f)
+    res2 = Yao.expect(yaoblock(ps1), dm2f)
     @test res1 ≈ res2
 end

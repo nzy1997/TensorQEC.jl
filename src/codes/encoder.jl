@@ -38,18 +38,18 @@ Yao.nqubits(b::CSSBimatrix) = size(b.matrix, 2) ÷ 2
 # input: a vector of PauliString objects
 # output: a CSSBimatrix object
 function stabilizers2bimatrix(stabilizers::AbstractVector{PauliString{N}}) where N
-	xs = findall(s -> all(x -> x == 1 || x == 2, s.ids), stabilizers)
-	zs = findall(s -> all(x -> x == 1 || x == 4, s.ids), stabilizers)
+	xs = findall(s -> all(x -> x == Pauli(0) || x == Pauli(1), s), stabilizers)
+	zs = findall(s -> all(x -> x == Pauli(0) || x == Pauli(3), s), stabilizers)
 	@assert length(xs) + length(zs) == length(stabilizers) "Invalid PauliString"
-	A = [stabilizers[xs[i]].ids[j] == 2 for i ∈ 1:length(xs), j ∈ 1:N]
-	B = [stabilizers[zs[i]].ids[j] == 4 for i ∈ 1:length(zs), j ∈ 1:N]
+	A = [stabilizers[xs[i]][j] == Pauli(1) for i ∈ 1:length(xs), j ∈ 1:N]
+	B = [stabilizers[zs[i]][j] == Pauli(3) for i ∈ 1:length(zs), j ∈ 1:N]
 	return CSSBimatrix(cat(A, B; dims = (1, 2)), Matrix{Mod2}(I, length(stabilizers), length(stabilizers)), collect(1:N), length(xs))
 end
 
 function bimatrix2stabilizers(bimat::CSSBimatrix)
 	n = Yao.nqubits(bimat)
-	xs = [paulistring(n, 2, bimat.ordering[findall(isone, bimat.matrix[i, 1:n])]) for i in 1:bimat.xcodenum]
-	zs = [paulistring(n, 4, bimat.ordering[findall(isone, bimat.matrix[i, n+1:end])]) for i in bimat.xcodenum+1:size(bimat.matrix, 1)]
+	xs = [PauliString(n, bimat.ordering[findall(isone, bimat.matrix[i, 1:n])] => Pauli(1)) for i in 1:bimat.xcodenum]
+	zs = [PauliString(n, bimat.ordering[findall(isone, bimat.matrix[i, n+1:end])] => Pauli(3)) for i in bimat.xcodenum+1:size(bimat.matrix, 1)]
 	return vcat(xs, zs)
 end
 

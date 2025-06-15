@@ -1,10 +1,10 @@
 struct Tableau{N}
-    tabx::Vector{PauliGroup{N}}
-    tabz::Vector{PauliGroup{N}}
+    tabx::Vector{PauliGroupElement{N}}
+    tabz::Vector{PauliGroupElement{N}}
 end
 
 function new_tableau(n::Int)
-    return Tableau([PauliGroup(0,paulistring(n,2,i)) for i in 1:n], [PauliGroup(0,paulistring(n,4,i)) for i in 1:n])
+    return Tableau([PauliGroupElement(0,PauliString(n, i => Pauli(1))) for i in 1:n], [PauliGroupElement(0,PauliString(n, i => Pauli(3))) for i in 1:n])
 end
 
 Base.show(io::IO, ::MIME"text/plain", tab::Tableau) = show(io, tab)
@@ -44,17 +44,17 @@ function tableau_simulate(qc::ChainBlock)
 end
 function tableau_simulate(ps::PauliString{N}, qc::ChainBlock) where N
     tab = tableau_simulate(qc)
-    res = PauliGroup{N}(0, paulistring(N, 1,1))
+    res = PauliGroupElement(0, PauliString(N, 1 => Pauli(0)))
     count = 0
     for i in 1:N
-        if ps.ids[i] == 2
+        if ps[i] == Pauli(1)
             res *= tab.tabx[i]
-        elseif ps.ids[i] == 4
+        elseif ps[i] == Pauli(3)
             res *= tab.tabz[i]
-        elseif ps.ids[i] == 3
+        elseif ps[i] == Pauli(2)
             res *= tab.tabx[i] * tab.tabz[i]
             count += 1
         end
     end
-    return PauliGroup{N}(_mul_coeff(res.coeff,count), res.ps)
+    return PauliGroupElement(_mul_coeff(res.coeff,count), res.ps)
 end

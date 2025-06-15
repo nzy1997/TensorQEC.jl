@@ -53,7 +53,8 @@ end
 end
 
 @testset "qc2enisum" begin
-    st = [PauliString((1,4,4)),PauliString((4,1,4))]
+    i, x, y, z = Pauli(0), Pauli(1), Pauli(2), Pauli(3)
+    st = [PauliString((i,z,z)),PauliString((z,i,z))]
     qcen, data_qubits, code = encode_stabilizers(st)
     qc = chain(qcen, put(3, 1=>X),put(3,2=>X),put(3,3=>X), qcen', put(3, 3=>X))
     qc_info = QCInfo(data_qubits, 3)

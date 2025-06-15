@@ -37,8 +37,8 @@ function convert_to_put(g::ControlBlock)
 end
 
 # convert a gate to a Factor
-function matrix2factor(g::AbstractBlock, input_vars::Vector{Int}, pins::Vector{Int})
-	vals = pauli_mapping(mat(ComplexF64, g))
+function matrix2factor(g::AbstractBlock{D}, input_vars::Vector{Int}, pins::Vector{Int}) where D
+	vals = reshape(pauli_repr(mat(ComplexF64, g)), ntuple(_ -> D^2, 2 * nqudits(g)))
 	vars = (pins..., input_vars...)
 	return Factor(vars, vals)
 end
@@ -127,8 +127,8 @@ end
 function Yao.expect(operator::PauliString, cl::CliffordNetwork{T}, rho::PauliString) where T
 	n = nqubits(cl)
 	# construct the tensor network
-	ps = Dict([i=>BoundarySpec((Yao.BitBasis._onehot(T, 4, rho.ids[i])...,), false) for i in 1:n])
-	qs = Dict([i=>BoundarySpec((Yao.BitBasis._onehot(T, 4, operator.ids[i])...,), false) for i in 1:n])
+	ps = Dict([i=>BoundarySpec((Yao.BitBasis._onehot(T, 4, rho.operators[i].id + 1)...,), false) for i in 1:n])
+	qs = Dict([i=>BoundarySpec((Yao.BitBasis._onehot(T, 4, operator.operators[i].id + 1)...,), false) for i in 1:n])
 	# TODO: avoid repeated optimization of contraction order
 	tn = generate_tensor_network(cl, ps, qs)
 	return probability(tn)*2^n

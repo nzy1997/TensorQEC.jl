@@ -34,7 +34,7 @@ function correction_dict(st::Vector{PauliString{N}}, d::Int64;et="XZ") where N
 			for j in 1:num_st
 				reduce(xor, bivec[findall(mat[j, :])]) && (syndrome |= 1 << (j - 1))
 			end
-			table[syndrome] = bit_literal(Int.(bivec)...).buf
+			table[syndrome] = bit_literal((Int.(bivec)...,)).buf
 		end
 	end
 	return table

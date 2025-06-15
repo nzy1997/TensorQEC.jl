@@ -13,7 +13,7 @@ function probability_tn(qc::ChainBlock, final_state::Vector{Complex{Float64}})
 end
 
 function Yao.depolarizing_channel(n::Int, p_vec::AbstractVector)
-    return UnitaryChannel(vec(pauli_basis(n)),p_vec)
+    return UnitaryChannel(vec(yaoblock.(pauli_basis(n))),p_vec)
 end
 
 mutable struct TrainingChannel{D} <: AbstractRecoder{D}

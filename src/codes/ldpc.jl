@@ -103,10 +103,10 @@ function CSSTannerGraph(nq::Int, stxs::Vector{Vector{Int}}, stzs::Vector{Vector{
 end
 
 function CSSTannerGraph(sts::Vector{PauliString{N}}) where N
-    xlabel = findall([st.ids[findfirst(!=(1),st.ids)] == 2 for st in sts])
-    zlabel = findall([st.ids[findfirst(!=(1),st.ids)] == 4 for st in sts])
-    stxs = [findall(!=(1),st.ids) for st in sts[xlabel]]
-    stzs = [findall(!=(1),st.ids) for st in sts[zlabel]]
+    xlabel = findall(st -> st[findfirst(x -> x != Pauli(0), st)] == Pauli(1), sts)
+    zlabel = findall(st -> st[findfirst(x -> x != Pauli(0), st)] == Pauli(3), sts)
+    stxs = [findall(x -> x != Pauli(0), st) for st in sts[xlabel]]
+    stzs = [findall(x -> x != Pauli(0), st) for st in sts[zlabel]]
     return CSSTannerGraph(N, stxs, stzs)
 end
 
