@@ -37,13 +37,13 @@ YaoAPI.mat(p::Pauli) = YaoAPI.mat(ComplexF64, p)
 function YaoAPI.mat(::Type{T}, p::Pauli) where T
     id = p.id
     if id == 0
-        return T[1 0; 0 1]
+        return PermMatrix([1, 2], ones(T, 2))
     elseif id == 1
-        return T[0 1; 1 0]
+        return PermMatrix([2, 1], ones(T, 2))
     elseif id == 2
-        return T[0 -im; im 0]
+        return PermMatrix([2, 1], T[-im, im])
     else
-        return T[1 0; 0 -1]
+        return PermMatrix([1, 2], T[1, -1])
     end
 end
 
@@ -138,9 +138,9 @@ YaoAPI.isreflexive(ps::PauliString) = true
 YaoAPI.isunitary(ps::PauliString) = true
 
 YaoAPI.mat(ps::PauliString) = YaoAPI.mat(ComplexF64, ps)
-function YaoAPI.mat(::Type{T}, ps::PauliString) where T
-    isempty(ps.operators) && return sparse([1, 2], [1, 2], fill(T(im^ps.coeff), 2), 2, 2)  # identity matrix (with phase)
-    return reduce(kron, sparse.(YaoAPI.mat.(T, ps.operators[end:-1:1])))
+function YaoAPI.mat(::Type{T}, ps::PauliString{N}) where {T, N}
+    isempty(ps.operators) && return PermMatrix(collect(Int, 1:2^N), fill(T(im^ps.coeff), 2^N))  # identity matrix (with phase)
+    return reduce(kron, YaoAPI.mat.(T, ps.operators[end:-1:1]))
 end
 
 """
@@ -191,8 +191,8 @@ YaoAPI.isunitary(ps::PauliGroupElement) = true
 
 YaoAPI.mat(pg::PauliGroupElement) = YaoAPI.mat(ComplexF64, pg)
 function YaoAPI.mat(::Type{T}, pg::PauliGroupElement) where T
-    isempty(pg.ps.operators) && return sparse([1, 2], [1, 2], fill(T(im^pg.coeff), 2), 2, 2)  # identity matrix (with phase)
-    return im^pg.coeff * mapreduce(i-> sparse(YaoAPI.mat(T, pg.ps.operators[i])), (x, y)->kron(x, y), length(pg):-1:1)
+    isempty(pg.ps.operators) && return PermMatrix(collect(Int, 1:2^N), fill(T(im^pg.coeff), 2^N))  # identity matrix (with phase)
+    return im^pg.coeff * reduce(kron, YaoAPI.mat.(T, pg.ps.operators[end:-1:1]))
 end
 
 function YaoAPI.iscommute(a::PauliGroupElement{N}, b::PauliGroupElement{N}) where N

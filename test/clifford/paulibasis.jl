@@ -30,21 +30,21 @@ end
 	@test mat(yaoblock(sp2)) ≈ dm.state
 end
 
-@testset "pauli_string_map" begin
+@testset "map_pauli_string" begin
 	i, x, y, z = Pauli(0), Pauli(1), Pauli(2), Pauli(3)
 	ps = PauliString(x, y, z, y, x, i)
-	@test getfield.(TensorQEC.pauli_string_map(ps, pauli_mapping(mat(ComplexF64,cnot(2,1,2))), [5,6]).operators, :id) == (1,2,3,2,1,1)
+	@test TensorQEC.map_pauli_string(ps, pauli_repr_t(mat(ComplexF64,cnot(2,1,2))), [5,6]) == PauliString(x, y, z, y, x, x)
 end
 
 @testset "pauli_string_map_iter" begin
 	i, x, y, z = Pauli(0), Pauli(1), Pauli(2), Pauli(3)
 	ps = PauliString(i, y, z, x, i)
 	qc = chain(cnot(5,4,5), put(5, 3=>H))
-	@test getfield.(TensorQEC.pauli_string_map_iter(ps, qc).operators, :id) == (0,2,1,1,1)
+	@test TensorQEC.pauli_string_map_iter(ps, qc) == PauliString(i, y, x, x, x)
 
 	ps = PauliString(i, x, x)
 	qc = chain(cnot(3,3,2), cnot(3,3,1))
-	@test getfield.(TensorQEC.pauli_string_map_iter(ps, qc).operators, :id) == (1, 0, 1)
+	@test TensorQEC.pauli_string_map_iter(ps, qc) == PauliString(x, i, x)
 end
 
 @testset "yao interfaces" begin
@@ -52,5 +52,5 @@ end
     @test PauliString(5, (2, 3)=>x) == PauliString(i, x, x, i, i)
     @test PauliString(5, (2, 3)=>x, 4=>y) == PauliString(i, x, x, y, i)
     @test pauli_decomposition(X) ≈ [0, 1, 0, 0]
-    @test pauli_mapping(X) ≈ Diagonal([1, 1, -1, -1])
+    @test pauli_repr_t(X) ≈ Diagonal([1, 1, -1, -1])
 end

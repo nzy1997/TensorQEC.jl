@@ -37,8 +37,8 @@ function convert_to_put(g::ControlBlock)
 end
 
 # convert a gate to a Factor
-function matrix2factor(g::AbstractBlock, input_vars::Vector{Int}, pins::Vector{Int})
-	vals = pauli_mapping(mat(ComplexF64, g))
+function matrix2factor(g::AbstractBlock{D}, input_vars::Vector{Int}, pins::Vector{Int}) where D
+	vals = reshape(pauli_repr(mat(ComplexF64, g)), ntuple(_ -> D^2, 2 * nqudits(g)))
 	vars = (pins..., input_vars...)
 	return Factor(vars, vals)
 end
