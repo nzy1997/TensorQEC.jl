@@ -27,7 +27,7 @@ Decompose a matrix into the Pauli basis.
 """
 function pauli_decomposition(m::AbstractMatrix{T}) where T
 	nqubits = Int(log2(size(m, 1)))
-	return [tr(mat(T, pauli) * m) for pauli in pauli_basis(nqubits)] / (2^nqubits)
+	return [tr(mat(complex(T), pauli) * m) for pauli in pauli_basis(nqubits)] / (2^nqubits)
 end
 pauli_decomposition(::Type{T}, m::AbstractBlock) where T = pauli_decomposition(mat(T, m))
 pauli_decomposition(m::AbstractBlock) = pauli_decomposition(ComplexF64, m)

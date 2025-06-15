@@ -90,7 +90,7 @@ function Base.show(io::IO, cep::CSSErrorPattern)
     n = length(cep.xerror)
     psx = paulistring(n,2,xe)
     psz = paulistring(n,4,ze)
-    println(io, (PauliGroup(1,psx)*PauliGroup(1,psz)).ps)
+    println(io, (PauliGroupElement(1,psx)*PauliGroupElement(1,psz)).ps)
     return
 end
 

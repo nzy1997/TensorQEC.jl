@@ -100,10 +100,10 @@ function perm_of_paulistring(ps::PauliString, operation::Pair{Vector{Int}, <:Per
     return PauliString(v...), pm.vals[ps_perm_num]
 end
 _complex2int(x) = x==1+0im ? 0 : x==0+1im ? 1 : x==-1+0im ? 2 : 3
-function perm_of_pauligroup(pg::PauliGroup, operation::Pair{Vector{Int}, <:PermMatrix})
+function perm_of_pauligroup(pg::PauliGroupElement, operation::Pair{Vector{Int}, <:PermMatrix})
     ps, val = perm_of_paulistring(pg.ps, operation)
 
-    return PauliGroup(_mul_coeff(pg.coeff,_complex2int(val)), ps)
+    return PauliGroupElement(_mul_coeff(pg.coeff,_complex2int(val)), ps)
 end
 
 """

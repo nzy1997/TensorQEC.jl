@@ -6,25 +6,26 @@ end
 
 @testset "pauli_decomposition" begin
 	@test pauli_decomposition(Matrix(H)) == [0, 1, 0, 1] / sqrt(2)
+	@test pauli_decomposition(Matrix(Float64, H)) == [0, 1, 0, 1] / sqrt(2)
 	@test pauli_decomposition(Matrix(kron(X, X))) == [0 0 0 0; 0 1 0 0; 0 0 0 0; 0 0 0 0]
 end
 
 @testset "density matrix" begin
 	reg = rand_state(6)
 	dm = density_matrix(reg, 1:3)
-	sp = densitymatrix2sumofpaulis(dm)
+	sp = SumOfPaulis(dm)
 	@test mat(sp) ≈ dm.state
 end
 
-@testset "arrayreg2sumofpaulis" begin 
+@testset "arrayreg to sumofpaulis" begin 
 	reg = rand_state(3)
 	dm = density_matrix(reg)
-	sp1 = arrayreg2sumofpaulis(reg)
+	sp1 = SumOfPaulis(reg)
 	@test mat(sp1) ≈ dm.state
 
 	reg = ghz_state(3)
 	dm = density_matrix(reg)
-	sp2 = arrayreg2sumofpaulis(reg)
+	sp2 = SumOfPaulis(reg)
 	@test mat(sp2) ≈ dm.state
 end
 

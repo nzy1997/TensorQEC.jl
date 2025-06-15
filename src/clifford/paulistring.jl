@@ -126,20 +126,20 @@ end
 # create a macro for pauli group items
 # - coeff ∈ {0, 1, 2, 3} is the coefficient (im^coeff) of the Pauli string,
 # - ps is the Pauli string
-struct PauliGroup{N} <: CompositeBlock{2}
+struct PauliGroupElement{N} <: CompositeBlock{2}
     coeff::Int
     ps::PauliString{N}
 end
-Yao.subblocks(x::PauliGroup) = (x.ps,)
-Yao.nqudits(x::PauliGroup{N}) where {N} = N
-function Base.:(*)(a::PauliGroup{N}, b::PauliGroup{N}) where {N}
+Yao.subblocks(x::PauliGroupElement) = (x.ps,)
+Yao.nqudits(x::PauliGroupElement{N}) where {N} = N
+function Base.:(*)(a::PauliGroupElement{N}, b::PauliGroupElement{N}) where {N}
     cc = _mul_coeff(a.coeff, b.coeff)
     pc = ntuple(N) do i
         cci, pci = _mul(a.ps.ids[i], b.ps.ids[i])
         cc = _mul_coeff(cci, cc)
         pci
     end
-    return PauliGroup(cc, PauliString(pc))
+    return PauliGroupElement(cc, PauliString(pc))
 end
 _mul_coeff(a, b) = (a + b) % 4
 function _mul(idx::Int, idy::Int)
@@ -163,21 +163,29 @@ function _mul(idx::Int, idy::Int)
         return 3, 2
     end
 end
-Base.show(io::IO, ::MIME"text/plain", pg::PauliGroup) = show(io, pg)
-function Base.show(io::IO, pg::PauliGroup)
+Base.show(io::IO, ::MIME"text/plain", pg::PauliGroupElement) = show(io, pg)
+function Base.show(io::IO, pg::PauliGroupElement)
     print(io, ("+1", "+i", "-1", "-i")[pg.coeff+1], " * ")
     print(io, pg.ps)
 end
-function Yao.print_block(io::IO, ::MIME"text/plain", pg::PauliGroup)
+function Yao.print_block(io::IO, ::MIME"text/plain", pg::PauliGroupElement)
     print(io, ("+1", "+i", "-1", "-i")[pg.coeff+1], " * ")
 end
-Yao.iscommute(a::PauliGroup, b::PauliGroup) = iscommute(a.ps, b.ps)
-isanticommute(a::PauliGroup, b::PauliGroup) = isanticommute(a.ps, b.ps)
-Yao.ishermitian(p::PauliGroup) = p.coeff ∈ (0, 2)
-Yao.isreflexive(p::PauliGroup) = p.coeff ∈ (0, 2)
-Yao.isunitary(p::PauliGroup) = true
+Yao.iscommute(a::PauliGroupElement, b::PauliGroupElement) = iscommute(a.ps, b.ps)
+isanticommute(a::PauliGroupElement, b::PauliGroupElement) = isanticommute(a.ps, b.ps)
+Yao.ishermitian(p::PauliGroupElement) = p.coeff ∈ (0, 2)
+Yao.isreflexive(p::PauliGroupElement) = p.coeff ∈ (0, 2)
+Yao.isunitary(p::PauliGroupElement) = true
 
 # sum of paulis
+"""
+    SumOfPaulis{T<:Number, N} <: CompositeBlock{2}
+
+A sum of Pauli strings is a linear combination of Pauli strings, e.g. ``c_1 P_1 + c_2 P_2 + \\cdots + c_n P_n``.
+
+### Fields
+- `items::Vector{Pair{T, PauliString{N}}}`: the vector of pairs of coefficients and Pauli strings.
+"""
 struct SumOfPaulis{T<:Number, N} <: CompositeBlock{2}
 	items::Vector{Pair{T, PauliString{N}}}
 end
@@ -186,11 +194,26 @@ Yao.mat(::Type{T}, sp::SumOfPaulis) where T = mat(T, sum([c * kron(pauli(q) for 
 Yao.subblocks(x::SumOfPaulis) = ((x.second for x in x.items)...,)
 Yao.chsubblocks(sp::SumOfPaulis{T,N}, blocks) where {T,N} = SumOfPaulis(Pair{T,PauliString{N}}[c.first => p for (c, p) in zip(sp.items, blocks)])
 
-function tensor2sumofpaulis(t::AbstractArray)
-	return SumOfPaulis([t[ci]=>PauliString(ci.I) for ci in CartesianIndices(t)] |> vec)
+"""
+    SumOfPaulis(m::AbstractArray; atol=0)
+    SumOfPaulis(dm::DensityMatrix; atol=0)
+    SumOfPaulis(reg::ArrayReg; atol=0)
+
+Returns a pauli decomposition representation of a matrix `m`, a density matrix `dm`, or an array register `reg`.
+
+### Keyword Arguments
+- `atol::Float64`: the absolute tolerance for the coefficients. If the coefficient is less than `atol`, it will be ignored.
+"""
+function SumOfPaulis(m::AbstractMatrix; atol=0)
+	coeffs = pauli_decomposition(m)
+	return SumOfPaulis([coeffs[ci]=>PauliString(ci.I) for ci in CartesianIndices(coeffs) if !isapprox(coeffs[ci], 0; atol=atol)] |> vec)
 end
-densitymatrix2sumofpaulis(dm::DensityMatrix) = tensor2sumofpaulis(real.(pauli_decomposition(dm.state)))
-arrayreg2sumofpaulis(reg::ArrayReg) = densitymatrix2sumofpaulis(density_matrix(reg))
+function SumOfPaulis(dm::DensityMatrix)
+    res = SumOfPaulis(dm.state)
+    # convert the coefficients to real numbers.
+    return SumOfPaulis([real(c)=>p for (c, p) in res.items])
+end
+SumOfPaulis(reg::ArrayReg) = SumOfPaulis(density_matrix(reg))
 
 """
     paulistring(n::Int, k::Int, ids::Vector{Int}) -> PauliString
@@ -201,3 +224,22 @@ Create a Pauli string with `n` qubits, where the `i`-th qubit is `k` if `i` is i
 paulistring(n::Int, k, ids) = PauliString((i ∈ ids ? k : _I(k) for i in 1:n)...)
 _I(::Int) = 1
 _I(::YaoBlocks.PauliGate) = I2
+
+# macro
+macro P_str(str::String)
+    indices = Int[]
+    for c in str
+        if c == 'I'
+            push!(indices, 1)
+        elseif c == 'X'
+            push!(indices, 2)
+        elseif c == 'Y'
+            push!(indices, 3)
+        elseif c == 'Z'
+            push!(indices, 4)
+        else
+            return :(error("Token `$($c)` is not a valid Pauli string."))
+        end
+    end
+    return PauliString(indices...)
+end

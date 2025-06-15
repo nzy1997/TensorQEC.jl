@@ -48,12 +48,12 @@ end
 
 @testset "perm_of_pauligroup" begin
 	ps = PauliString(2,3,4,3,2,1)
-	pg = PauliGroup(1, ps)
+	pg = PauliGroupElement(1, ps)
 	pm = TensorQEC.to_perm_matrix(Int8, Int, pauli_repr(ConstGate.CNOT))
 
 	pg2 = perm_of_pauligroup(pg, [2, 3]=>pm)
 	ps2, val = perm_of_paulistring(ps, [2, 3]=>pm)
-	@test pg2 == PauliGroup(1, ps2)
+	@test pg2 == PauliGroupElement(1, ps2)
 end
 
 @testset "clifford_simulate" begin

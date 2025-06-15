@@ -67,17 +67,17 @@ end
     # convert to sum of paulis
     reg = rand_state(6)
     dm = density_matrix(reg, 1:3)
-    sp = densitymatrix2sumofpaulis(dm)
+    sp = SumOfPaulis(dm)
     @test dm.state ≈ mat(sp)
 end
 
 @testset "pauli group" begin
-    g = PauliGroup(3, PauliString(X, Y, Z))
-    h = PauliGroup(1, PauliString(Y, I2, Z))
-    i = PauliGroup(2, PauliString(Z, Y, X))
-    @test g * h == PauliGroup(1, PauliString(Z, Y, I2))
-    @test g * g == PauliGroup(2, PauliString(I2, I2, I2))
-    @test h * g == PauliGroup(3, PauliString(Z, Y, I2))
+    g = PauliGroupElement(3, PauliString(X, Y, Z))
+    h = PauliGroupElement(1, PauliString(Y, I2, Z))
+    i = PauliGroupElement(2, PauliString(Z, Y, X))
+    @test g * h == PauliGroupElement(1, PauliString(Z, Y, I2))
+    @test g * g == PauliGroupElement(2, PauliString(I2, I2, I2))
+    @test h * g == PauliGroupElement(3, PauliString(Z, Y, I2))
     @test isunitary(g)
     @test isunitary(h)
     @test isunitary(i)
@@ -93,4 +93,11 @@ end
     @test !iscommute(h, g)
     @test iscommute(h, i)
     @test isanticommute(h, g)
+end
+
+@testset "macro" begin
+    @test P"IXYZ" == PauliString(1, 2, 3, 4)
+    @test P"IIII" == PauliString(1, 1, 1, 1)
+    @test P"XYZI" == PauliString(2, 3, 4, 1)
+    @test_throws ErrorException P"IXYZC"
 end
