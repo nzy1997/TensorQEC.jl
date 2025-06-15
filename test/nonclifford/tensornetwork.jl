@@ -29,7 +29,7 @@ end
 @testset "tensor network mapping - 1 gate" begin
 	# create a circuit and convert it to the pauli basis
 	yaoqc = chain(cnot(2, 1, 2), put(1=>T), put(2=>H), put(2=>rand_unitary(2)), cnot(2, 1, 2))
-	yaopauli = pauli_repr_t(mat(ComplexF64, yaoqc))
+	yaopauli = reshape(pauli_repr(mat(ComplexF64, yaoqc)), 4, 4, 4, 4)
 
 	# tensor network mapping of a quantum circuit
 	for ci in CartesianIndices((fill(4, 2)...,))
@@ -51,7 +51,7 @@ end
 @testset "tensor network mapping" begin
 	# create a circuit and convert it to the pauli basis
 	yaoqc = chain(cnot(3, 1, 2), put(3, 1=>X), cnot(3, 3, 2))
-	yaopauli = pauli_repr_t(mat(ComplexF64, yaoqc))
+	yaopauli = reshape(pauli_repr(mat(ComplexF64, yaoqc)), 4, 4, 4, 4, 4, 4)
 
 	# tensor network mapping of a quantum circuit
 	for ci in CartesianIndices((fill(4, 3)...,))

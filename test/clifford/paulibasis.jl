@@ -58,5 +58,5 @@ end
     @test PauliString(5, (2, 3)=>x) == PauliString(i, x, x, i, i)
     @test PauliString(5, (2, 3)=>x, 4=>y) == PauliString(i, x, x, y, i)
     @test pauli_decomposition(X) ≈ [0, 1, 0, 0]
-    @test pauli_repr_t(X) ≈ Diagonal([1, 1, -1, -1])
+    @test pauli_repr(X) ≈ Diagonal([1, 1, -1, -1])
 end

@@ -24,7 +24,7 @@ import Yao.YaoArrayRegister.StaticArrays: SizedVector
 import Yao.YaoArrayRegister.LuxurySparse
 
 # pauli basis
-export pauli_basis, pauli_decomposition, pauli_repr_t, pauli_repr
+export pauli_basis, pauli_decomposition, pauli_repr
 export Pauli, SumOfPaulis, @P_str, yaoblock
 
 # Mod

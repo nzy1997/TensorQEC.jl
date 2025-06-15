@@ -36,28 +36,15 @@ pauli_decomposition(::Type{T}, m::AbstractBlock) where T = pauli_decomposition(m
 pauli_decomposition(m::AbstractBlock) = pauli_decomposition(ComplexF64, m)
 
 """
-    pauli_repr_t(m::AbstractMatrix)
-
-Convert a linear operator to a tensor in the Pauli basis.
-If a matrix has size `2^N`, its Pauli basis representation will be a real tensor of size `(4, 4, ..., 4)`.
-Please also check `pauli_repr` for the matrix representation.
-"""
-function pauli_repr_t(m::AbstractMatrix{T}) where T
-	nqubits = Int(log2(size(m, 1)))
-	paulis = pauli_basis(nqubits)
-	return [real(tr(mat(complex(T), pi) * m * mat(complex(T), pj) * m'))/size(m, 1) for pi in paulis, pj in paulis]
-end
-
-"""
     pauli_repr(m::AbstractMatrix)
 
 Convert a linear operator to a matrix in the Pauli basis.
 If a matrix has size `2^N x 2^N`, its Pauli basis representation will be a `4^N x 4^N` real matrix.
-Please also check `pauli_repr_t` for the tensor representation.
 """
-function pauli_repr(m::AbstractMatrix)
-    pmat = pauli_repr_t(m)
-    return reshape(pmat, (size(m) .^ 2)...)
+function pauli_repr(m::AbstractMatrix{T}) where T
+	nqubits = Int(log2(size(m, 1)))
+	paulis = pauli_basis(nqubits)
+	return [real(tr(mat(complex(T), pi) * m * mat(complex(T), pj) * m'))/size(m, 1) for pi in vec(paulis), pj in vec(paulis)]
 end
 
 # all the elements in the Pauli group of size N
@@ -105,6 +92,4 @@ function pauli_c2l(::Val{N}, indices) where N
 end
 
 # YaoAPI
-pauli_repr_t(::Type{T}, m::AbstractBlock) where T = pauli_repr_t(mat(T, m))
-pauli_repr_t(m::AbstractBlock) = pauli_repr_t(ComplexF64, m)
 pauli_repr(m::AbstractBlock) = pauli_repr(mat(m))

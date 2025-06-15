@@ -6,4 +6,4 @@
 @deprecate paulistring(nq::Int, idx, pos) PauliString(nq, pos => Pauli(idx-1))
 import Yao: apply!
 @deprecate apply!(reg::ArrayReg, ps::PauliString) apply!(reg, yaoblock(ps))
-@deprecate pauli_mapping(m) pauli_repr_t(m)
+@deprecate pauli_mapping(m) reshape(pauli_repr(m), fill(4, 2*log2i(size(m, 1)))...)
