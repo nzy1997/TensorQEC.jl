@@ -20,8 +20,8 @@ end
     @test findfirst(x -> x == y, g) == 2
     @test g == PauliString((Pauli(0), Pauli(2), Pauli(3)))
     @test occupied_locs(yaoblock(g)) == (2, 3)
-    @test g * g == SumOfPaulis([1=>PauliString(i, i, i)])
-    @test g * g ≈ SumOfPaulis([1=>PauliString(i, i, i)])
+    @test g * g isa PauliGroupElement
+    @test g * g == PauliGroupElement(0, PauliString(i, i, i))
 
     # properties (faster implementation)
     @test ishermitian(g) == ishermitian(mat(g)) == true
@@ -66,6 +66,8 @@ end
     p1 = PauliString(i, x, y)
     p2 = PauliString(z, z, y)
     sp = SumOfPaulis([0.6=>p1, 0.8=>p2])
+    @test sp == SumOfPaulis([0.6=>p1]) + SumOfPaulis([0.8=>p2])
+    @test sp ≈ SumOfPaulis([0.6=>p1, 0.8=>p2])
     @test mat(yaoblock(sp)) ≈ 0.6 * mat(yaoblock(p1)) + 0.8 * mat(yaoblock(p2))
 
     reg = rand_state(3)
@@ -108,6 +110,9 @@ end
     @test P"IXYZ" == PauliString(i, x, y, z)
     @test P"IIII" == PauliString(i, i, i, i)
     @test P"XYZI" == PauliString(x, y, z, i)
+    @test P"XX" > P"IX"
+    @test P"XI" < P"IX"   # Note: big endian format!
+    @test !(P"XI" < P"XI")
     @test_throws ErrorException P"IXYZC"
 end
 

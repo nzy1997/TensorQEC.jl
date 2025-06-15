@@ -26,6 +26,8 @@ function Base.show(io::IO, p::Pauli)
     c = p.id == 0 ? 'I' : p.id == 1 ? 'X' : p.id == 2 ? 'Y' : 'Z'
     print(io, c)
 end
+Base.isless(p1::Pauli, p2::Pauli) = isless(p1.id, p2.id)
+coeff_type(::Type{Pauli}) = Int
 
 # YaoAPI
 LinearAlgebra.ishermitian(p::Pauli) = true
@@ -46,7 +48,7 @@ function YaoAPI.mat(::Type{T}, p::Pauli) where T
 end
 
 """
-    PauliString{N}
+    PauliString{N} <: AbstractPauli{N}
     PauliString(operators::NTuple{N, Pauli}) where N
     PauliString(pairs::Pair...)
 
@@ -85,9 +87,17 @@ function PauliString(n::Int, pairs::Pair...)
     end
     return PauliString(content)
 end
+coeff_type(::Type{PauliString{N}}) where N = Int
 
 function Base.:(==)(lhs::PauliString{N}, rhs::PauliString{N}) where N
     return lhs.operators == rhs.operators
+end
+function Base.isless(p1::PauliString{N}, p2::PauliString{N}) where N
+    for k = N:-1:1
+        isless(p1.operators[k], p2.operators[k]) && return true
+        isless(p2.operators[k], p1.operators[k]) && return false
+    end
+    return false
 end
 # iterating and indexing
 Base.lastindex(ps::PauliString) = lastindex(ps.operators)
@@ -134,7 +144,7 @@ function YaoAPI.mat(::Type{T}, ps::PauliString) where T
 end
 
 """
-    PauliGroupElement{N}
+    PauliGroupElement{N} <: AbstractPauli{N}
 
 A Pauli group element is a Pauli string with a phase factor of `im^k` where `k` is in range 0-3.
 
@@ -150,6 +160,7 @@ struct PauliGroupElement{N} <: AbstractPauli{N}
         return new{N}(coeff, ps)
     end
 end
+coeff_type(::Type{PauliGroupElement{N}}) where N = Complex{Int}
 
 # Convert between PauliString and PauliGroupElement
 PauliGroupElement(ps::PauliString) = PauliGroupElement(0, ps)
@@ -202,7 +213,7 @@ isanticommute(a::PauliGroupElement{N}, b::PauliGroupElement{N}) where N = !iscom
 
 # sum of paulis
 """
-    SumOfPaulis{T<:Number, N}
+    SumOfPaulis{T<:Number, N} <: AbstractPauli{N}
 
 A sum of Pauli strings is a linear combination of Pauli strings, e.g. ``c_1 P_1 + c_2 P_2 + \\cdots + c_n P_n``.
 
@@ -211,12 +222,14 @@ A sum of Pauli strings is a linear combination of Pauli strings, e.g. ``c_1 P_1 
 """
 struct SumOfPaulis{T<:Number, N} <: AbstractPauli{N}
 	items::Vector{Pair{T, PauliString{N}}}
+    function SumOfPaulis(items::Vector{Pair{T, PauliString{N}}}) where {T, N}
+        return new{T, N}(items)
+    end
 end
-SumOfPaulis(p::Pauli) = SumOfPaulis(Int, p)
-SumOfPaulis(::Type{T}, p::Pauli) where T = SumOfPaulis([one(T)=>PauliString(p)])
-SumOfPaulis(p::PauliString) = SumOfPaulis(Int, p)
-SumOfPaulis(::Type{T}, p::PauliString) where T = SumOfPaulis([one(T)=>p])
-SumOfPaulis(p::SumOfPaulis) = p
+Base.convert(::Type{SumOfPaulis{T, N}}, p::AbstractPauli{N}) where {T, N} = SumOfPaulis{T, N}(p)
+SumOfPaulis{T, N}(p::Pauli) where {T, N} = SumOfPaulis([one(T)=>PauliString(p)])
+SumOfPaulis{T, N}(p::PauliString) where {T, N} = SumOfPaulis([one(T)=>p])
+SumOfPaulis{T, N}(p::SumOfPaulis{T2, N}) where {T, T2, N} = T === T2 ? p : SumOfPaulis([T(c)=>p for (c, p) in p.items])
 
 """
     sumofpaulis(items::Vector{Pair{T, PauliString{N}}}) where {T, N}
@@ -250,6 +263,7 @@ function SumOfPaulis(m::AbstractMatrix; atol=0)
 	coeffs = pauli_decomposition(m)
 	return SumOfPaulis([coeffs[ci]=>PauliString(Pauli.(ci.I .- 1)) for ci in CartesianIndices(coeffs) if !isapprox(coeffs[ci], 0; atol=atol)] |> vec)
 end
+coeff_type(::Type{SumOfPaulis{T, N}}) where {T, N} = T
 
 Base.show(io::IO, ::MIME"text/plain", sp::SumOfPaulis) = show(io, sp)
 function Base.show(io::IO, sp::SumOfPaulis)
@@ -290,9 +304,16 @@ YaoAPI.mat(sp::SumOfPaulis) = YaoAPI.mat(ComplexF64, sp)
 YaoAPI.mat(::Type{T}, sp::SumOfPaulis) where T = sum([c * mat(T, p) for (c, p) in sp.items])
 
 # algebra
+Base.promote_rule(::Type{PauliString{1}}, ::Type{Pauli}) = PauliString{1}
+Base.promote_rule(::Type{PauliGroupElement{1}}, ::Type{Pauli}) = PauliGroupElement{1}
+Base.promote_rule(::Type{PauliGroupElement{N}}, ::Type{PauliString{N}}) where N = PauliGroupElement{N}
+Base.promote_rule(::Type{SumOfPaulis{T, N}}, ::Type{Pauli}) where {T, N} = SumOfPaulis{T, N}
+Base.promote_rule(::Type{SumOfPaulis{T, N}}, ::Type{PauliString{N}}) where {T, N} = SumOfPaulis{T, N}
+Base.promote_rule(::Type{SumOfPaulis{T, N}}, ::Type{PauliGroupElement{N}}) where {T, N} = SumOfPaulis{T, N}
+
 function Base.:(*)(a::Pauli, b::Pauli)
     coeff, idz = _mul(a, b)
-    return SumOfPaulis([im^coeff=>PauliString((idz,))])
+    return PauliGroupElement(coeff, PauliString((idz,)))
 end
 function _mul(a::Pauli, b::Pauli)
     idx, idy = a.id, b.id
@@ -318,7 +339,7 @@ function _mul(a::Pauli, b::Pauli)
 end
 function Base.:(*)(a::PauliString{N}, b::PauliString{N}) where {N}
     coeff, ps = _mul(a, b)
-    return SumOfPaulis([im^coeff=>ps])
+    return PauliGroupElement(coeff, ps)
 end
 function _mul(a::PauliString{N}, b::PauliString{N}) where {N}
     res = PauliGroupElement(0, a) * PauliGroupElement(0, b)
@@ -326,20 +347,24 @@ function _mul(a::PauliString{N}, b::PauliString{N}) where {N}
 end
 
 function Base.:(*)(a::AbstractPauli, b::AbstractPauli)
-    return SumOfPaulis(a) * SumOfPaulis(b)
+    pa, pb = promote(a, b)
+    return pa * pb
 end
-Base.:(*)(a::Number, b::AbstractPauli) = SumOfPaulis([a * c => p for (c, p) in SumOfPaulis(b).items])
+Base.:(*)(a::Number, b::AbstractPauli{N}) where N = SumOfPaulis([a * c => p for (c, p) in SumOfPaulis{promote_type(typeof(a), coeff_type(typeof(b))), N}(b).items])
 Base.:(*)(a::AbstractPauli, b::Number) = b * a
 Base.:(/)(a::AbstractPauli, b::Number) = a * inv(b)
 
 function Base.:(+)(a::AbstractPauli{N}, b::AbstractPauli{N}) where {N}
-    return SumOfPaulis(a) + SumOfPaulis(b)
+    T = promote_type(coeff_type(typeof(a)), coeff_type(typeof(b)))
+    return SumOfPaulis{T, N}(a) + SumOfPaulis{T, N}(b)
 end
 function Base.:(-)(a::AbstractPauli{N}, b::AbstractPauli{N}) where {N}
-    return SumOfPaulis(a) - SumOfPaulis(b)
+    T = promote_type(coeff_type(typeof(a)), coeff_type(typeof(b)))
+    return SumOfPaulis{T, N}(a) - SumOfPaulis{T, N}(b)
 end
 function Base.:(-)(a::AbstractPauli{N}) where {N}
-    return -SumOfPaulis(a)
+    T = coeff_type(typeof(a))
+    return -SumOfPaulis{T, N}(a)
 end
 
 # YaoAPI
