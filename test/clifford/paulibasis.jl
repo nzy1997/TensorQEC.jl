@@ -1,5 +1,11 @@
 using Test, TensorQEC, TensorQEC.Yao, TensorQEC.LinearAlgebra
 
+@testset "pauli_c2l and pauli_l2c" begin
+    N = 3
+	@test TensorQEC.pauli_l2c(Val(N), TensorQEC.pauli_c2l(Val(N), [1, 2, 3])) == (1, 2, 3)
+    @test TensorQEC.pauli_c2l(Val(N), TensorQEC.pauli_l2c(Val(N), 12)) == 12
+end
+
 @testset "pauli_basis" begin
 	i, x, y, z = Pauli(0), Pauli(1), Pauli(2), Pauli(3)
 	@test pauli_basis(1) == PauliString.([i, x, y, z])
@@ -33,7 +39,7 @@ end
 @testset "map_pauli_string" begin
 	i, x, y, z = Pauli(0), Pauli(1), Pauli(2), Pauli(3)
 	ps = PauliString(x, y, z, y, x, i)
-	@test TensorQEC.map_pauli_string(ps, pauli_repr_t(mat(ComplexF64,cnot(2,1,2))), [5,6]) == PauliString(x, y, z, y, x, x)
+	@test TensorQEC.map_pauli_string(ps, pauli_repr(mat(ComplexF64,cnot(2,1,2))), [5,6]) == PauliString(x, y, z, y, x, x)
 end
 
 @testset "pauli_string_map_iter" begin

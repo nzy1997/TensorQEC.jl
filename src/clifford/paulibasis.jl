@@ -76,13 +76,32 @@ function pauli_string_map_iter(ps::PauliString{N}, qc::ChainBlock) where N
         return ps
     end
     block = convert_to_put(qc[1])
-    return pauli_string_map_iter(map_pauli_string(ps, pauli_repr_t(mat(ComplexF64,block.content)),[block.locs...]),qc[2:end])
+    return pauli_string_map_iter(map_pauli_string(ps, pauli_repr(mat(ComplexF64,block.content)),[block.locs...]),qc[2:end])
 end
 # map a Pauli string to another one, for Clifford simulation
-function map_pauli_string(ps::PauliString{N}, paulimapping::Array, qubits::Vector{Int}) where N
+function map_pauli_string(ps::PauliString{N}, paulimapping::Matrix, qubits::Vector{Int}) where N
     # Q: why only get the first non-zero element?!!!
-    c = findall(!iszero, paulimapping[fill(:,length(size(paulimapping)) ÷ 2)..., map(k->ps.operators[k].id + 1, qubits)...])[1]
-    return PauliString(([Pauli(k ∈ qubits ? c[findfirst(==(k),qubits)]-1 : ps.operators[k].id) for k in 1:N]...,))
+    mapped = _map(Val(length(qubits)), paulimapping, map(k->ps.operators[k], qubits))
+    return PauliString(ntuple(k -> k ∈ qubits ? mapped[findfirst(==(k),qubits)] : ps.operators[k], Val{N}()))
+end
+# check which pauli string to map to
+function _map(::Val{N}, paulimapping::Matrix, ps::Vector) where N
+    @assert N == length(ps) "`ps` must have the same length as `N`, got $(length(ps)) and $N"
+    idx = pauli_c2l(Val(N), map(k->k.id + 1, ps))
+    for i = 1:4^N
+        if paulimapping[i, idx] != 0
+            @assert paulimapping[i, idx] ≈ 1 "`paulimapping` is not a permutation matrix, got $(paulimapping)"
+            ci = pauli_l2c(Val(N), i)
+            return PauliString(ntuple(j->Pauli(ci[j]-1), Val{N}()))
+        end
+    end
+end
+
+function pauli_l2c(::Val{N}, idx::Int) where N
+    return ntuple(k-> (((idx-1) >> (2*(k-1))) & 3) + 1, Val{N}())
+end
+function pauli_c2l(::Val{N}, indices) where N
+    return sum(k->(indices[k]-1) * 4^(k-1), 1:N; init=1)
 end
 
 # YaoAPI
