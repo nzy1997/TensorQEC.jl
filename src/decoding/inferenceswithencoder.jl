@@ -12,7 +12,7 @@ Measure the given stabilizers.
 - `measure_outcome`: The measurement outcome of the stabilizers, which is either 1 or -1.
 """
 function measure_syndrome!(reg::AbstractRegister, stabilizers::AbstractVector{PauliString{N}}) where N
-	measure_oprators = [Yao.YaoBlocks.Optimise.to_basictypes(ps) for ps in stabilizers]
+	measure_oprators = [yaoblock(ps) for ps in stabilizers]
 	return [round(Int, real.(measure!(op,reg))) for op in measure_oprators]
 end
 

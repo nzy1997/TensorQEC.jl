@@ -44,17 +44,17 @@ function tableau_simulate(qc::ChainBlock)
 end
 function tableau_simulate(ps::PauliString{N}, qc::ChainBlock) where N
     tab = tableau_simulate(qc)
-    res = PauliGroupElement{N}(0, paulistring(N, 1,1))
+    res = PauliGroupElement(0, PauliString(N, 1 => Pauli(0)))
     count = 0
     for i in 1:N
-        if ps.ids[i] == 2
+        if ps[i] == Pauli(1)
             res *= tab.tabx[i]
-        elseif ps.ids[i] == 4
+        elseif ps[i] == Pauli(3)
             res *= tab.tabz[i]
-        elseif ps.ids[i] == 3
+        elseif ps[i] == Pauli(2)
             res *= tab.tabx[i] * tab.tabz[i]
             count += 1
         end
     end
-    return PauliGroupElement{N}(_mul_coeff(res.coeff,count), res.ps)
+    return PauliGroupElement(_mul_coeff(res.coeff,count), res.ps)
 end

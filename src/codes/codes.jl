@@ -98,12 +98,12 @@ struct SteaneCode   <: CSSQuantumCode end
 function stabilizers(::SteaneCode)
 	nq = 7
 	pauli_string = PauliString{nq}[]
-	push!(pauli_string, paulistring(nq, 2, (1,3,5,7)))
-	push!(pauli_string, paulistring(nq, 2, (2,3,6,7)))
-	push!(pauli_string, paulistring(nq, 2, (4,5,6,7)))
-	push!(pauli_string, paulistring(nq, 4, (1,3,5,7)))
-	push!(pauli_string, paulistring(nq, 4, (2,3,6,7)))
-	push!(pauli_string, paulistring(nq, 4, (4,5,6,7)))
+	push!(pauli_string, PauliString(nq, (1,3,5,7) => Pauli(1)))
+	push!(pauli_string, PauliString(nq, (2,3,6,7) => Pauli(1)))
+	push!(pauli_string, PauliString(nq, (4,5,6,7) => Pauli(1)))
+	push!(pauli_string, PauliString(nq, (1,3,5,7) => Pauli(3)))
+	push!(pauli_string, PauliString(nq, (2,3,6,7) => Pauli(3)))
+	push!(pauli_string, PauliString(nq, (4,5,6,7) => Pauli(3)))
 	return pauli_string
 end
 

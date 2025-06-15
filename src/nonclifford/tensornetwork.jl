@@ -127,8 +127,8 @@ end
 function Yao.expect(operator::PauliString, cl::CliffordNetwork{T}, rho::PauliString) where T
 	n = nqubits(cl)
 	# construct the tensor network
-	ps = Dict([i=>BoundarySpec((Yao.BitBasis._onehot(T, 4, rho.ids[i])...,), false) for i in 1:n])
-	qs = Dict([i=>BoundarySpec((Yao.BitBasis._onehot(T, 4, operator.ids[i])...,), false) for i in 1:n])
+	ps = Dict([i=>BoundarySpec((Yao.BitBasis._onehot(T, 4, rho.operators[i].id + 1)...,), false) for i in 1:n])
+	qs = Dict([i=>BoundarySpec((Yao.BitBasis._onehot(T, 4, operator.operators[i].id + 1)...,), false) for i in 1:n])
 	# TODO: avoid repeated optimization of contraction order
 	tn = generate_tensor_network(cl, ps, qs)
 	return probability(tn)*2^n

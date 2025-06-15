@@ -94,9 +94,9 @@ Map the Pauli string `ps` by a permutation matrix `pm`. Return the mapped Pauli 
 function perm_of_paulistring(ps::PauliString, operation::Pair{Vector{Int}, <:PermMatrix})
     pos, pm = operation
     @assert 4^length(pos) == length(pm.perm)
-    v = collect(ps.ids)
-    ps_perm_num = 1+sum((ps.ids[pos] .-1) .* [4^i for i in 0:length(pos)-1])
-    v[pos]=[mod(div(pm.perm[ps_perm_num]-1, 4^(j-1)), 4)+1 for j in 1:length(pos)]
+    v = collect(ps.operators)
+    ps_perm_num = 1 + sum(i->ps.operators[pos[i]].id * 4^(i-1), 1:length(pos))
+    v[pos]=[Pauli(mod(div(pm.perm[ps_perm_num]-1, 4^(j-1)), 4)) for j in 1:length(pos)]
     return PauliString(v...), pm.vals[ps_perm_num]
 end
 _complex2int(x) = x==1+0im ? 0 : x==0+1im ? 1 : x==-1+0im ? 2 : 3
@@ -167,9 +167,9 @@ function paulistring_annotate(ps::PauliString{N};color = "red") where N
 end
 function paulistring_annotate(ps::PauliString{N},num_qubits::Int;color = "red") where N
     qc = chain(num_qubits)
-    for i in occupied_locs(ps)
-        p = pauli(ps.ids[i])
-        push!(qc, put(num_qubits, i=>line_annotation("$p";color)))
+    for (loc, p) in enumerate(ps.operators)
+        p == Pauli(0) && continue
+        push!(qc, put(num_qubits, loc=>line_annotation("$p"; color)))
     end
     return qc
 end
@@ -197,7 +197,7 @@ function generate_annotate_circuit(res::CliffordSimulateResult{N};color = "red")
     for i in 1:length(res.circuit)
         block = res.circuit[i]
         push!(qcf, block)
-        if !isempty(occupied_locs(block) ∩ occupied_locs(res.history[i+1]))
+        if !isempty(occupied_locs(block) ∩ findall(x -> x != Pauli(0), res.history[i+1]))
             push!(qcf, paulistring_annotate(res.history[i+1];color))
             push!(pos, length(qcf))
         end

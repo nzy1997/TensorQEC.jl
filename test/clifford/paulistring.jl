@@ -17,6 +17,7 @@ end
     i, x, y, z = Pauli(0), Pauli(1), Pauli(2), Pauli(3)
     # constructor
     g = PauliString(i, y, z)
+    @test findfirst(x -> x == y, g) == 2
     @test g == PauliString((Pauli(0), Pauli(2), Pauli(3)))
     @test occupied_locs(yaoblock(g)) == (2, 3)
     @test g * g == PauliGroupElement(0, PauliString(i, i, i))

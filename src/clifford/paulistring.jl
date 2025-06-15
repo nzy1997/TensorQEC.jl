@@ -89,6 +89,7 @@ Base.iterate(ps::PauliString, st) = iterate(ps.operators, st)
 Base.length(ps::PauliString) = length(ps.operators)
 Base.eachindex(ps::PauliString) = eachindex(ps.operators)
 Base.getindex(ps::PauliString, index::Integer) = getindex(ps.operators, index)
+Base.keys(ps::PauliString) = Base.OneTo(length(ps))
 
 # visualization
 Base.show(io::IO, ::MIME"text/plain", ps::PauliString) = show(io, ps)

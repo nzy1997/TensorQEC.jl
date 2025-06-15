@@ -73,8 +73,8 @@ end
 	sp = SumOfPaulis(dm)
     ps1, ps2 = sp.items[6].second, sp.items[2].second
     res1 = expect(ps1, cl, ps2)[]
-    dm2 = DensityMatrix(Matrix{ComplexF64}(ps2))
+    dm2 = DensityMatrix(Matrix{ComplexF64}(yaoblock(ps2)))
     dm2f = apply(dm2, qc)
-    res2 = Yao.expect(ps1, dm2f)
+    res2 = Yao.expect(yaoblock(ps1), dm2f)
     @test res1 ≈ res2
 end

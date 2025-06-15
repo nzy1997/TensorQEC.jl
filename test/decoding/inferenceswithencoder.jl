@@ -62,7 +62,7 @@ end
     pinf = syndrome_inference(cl, syn_dict, p)
     ps_ec_phy = TensorQEC.pauli_string_map_iter(correction_pauli_string(qubit_num, syn_dict, pinf), qc)
     @show ps_ec_phy
-    apply!(reg, Yao.YaoBlocks.Optimise.to_basictypes(ps_ec_phy))
+    apply!(reg, yaoblock(ps_ec_phy))
 
     @test measure_syndrome!(reg, st) == [1,1]
     apply!(reg, qc')
@@ -89,7 +89,7 @@ end
 
     ps_ec_phy = TensorQEC.pauli_string_map_iter(correction_pauli_string(qubit_num, syn_dict, pinf), qc)
     @show ps_ec_phy
-    apply!(reg, ps_ec_phy)
+    apply!(reg, yaoblock(ps_ec_phy))
 
     @test measure_syndrome!(reg, st) == [1,1,1,1,1,1,1,1]
     apply!(reg, qc')
@@ -115,7 +115,7 @@ end
 
     ps_ec_phy = TensorQEC.pauli_string_map_iter(correction_pauli_string(qubit_num, syn_dict, pinf), qc)
     @show ps_ec_phy
-    apply!(reg, ps_ec_phy)
+    apply!(reg, yaoblock(ps_ec_phy))
 
     @test measure_syndrome!(reg, st) == [1,1,1,1,1,1]
     apply!(reg, qc')
