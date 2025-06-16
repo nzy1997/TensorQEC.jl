@@ -91,7 +91,7 @@ function PauliString(n::Int, pairs::Pair...)
 end
 coeff_type(::Type{PauliString{N}}) where N = Int
 
-Base.convert(::Type{PauliString{1}}, p::Pauli) where N = PauliString(p)
+Base.convert(::Type{PauliString{1}}, p::Pauli) = PauliString(p)
 function Base.:(==)(lhs::PauliString{N}, rhs::PauliString{N}) where N
     return lhs.operators == rhs.operators
 end
