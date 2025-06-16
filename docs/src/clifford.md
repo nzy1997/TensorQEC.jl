@@ -117,8 +117,3 @@ annotate_history(res)
 ````
 
 [^Bravyi2022]: Bravyi, S., Latone, J.A., Maslov, D., 2022. 6-qubit optimal Clifford circuits. npj Quantum Inf 8, 1–12. https://doi.org/10.1038/s41534-022-00583-7
-
----
-
-*This page was generated using [Literate.jl](https://github.com/fredrikekre/Literate.jl).*
-

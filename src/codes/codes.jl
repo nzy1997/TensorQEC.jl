@@ -120,8 +120,8 @@ function stabilizers(::Code832)
 	push!(pauli_string, PauliString(fill(Pauli(1), 8)...))
 	push!(pauli_string, PauliString(fill(Pauli(3), 8)...))
 	push!(pauli_string, PauliString(nq, (1,3,5,7) => Pauli(3)))
-	push!(pauli_string, PauliString(nq, (1,2,3,4) => Pauli(1)))
-	push!(pauli_string, PauliString(nq, (1,2,5,6) => Pauli(1)))
+	push!(pauli_string, PauliString(nq, (1,2,3,4) => Pauli(3)))
+	push!(pauli_string, PauliString(nq, (1,2,5,6) => Pauli(3)))
 	return pauli_string
 end
 

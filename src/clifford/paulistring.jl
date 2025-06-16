@@ -21,6 +21,7 @@ struct Pauli <: AbstractPauli{1}
         return new(id)
     end
 end
+Base.copy(p::Pauli) = p
 Base.show(io::IO, ::MIME"text/plain", p::Pauli) = show(io, p)
 function Base.show(io::IO, p::Pauli)
     c = p.id == 0 ? 'I' : p.id == 1 ? 'X' : p.id == 2 ? 'Y' : 'Z'
@@ -95,6 +96,7 @@ Base.convert(::Type{PauliString{1}}, p::Pauli) = PauliString(p)
 function Base.:(==)(lhs::PauliString{N}, rhs::PauliString{N}) where N
     return lhs.operators == rhs.operators
 end
+Base.copy(ps::PauliString) = ps
 function Base.isless(p1::PauliString{N}, p2::PauliString{N}) where N
     for k = N:-1:1
         isless(p1.operators[k], p2.operators[k]) && return true
@@ -106,7 +108,7 @@ end
 Base.lastindex(ps::PauliString) = lastindex(ps.operators)
 Base.iterate(ps::PauliString) = iterate(ps.operators)
 Base.iterate(ps::PauliString, st) = iterate(ps.operators, st)
-Base.length(ps::PauliString) = length(ps.operators)
+Base.length(::PauliString{N}) where N = N
 Base.eachindex(ps::PauliString) = eachindex(ps.operators)
 Base.getindex(ps::PauliString, index::Integer) = getindex(ps.operators, index)
 Base.keys(ps::PauliString) = Base.OneTo(length(ps))
@@ -170,6 +172,7 @@ PauliGroupElement(ps::PauliString) = PauliGroupElement(0, ps)
 
 Base.convert(::Type{PauliGroupElement{1}}, p::Pauli) = PauliGroupElement(0, PauliString(p))
 Base.convert(::Type{PauliGroupElement{N}}, p::PauliString{N}) where N = PauliGroupElement(0, p)
+Base.copy(pg::PauliGroupElement) = PauliGroupElement(pg.coeff, copy(pg.ps))
 Base.length(pg::PauliGroupElement) = length(pg.ps)
 
 # Algebra operations for PauliGroupElement
@@ -215,6 +218,7 @@ end
 
 Returns `true` if two Pauli group elements anticommute, i.e. ``a b + b a = 0``.
 """
+isanticommute(op1, op2) = op1 * op2 ≈ -(op2 * op1)
 isanticommute(a::PauliGroupElement{N}, b::PauliGroupElement{N}) where N = !iscommute(a, b)
 
 # sum of paulis
@@ -258,13 +262,21 @@ SumOfPaulis{T, N}(p::SumOfPaulis{T2, N}) where {T, T2, N} = T === T2 ? p : SumOf
 
 Returns a sum of Pauli strings from a vector of pairs of coefficients and Pauli strings.
 Unlike `SumOfPaulis`, it will merge the same Pauli strings and sum up the coefficients.
+
+### Keyword Arguments
+- `atol::Float64`: the absolute tolerance for the coefficients. If the coefficient is less than `atol`, it will be ignored.
 """
-function sumofpaulis(items::Vector{Pair{T, PauliString{N}}}) where {T, N}
+function sumofpaulis(items::Vector{Pair{T, PauliString{N}}}; atol=0) where {T, N}
     items = sort(items, by=x->x.second)
     res = Pair{T, PauliString{N}}[]
     for (c, p) in items
         if length(res) > 0 && res[end].second == p
-            res[end] = res[end].first + c => p
+            coeff = res[end].first + c
+            if isapprox(coeff, 0; atol=atol)
+                pop!(res)
+            else
+                res[end] = coeff => p
+            end
         else
             push!(res, c=>p)
         end
@@ -287,7 +299,7 @@ function SumOfPaulis(m::AbstractMatrix; atol=0)
 	return SumOfPaulis([coeffs[ci]=>PauliString(Pauli.(ci.I .- 1)) for ci in CartesianIndices(coeffs) if !isapprox(coeffs[ci], 0; atol=atol)] |> vec)
 end
 coeff_type(::Type{SumOfPaulis{T, N}}) where {T, N} = T
-
+Base.copy(sp::SumOfPaulis) = SumOfPaulis([c => copy(p) for (c, p) in sp.items])
 Base.show(io::IO, ::MIME"text/plain", sp::SumOfPaulis) = show(io, sp)
 function Base.show(io::IO, sp::SumOfPaulis)
     if isempty(sp.items)
@@ -329,8 +341,11 @@ Base.:(-)(a::SumOfPaulis{T1, N}, b::SumOfPaulis{T2, N}) where {T1, T2, N} = a + 
 Base.zero(sp::SumOfPaulis) = zero(typeof(sp))
 Base.zero(::Type{SumOfPaulis{T, N}}) where {T, N} = SumOfPaulis(Pair{T, PauliString{N}}[])
 
-YaoAPI.mat(sp::SumOfPaulis) = YaoAPI.mat(ComplexF64, sp)
-YaoAPI.mat(::Type{T}, sp::SumOfPaulis) where T = sum([c * mat(T, p) for (c, p) in sp.items])
+YaoAPI.mat(sp::SumOfPaulis{T}) where T = YaoAPI.mat(complex(T), sp)
+function YaoAPI.mat(::Type{T}, sp::SumOfPaulis{T2, N}) where {T, T2, N}
+    isempty(sp.items) && return YaoBlocks.spzeros(T, 2^N, 2^N)
+    return sum([c * mat(T, p) for (c, p) in sp.items])
+end
 
 # algebra
 Base.promote_rule(::Type{PauliString{1}}, ::Type{Pauli}) = PauliString{1}
@@ -395,6 +410,7 @@ function Base.:(-)(a::AbstractPauli{N}) where {N}
     T = coeff_type(typeof(a))
     return -SumOfPaulis{T, N}(a)
 end
+Base.:(^)(a::AbstractPauli{N}, k::Integer) where {N} = Base.power_by_squaring(a, k)
 
 # YaoAPI
 """

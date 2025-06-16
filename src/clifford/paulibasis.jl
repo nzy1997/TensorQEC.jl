@@ -1,15 +1,15 @@
-# pauli basis
+# pauli string order
 # let P = {I, X, Y, Z}, a n-qubit pauli basis is the set of all possible tensor products of elements in P.
 # !!! note
 #     The order of qubits is following the little-endian convention, i.e. the first qubit is the least significant qubit. For example, `pauli_basis(2)` returns
 #     II, XI (in Yao, it is kron(I2, X)), YI, ZI, IX, XX, YX, ZX, IY, XY, YY, ZY, IZ, XZ, YZ, ZZ
 
 # The following pauli strings may in different format, but are the same thing:
-# 1. PauliString(1, 2)
+# 1. P"IX"
 # 2. Yao.kron(I2, X)
 # 3. pauli_basis(2)[1,2]
 # 4. LinearAlgebra.kron(X,I2)
-# 5. X ⊗ I shown in the print
+# 5. IX shown in the print
 
 """
     pauli_basis(nqubits::Int)

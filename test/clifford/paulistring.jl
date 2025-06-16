@@ -23,6 +23,7 @@ using Test
     @test Pauli(Yao.Y) == Pauli(2)
     @test Pauli(Yao.Z) == Pauli(3)
     @test_throws AssertionError Pauli(4)
+    @test copy(Pauli(1)) == Pauli(1)
 end
 
 @testset "paulistring" begin
@@ -42,7 +43,7 @@ end
     @test occupied_locs(yaoblock(g)) == (2, 3)
     @test g * g isa PauliGroupElement
     @test g * g == PauliGroupElement(0, PauliString(i, i, i))
-
+    @test copy(g) == g
     # properties (faster implementation)
     @test ishermitian(g) == ishermitian(mat(g)) == true
     @test isreflexive(g) == isreflexive(mat(g)) == true
@@ -96,6 +97,7 @@ end
     @test sp == SumOfPaulis([0.6=>p1]) + SumOfPaulis([0.8=>p2])
     @test sp ≈ SumOfPaulis([0.6=>p1, 0.8=>p2])
     @test mat(yaoblock(sp)) ≈ 0.6 * mat(yaoblock(p1)) + 0.8 * mat(yaoblock(p2))
+    @test copy(sp) == sp
 
     reg = rand_state(3)
     @test apply(reg, yaoblock(sp)) ≈ 0.6 * apply(reg, yaoblock(p1)) + 0.8 * apply(reg, yaoblock(p2))
@@ -105,6 +107,12 @@ end
     dm = density_matrix(reg, 1:3)
     sp = SumOfPaulis(dm)
     @test dm.state ≈ mat(yaoblock(sp))
+
+    # commute and anticommute
+    @test iscommute(sp, sp)
+    sp = 0.6 * P"IXY"
+    sp2 = P"IXZ"
+    @test isanticommute(sp, sp2)
 end
 
 @testset "pauli group" begin
@@ -121,6 +129,9 @@ end
     @test g * h == PauliGroupElement(1, PauliString(z, y, i2))
     @test g * g == PauliGroupElement(2, PauliString(i2, i2, i2))
     @test h * g == PauliGroupElement(3, PauliString(z, y, i2))
+    @test copy(g) == g
+    @test copy(h) == h
+    @test copy(i) == i
     for g in [g, h, i]
         @test isunitary(g) == isunitary(yaoblock(g))
         @test ishermitian(g) == ishermitian(yaoblock(g))
@@ -162,6 +173,12 @@ end
             end
         end
     end
+    p = (0.5 * P"XX" + 0.2 * P"XY")
+    @test p^0 ≈ one(p)
+    @test p^2 ≈ 0.29 * P"II"
+    @test x^0 == PauliGroupElement(0, P"I")
+    @test x^1 == PauliGroupElement(0, P"X")
+    @test x^2 == PauliGroupElement(0, P"I")
 end
 
 @testset "promote" begin
