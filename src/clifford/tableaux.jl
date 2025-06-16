@@ -18,13 +18,13 @@ function Base.show(io::IO, tab::Tableau{N}) where {N}
 end
 
 
-function tableau_simulate(tab::Tableau{N}, operation::Pair{Vector{Int}, <:PermMatrix}) where N
+function tableau_simulate(tab::Tableau{N}, operation::Pair{Vector{Int}, <:PermMatrixCSC}) where N
     return Tableau([perm_of_pauligroup(tab.tabx[i], operation) for i in 1:N], [perm_of_pauligroup(tab.tabz[i], operation) for i in 1:N])
 end
 
 function tableau_simulate(tab::Tableau{N}, qc::ChainBlock) where N
     qc = simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
-    gatedict=Dict{UInt64, PermMatrix}()
+    gatedict=Dict{UInt64, PermMatrixCSC}()
     for _gate in qc
         gate = toput(_gate)
         key = hash(gate.content)

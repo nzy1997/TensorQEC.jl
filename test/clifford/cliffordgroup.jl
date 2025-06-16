@@ -21,7 +21,7 @@ end
 	@test size(pauli_group(1)) == (4, 4)
 	@test all(getfield.(pauli_group(1)[1, :], :coeff) .== 0)
 	@test all(getfield.(pauli_group(1)[2, :], :coeff) .== 1)
-	@test size(pauli_group(2)) == (4, 4, 4)
+	@test size(pauli_group(2)) == (4, 16)
 end
 
 @testset "clifford group" begin
