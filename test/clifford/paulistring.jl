@@ -29,7 +29,7 @@ end
     i, x, y, z = Pauli(0), Pauli(1), Pauli(2), Pauli(3)
     # constructor
     g = PauliString(i, y, z)
-    @test coeff_type(typeof(g)) == Int
+    @test TensorQEC.coeff_type(typeof(g)) == Int
     @test string(g) == "IYZ"
     @test isunitary(g)
     @test ishermitian(g)
