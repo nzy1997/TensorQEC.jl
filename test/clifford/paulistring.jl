@@ -3,7 +3,15 @@ using Test
 
 @testset "Pauli" begin
     I, X, Y, Z = Pauli(0), Pauli(1), Pauli(2), Pauli(3)
+    @test string(I) == "I"
+    @test string(X) == "X"
+    @test string(Y) == "Y"
+    @test string(Z) == "Z"
+    @test TensorQEC.coeff_type(Pauli) == Int
     for i in 0:3
+        @test isunitary(Pauli(i))
+        @test ishermitian(Pauli(i))
+        @test isreflexive(Pauli(i))
         @test mat(Pauli(i)) ≈ mat(yaoblock(Pauli(i)))
         for j in 0:3
             @info "Testing $(Pauli(i)) * $(Pauli(j)) -> $(Pauli(i) * Pauli(j))"
@@ -21,6 +29,11 @@ end
     i, x, y, z = Pauli(0), Pauli(1), Pauli(2), Pauli(3)
     # constructor
     g = PauliString(i, y, z)
+    @test coeff_type(typeof(g)) == Int
+    @test string(g) == "IYZ"
+    @test isunitary(g)
+    @test ishermitian(g)
+    @test isreflexive(g)
     @test_throws AssertionError PauliString(4, (1, 2, 4)=>Pauli(1), 2=>Pauli(1))
     @test_throws AssertionError PauliString(4, (1, 2, 2)=>Pauli(1), 4=>Pauli(1))
     @test PauliString(Yao.I2, Yao.X) == PauliString(i, x)
@@ -73,6 +86,13 @@ end
     p1 = PauliString(i, x, y)
     p2 = PauliString(z, z, y)
     sp = SumOfPaulis([0.6=>p1, 0.8=>p2])
+    @test string(sp) == "0.6 * IXY + 0.8 * ZZY"
+    @test string(zero(sp)) == "𝟘"
+    @test one(sp) == SumOfPaulis([1.0=>P"III"])
+    @test one(sp) * sp == sp
+    @test zero(sp) == SumOfPaulis(Pair{Float64, PauliString{3}}[])
+    @test zero(sp) + sp == sp
+    @test zero(sp) * sp == zero(sp)
     @test sp == SumOfPaulis([0.6=>p1]) + SumOfPaulis([0.8=>p2])
     @test sp ≈ SumOfPaulis([0.6=>p1, 0.8=>p2])
     @test mat(yaoblock(sp)) ≈ 0.6 * mat(yaoblock(p1)) + 0.8 * mat(yaoblock(p2))
@@ -92,18 +112,20 @@ end
     g = PauliGroupElement(3, PauliString(x, y, z))
     h = PauliGroupElement(1, PauliString(y, i2, z))
     i = PauliGroupElement(2, PauliString(z, y, x))
+    @test length(g) == 3
+    @test TensorQEC.coeff_type(typeof(g)) == Complex{Int}
+    @test PauliGroupElement(P"XXX") == PauliGroupElement(0, PauliString(3, (1,2,3)=>x))
+    @test one(g) == PauliGroupElement(0, PauliString(3, (1,2,3)=>i2))
+    @test one(g) * g == g
+    @test string(g) == "-i * XYZ"
     @test g * h == PauliGroupElement(1, PauliString(z, y, i2))
     @test g * g == PauliGroupElement(2, PauliString(i2, i2, i2))
     @test h * g == PauliGroupElement(3, PauliString(z, y, i2))
-    @test isunitary(g)
-    @test isunitary(h)
-    @test isunitary(i)
-    @test !ishermitian(g)
-    @test !ishermitian(h)
-    @test ishermitian(i)
-    @test !isreflexive(g)
-    @test !isreflexive(h)
-    @test isreflexive(i)
+    for g in [g, h, i]
+        @test isunitary(g) == isunitary(yaoblock(g))
+        @test ishermitian(g) == ishermitian(yaoblock(g))
+        @test isreflexive(g) == isreflexive(yaoblock(g))
+    end
     @test !iscommute(g, h)
     @test iscommute(g, g)
     @test iscommute(g, i)
@@ -132,6 +154,7 @@ end
         @test mat(a * 2) ≈ mat(a) * 2
         @test mat(a / 2) ≈ mat(a) / 2
         for b in ops
+            @info "Testing $(a) and $(b)"
             if (a isa Pauli && b isa Pauli) || (!(a isa Pauli) && !(b isa Pauli))
                 @test mat(a + b) ≈ mat(a) + mat(b)
                 @test mat(a - b) ≈ mat(a) - mat(b)
@@ -139,4 +162,13 @@ end
             end
         end
     end
+end
+
+@testset "promote" begin
+    @test promote(Pauli(1), P"Z") == (P"X", P"Z")
+    @test promote(Pauli(1), PauliGroupElement(P"Z")) == (PauliGroupElement(0, P"X"), PauliGroupElement(0, P"Z"))
+    @test promote(Pauli(1), SumOfPaulis([0.6=>P"Z"])) == (SumOfPaulis([1.0=>P"X"]), SumOfPaulis([0.6=>P"Z"]))
+    @test promote(P"ZX", PauliGroupElement(1, P"ZX")) == (PauliGroupElement(0, P"ZX"), PauliGroupElement(1, P"ZX"))
+    @test promote(P"ZX", SumOfPaulis([0.6=>P"ZZ"])) == (SumOfPaulis([1.0=>P"ZX"]), SumOfPaulis([0.6=>P"ZZ"]))
+    @test promote(PauliGroupElement(1, P"ZX"), SumOfPaulis([0.6=>P"ZZ"])) == (SumOfPaulis([1.0im=>P"ZX"]), SumOfPaulis([0.6=>P"ZZ"]))
 end

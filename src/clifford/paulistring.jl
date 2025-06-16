@@ -91,6 +91,7 @@ function PauliString(n::Int, pairs::Pair...)
 end
 coeff_type(::Type{PauliString{N}}) where N = Int
 
+Base.convert(::Type{PauliString{1}}, p::Pauli) where N = PauliString(p)
 function Base.:(==)(lhs::PauliString{N}, rhs::PauliString{N}) where N
     return lhs.operators == rhs.operators
 end
@@ -167,6 +168,8 @@ coeff_type(::Type{PauliGroupElement{N}}) where N = Complex{Int}
 # Convert between PauliString and PauliGroupElement
 PauliGroupElement(ps::PauliString) = PauliGroupElement(0, ps)
 
+Base.convert(::Type{PauliGroupElement{1}}, p::Pauli) = PauliGroupElement(0, PauliString(p))
+Base.convert(::Type{PauliGroupElement{N}}, p::PauliString{N}) where N = PauliGroupElement(0, p)
 Base.length(pg::PauliGroupElement) = length(pg.ps)
 
 # Algebra operations for PauliGroupElement
@@ -178,6 +181,7 @@ function Base.:(*)(a::PauliGroupElement{N}, b::PauliGroupElement{N}) where {N}
     end
     return PauliGroupElement(mapreduce(x -> x[1], _mul_coeff, pc, init=cc), PauliString(ntuple(i->pc[i][2], Val{N}())))
 end
+Base.one(pg::PauliGroupElement) = one(typeof(pg))
 Base.one(::Type{PauliGroupElement{N}}) where N = PauliGroupElement(0, PauliString(ntuple(i->Pauli(0), Val{N}())))
 
 # Visualization
@@ -228,9 +232,10 @@ struct SumOfPaulis{T<:Number, N} <: AbstractPauli{N}
         return new{T, N}(items)
     end
 end
-Base.convert(::Type{SumOfPaulis{T, N}}, p::AbstractPauli{N}) where {T, N} = SumOfPaulis{T, N}(p)
+Base.convert(::Type{SumOfPaulis{T, N}}, p::AbstractPauli{N}) where {T, N} = SumOfPaulis{promote_type(T, coeff_type(typeof(p))), N}(p)
 SumOfPaulis{T, N}(p::Pauli) where {T, N} = SumOfPaulis([one(T)=>PauliString(p)])
 SumOfPaulis{T, N}(p::PauliString) where {T, N} = SumOfPaulis([one(T)=>p])
+SumOfPaulis{T, N}(p::PauliGroupElement) where {T, N} = SumOfPaulis([T(im^p.coeff)=>p.ps])
 SumOfPaulis{T, N}(p::SumOfPaulis{T2, N}) where {T, T2, N} = T === T2 ? p : SumOfPaulis([T(c)=>p for (c, p) in p.items])
 
 """
@@ -269,6 +274,10 @@ coeff_type(::Type{SumOfPaulis{T, N}}) where {T, N} = T
 
 Base.show(io::IO, ::MIME"text/plain", sp::SumOfPaulis) = show(io, sp)
 function Base.show(io::IO, sp::SumOfPaulis)
+    if isempty(sp.items)
+        print(io, "𝟘")
+        return
+    end
     for (i, (c, p)) in enumerate(sp.items)
         print(io, c, " * ", p)
         if i < length(sp.items)
@@ -293,6 +302,7 @@ end
 function Base.:(*)(a::SumOfPaulis{T1, N}, b::SumOfPaulis{T2, N}) where {T1, T2, N}
     return sumofpaulis([((coeff, p) = _mul(p1, p2); im^coeff * c1*c2=>p) for (c1, p1) in a.items for (c2, p2) in b.items])
 end
+Base.one(sp::SumOfPaulis) = one(typeof(sp))
 Base.one(::Type{SumOfPaulis{T, N}}) where {T, N} = SumOfPaulis([one(T)=>PauliString(ntuple(i->Pauli(0), Val{N}()))])
 
 function Base.:(+)(a::SumOfPaulis{T1, N}, b::SumOfPaulis{T2, N}) where {T1, T2, N}
@@ -300,6 +310,7 @@ function Base.:(+)(a::SumOfPaulis{T1, N}, b::SumOfPaulis{T2, N}) where {T1, T2, 
 end
 Base.:(-)(a::SumOfPaulis{T, N}) where {T, N} = SumOfPaulis([-c=>p for (c, p) in a.items])
 Base.:(-)(a::SumOfPaulis{T1, N}, b::SumOfPaulis{T2, N}) where {T1, T2, N} = a + (-b)
+Base.zero(sp::SumOfPaulis) = zero(typeof(sp))
 Base.zero(::Type{SumOfPaulis{T, N}}) where {T, N} = SumOfPaulis(Pair{T, PauliString{N}}[])
 
 YaoAPI.mat(sp::SumOfPaulis) = YaoAPI.mat(ComplexF64, sp)
