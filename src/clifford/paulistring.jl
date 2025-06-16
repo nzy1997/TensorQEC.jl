@@ -225,6 +225,21 @@ A sum of Pauli strings is a linear combination of Pauli strings, e.g. ``c_1 P_1 
 
 ### Fields
 - `items::Vector{Pair{T, PauliString{N}}}`: the vector of pairs of coefficients and Pauli strings.
+
+### Examples
+```jldoctest; setup=:(using TensorQEC)
+julia> p1 = 0.5 * P"IXY" + 0.6 * P"XZI"
+0.6 * XZI + 0.5 * IXY
+
+julia> p2 = 0.7 * P"YZI" + 0.8 * P"XZI"
+0.8 * XZI + 0.7 * YZI
+
+julia> 0.2 * p1 + p2
+0.92 * XZI + 0.7 * YZI + 0.1 * IXY
+
+julia> p1 * p2
+0.48 + 0.0im * III + 0.0 + 0.42im * ZII + 0.0 - 0.35im * YYY + 0.0 - 0.4im * XYY
+```
 """
 struct SumOfPaulis{T<:Number, N} <: AbstractPauli{N}
 	items::Vector{Pair{T, PauliString{N}}}
