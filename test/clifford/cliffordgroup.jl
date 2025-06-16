@@ -19,8 +19,8 @@ end
 
 @testset "pauli group" begin
 	@test size(pauli_group(1)) == (4, 4)
-	@test all(getfield.(pauli_group(1)[1, :], :first) .== 0)
-	@test all(getfield.(pauli_group(1)[2, :], :first) .== 1)
+	@test all(getfield.(pauli_group(1)[1, :], :coeff) .== 0)
+	@test all(getfield.(pauli_group(1)[2, :], :coeff) .== 1)
 	@test size(pauli_group(2)) == (4, 4, 4)
 end
 
@@ -31,34 +31,37 @@ end
 end
 
 @testset "perm_of_paulistring" begin
+    i, x, y, z = Pauli(0), Pauli(1), Pauli(2), Pauli(3)
 	pm = TensorQEC.to_perm_matrix(Int8, Int, pauli_repr(H))
-	ps = PauliString((1, 2))
+	ps = PauliString((i, x))
 	ps2, val = TensorQEC.perm_of_paulistring(ps, [2]=>pm)
-	@test ps2 == PauliString((1, 4))
+	@test ps2 == PauliString((i, z))
 
 	pmcn = TensorQEC.to_perm_matrix(Int8, Int, TensorQEC.pauli_repr(ConstGate.CNOT))
-	ps = PauliString((2, 1, 3, 2))
+	ps = PauliString((x, i, y, x))
 	ps2, val = TensorQEC.perm_of_paulistring(ps, [4, 2]=>pmcn)
-	@test ps2.ids == (2, 2, 3, 2)
+	@test ps2.operators == (x, x, y, x)
 
-	ps = PauliString((2, 4, 3, 2))
+	ps = PauliString((x, z, y, x))
 	ps2, val = TensorQEC.perm_of_paulistring(ps, [3, 2]=>pmcn)
-	@test ps2.ids == (2, 3, 2, 2)
+	@test ps2.operators == (x, y, x, x)
 end
 
 @testset "perm_of_pauligroup" begin
-	ps = PauliString(2,3,4,3,2,1)
-	pg = PauliGroup(1, ps)
+    i, x, y, z = Pauli(0), Pauli(1), Pauli(2), Pauli(3)
+	ps = PauliString((x, y, z, y, x, i))
+	pg = PauliGroupElement(1, ps)
 	pm = TensorQEC.to_perm_matrix(Int8, Int, pauli_repr(ConstGate.CNOT))
 
 	pg2 = perm_of_pauligroup(pg, [2, 3]=>pm)
 	ps2, val = perm_of_paulistring(ps, [2, 3]=>pm)
-	@test pg2 == PauliGroup(1, ps2)
+	@test pg2 == PauliGroupElement(1, ps2)
 end
 
 @testset "clifford_simulate" begin
+    i, x, y, z = Pauli(0), Pauli(1), Pauli(2), Pauli(3)
 	qc = chain(put(5, 1 => H), control(5, 1, 2 => Z), control(5, 3, 4 => X), control(5, 5, 3 => X), put(5, 1 => X))
-	ps = PauliString((4, 3, 1, 3, 2))
+	ps = PauliString((z, y, i, y, x))
 	
 	res = clifford_simulate(ps, qc)
 	ps2 = res.output
@@ -67,13 +70,14 @@ end
 end
 
 @testset "annotate_history" begin
+    i, x, y, z = Pauli(0), Pauli(1), Pauli(2), Pauli(3)
 	st = stabilizers(SteaneCode())
 	qcen, data_qubits, code = encode_stabilizers(st) 
     qcm ,st_pos  = measure_circuit_steane(data_qubits[1],st)
-	ps0 = paulistring(27,3,6) 
+	ps0 = PauliString(27,6 => y) 
 	res = clifford_simulate(ps0, qcm)
 	annotate_history(res)
-	@test res.output.ids == (1, 1, 1, 1, 1, 3, 1, 1, 1, 1, 1, 1, 4, 1, 1, 2, 2, 1, 1, 1, 1, 1, 2, 1, 1, 2, 2)
+	@test getfield.(res.output.operators, :id) .+ 1 == (1, 1, 1, 1, 1, 3, 1, 1, 1, 1, 1, 1, 4, 1, 1, 2, 2, 1, 1, 1, 1, 1, 2, 1, 1, 2, 2)
 
 	annotate_circuit_pics(res)
 end

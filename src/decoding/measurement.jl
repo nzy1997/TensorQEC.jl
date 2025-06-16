@@ -1,12 +1,12 @@
 function measure_circuit_fault_tol!(qc::ChainBlock, st::PauliString{N}, pos::Vector{Int}) where N
-	non_one_positions = findall(x -> x != 1, st.ids)
+	non_one_positions = findall(x -> x != Pauli(0), st)
 	num_qubits = qc.n
 	push!(qc, put(num_qubits, pos[1] => H))
 	for i in 2:length(non_one_positions)
 		push!(qc, cnot(num_qubits, pos[1], pos[i]))
 	end
 	for i in 1:length(non_one_positions)
-		push!(qc, control(num_qubits,pos[i], non_one_positions[i] => st.ids[non_one_positions[i]] == 2 ? X : (st.ids[non_one_positions[i]] == 3 ? Y : Z)))
+		push!(qc, control(num_qubits,pos[i], non_one_positions[i] => st[non_one_positions[i]] == Pauli(1) ? X : (st[non_one_positions[i]] == Pauli(2) ? Y : Z)))
 	end
 	for i in 2:length(non_one_positions)
 		push!(qc, cnot(num_qubits,pos[1], pos[i]))
@@ -28,7 +28,7 @@ Generate the Shor type measurement circuit for fault tolerant measurement.
 - `num_qubits`: The total number of qubits in the circuit.
 """
 function measure_circuit_fault_tol(sts::Vector{PauliString{N}}) where N
-	st_length = [count(x -> x != 1, st.ids) for st in sts]
+	st_length = [count(x -> x != Pauli(0), st) for st in sts]
 	st_pos = [1 + sum(st_length[1:i-1]) for i in 1:length(st_length)]
 	num_qubits = sum(st_length) + N
 	qc = chain(num_qubits)
@@ -40,11 +40,11 @@ end
 
 
 function measure_circuit!(qc::ChainBlock, st::PauliString{N}, pos::Int) where N
-	non_one_positions = findall(x -> x != 1, st.ids)
+	non_one_positions = findall(x -> x != Pauli(0), st.operators)
 	num_qubits = qc.n
 	push!(qc, put(num_qubits, pos => H))
 	for idx in non_one_positions
-		push!(qc, control(num_qubits,pos, idx => st.ids[idx] == 2 ? X : (st.ids[idx] == 3 ? Y : Z)))
+		push!(qc, control(num_qubits,pos, idx => st.operators[idx].id == 1 ? X : (st.operators[idx].id == 2 ? Y : Z)))
 	end
 	push!(qc, put(num_qubits,pos => H))
 	return qc
@@ -74,7 +74,7 @@ Generate the Steane type measurement circuit.
 - `st_pos`: The ancilla qubit indices that measrue corresponding stabilizers.
 """
 function measure_circuit_steane(data_qubit::Int, sts::Vector{PauliString{N}};qcen = nothing) where N
-	xst_num = count([st.ids[findfirst(!=(1),st.ids)] == 2 for st in sts])
+	xst_num = count([st.operators[findfirst(!=(Pauli(0)), st.operators)].id == 1 for st in sts])
 	num_sts = length(sts)
 	num_qubits = N
 	qc = chain(num_qubits)

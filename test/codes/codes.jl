@@ -5,7 +5,7 @@ using Random
 	t = ToricCode(2, 3)
 	result = stabilizers(t)
 	expected_result =
-		PauliString.([
+		PauliString.(map(x->Pauli.(x .- 1), [
 			(2, 1, 2, 1, 1, 1, 2, 2, 1, 1, 1, 1),
 			(1, 2, 1, 2, 1, 1, 2, 2, 1, 1, 1, 1),
 			(1, 1, 2, 1, 2, 1, 1, 1, 2, 2, 1, 1),
@@ -16,7 +16,7 @@ using Random
 			(1, 1, 4, 4, 1, 1, 4, 1, 4, 1, 1, 1),
 			(1, 1, 4, 4, 1, 1, 1, 4, 1, 4, 1, 1),
 			(1, 1, 1, 1, 4, 4, 1, 1, 4, 1, 4, 1),
-		])
+		]))
 	@test result == expected_result
 end
 
@@ -122,8 +122,8 @@ end
 
 @testset "code422" begin
 	st = stabilizers(Code422())
-	@test st[1] == PauliString((2,2,2,2))
-	@test st[2] == PauliString((4,4,4,4))
+	@test st[1] == PauliString(ntuple(i->Pauli(1), 4)...)
+	@test st[2] == PauliString(ntuple(i->Pauli(3), 4)...)
 
 	@test code_distance(CSSTannerGraph(st)) == 2
 end
@@ -160,7 +160,7 @@ end
 	tanner = CSSTannerGraph(st)
 	lx,lz = logical_operator(tanner)
 	for i in 1:11
-		push!(st,paulistring(144,4,findall(i->i.x,lz[i,:])))
+		push!(st,PauliString(144, findall(i->i.x,lz[i,:]) => Pauli(3)))
 	end
 	tanner = CSSTannerGraph(st)
 	# @test code_distance(tanner) == 12

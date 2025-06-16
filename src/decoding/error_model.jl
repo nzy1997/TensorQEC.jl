@@ -88,9 +88,9 @@ function Base.show(io::IO, cep::CSSErrorPattern)
     xe = findall(v->v.x, cep.xerror)
     ze = findall(v->v.x, cep.zerror)
     n = length(cep.xerror)
-    psx = paulistring(n,2,xe)
-    psz = paulistring(n,4,ze)
-    println(io, (PauliGroup(1,psx)*PauliGroup(1,psz)).ps)
+    psx = PauliString(n, xe => Pauli(1))
+    psz = PauliString(n, ze => Pauli(3))
+    println(io, (PauliGroupElement(1,psx)*PauliGroupElement(1,psz)).ps)
     return
 end
 

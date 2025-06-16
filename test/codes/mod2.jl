@@ -3,6 +3,8 @@ using TensorQEC, Test
 @testset "mod2" begin
     a = Mod2(false)
     b = Mod2(true)
+    @test string(a) == "0₂"
+    @test string(b) == "1₂"
     @test a + b == Mod2(true)
     @test a + a == Mod2(false)
     @test a * b == Mod2(false)

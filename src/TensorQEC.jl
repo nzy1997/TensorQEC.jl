@@ -2,7 +2,7 @@ module TensorQEC
 
 using TensorInference
 using TensorInference: Factor
-using Yao
+using Yao, Yao.YaoAPI
 using Yao.ConstGate: PauliGate
 using Base.Iterators: product
 using LinearAlgebra
@@ -19,12 +19,12 @@ using Graphs
 using SimpleWeightedGraphs
 using JuMP
 using SCIP
-
-# pauli basis
-export pauli_basis, pauli_decomposition, pauli_mapping
 import Yao.YaoArrayRegister.StaticArrays: SizedVector
 import Yao.YaoArrayRegister.LuxurySparse
-export arrayreg2sumofpaulis
+
+# pauli basis
+export pauli_basis, pauli_decomposition, pauli_repr
+export Pauli, SumOfPaulis, @P_str, yaoblock
 
 # Mod
 export Mod2
@@ -32,8 +32,7 @@ export Mod2
 # tensor network
 export clifford_network, CliffordNetwork, generate_tensor_network, circuit2tensornetworks
 export ExtraTensor, UNITY4, PXY, PIZ, PXY_UNITY2, PIZ_UNITY2
-export densitymatrix2sumofpaulis, SumOfPaulis
-export PauliString, PauliGroup, isanticommute,paulistring
+export PauliString, PauliGroupElement, isanticommute
 
 # inference
 export syndrome_inference, measure_syndrome!,correction_pauli_string, generate_syndrome_dict,pauli_string_map_iter, inference, transformed_syndrome_dict
@@ -118,4 +117,8 @@ include("decoding/bposd.jl")
 include("decoding/tndecoder.jl")
 include("decoding/ipdecoder.jl")
 include("decoding/matching.jl")
+
+# deprecate
+include("deprecate.jl")
+
 end

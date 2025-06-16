@@ -46,7 +46,8 @@ end
 # simple example: Z1Z3 Z2Z3 stabilizers on 3 qubits
 @testset "simple example inference and error correct" begin
     qubit_num = 3
-    st = [PauliString((1,4,4)),PauliString((4,1,4))]
+    i, x, y, z = Pauli(0), Pauli(1), Pauli(2), Pauli(3)
+    st = [PauliString((i,z,z)),PauliString((z,i,z))]
     qc, data_qubits, code = TensorQEC.encode_stabilizers(st)
 
     reg = join(rand_state(1), zero_state(2))  # join(qubit3, qubit2, qubit1)
@@ -62,7 +63,7 @@ end
     pinf = syndrome_inference(cl, syn_dict, p)
     ps_ec_phy = TensorQEC.pauli_string_map_iter(correction_pauli_string(qubit_num, syn_dict, pinf), qc)
     @show ps_ec_phy
-    apply!(reg, Yao.YaoBlocks.Optimise.to_basictypes(ps_ec_phy))
+    apply!(reg, yaoblock(ps_ec_phy))
 
     @test measure_syndrome!(reg, st) == [1,1]
     apply!(reg, qc')
@@ -89,7 +90,7 @@ end
 
     ps_ec_phy = TensorQEC.pauli_string_map_iter(correction_pauli_string(qubit_num, syn_dict, pinf), qc)
     @show ps_ec_phy
-    apply!(reg, ps_ec_phy)
+    apply!(reg, yaoblock(ps_ec_phy))
 
     @test measure_syndrome!(reg, st) == [1,1,1,1,1,1,1,1]
     apply!(reg, qc')
@@ -115,7 +116,7 @@ end
 
     ps_ec_phy = TensorQEC.pauli_string_map_iter(correction_pauli_string(qubit_num, syn_dict, pinf), qc)
     @show ps_ec_phy
-    apply!(reg, ps_ec_phy)
+    apply!(reg, yaoblock(ps_ec_phy))
 
     @test measure_syndrome!(reg, st) == [1,1,1,1,1,1]
     apply!(reg, qc')
@@ -135,7 +136,7 @@ end
     measure_outcome = measure_syndrome!(reg, st)
     ps_ec_phy = inference(measure_outcome, code, qc, p)
     @show ps_ec_phy
-    apply!(reg, ps_ec_phy)
+    apply!(reg, yaoblock(ps_ec_phy))
 
     @test measure_syndrome!(reg, st) == [1,1,1,1,1,1]
     apply!(reg, qc')

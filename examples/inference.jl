@@ -50,8 +50,8 @@ ps_ec_phy = clifford_simulate(correction_pauli_string(9, syn_dict, pinf), encode
 ps_ec_phy = inference(measure_outcome, bimatrix, encoder, prior)
 
 # ## Error Correction
-# Apply the error correction.
-apply!(logic_state, Yao.YaoBlocks.Optimise.to_basictypes(ps_ec_phy))
+# Apply the error correction by converting the Pauli string to Yao block with [`yaoblock`](@ref).
+apply!(logic_state, yaoblock(ps_ec_phy))
 
 # Finally, we can measure the stabilizers after error correction to check whether the error is corrected.
 measure_syndrome!(logic_state, surface_stabilizers)
