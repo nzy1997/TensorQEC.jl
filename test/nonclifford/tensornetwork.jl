@@ -70,7 +70,7 @@ end
 	# step 1: pauli decomposition of rho0
 	reg = rand_state(6)
 	dm = density_matrix(reg, 1:3)
-	sp = SumOfPaulis(dm)
+	sp = pauli_decomposition(dm)
     ps1, ps2 = sp.items[6].second, sp.items[2].second
     res1 = expect(ps1, cl, ps2)[]
     dm2 = DensityMatrix(Matrix{ComplexF64}(yaoblock(ps2)))

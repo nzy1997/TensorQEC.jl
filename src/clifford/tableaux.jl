@@ -18,7 +18,7 @@ function Base.show(io::IO, tab::Tableau{N}) where {N}
 end
 
 
-function tableau_simulate(tab::Tableau{N}, operation::Pair{Vector{Int}, <:PermMatrixCSC}) where N
+function tableau_simulate(tab::Tableau{N}, operation::Pair{NTuple{M,Int}, <:PermMatrixCSC}) where {M, N}
     return Tableau([perm_of_pauligroup(tab.tabx[i], operation) for i in 1:N], [perm_of_pauligroup(tab.tabz[i], operation) for i in 1:N])
 end
 
@@ -29,11 +29,11 @@ function tableau_simulate(tab::Tableau{N}, qc::ChainBlock) where N
         gate = toput(_gate)
         key = hash(gate.content)
         if haskey(gatedict, key) 
-            tab = tableau_simulate(tab, collect(gate.locs)=>gatedict[key])
+            tab = tableau_simulate(tab, gate.locs=>gatedict[key])
         else 
             pm = to_perm_matrix(Int8, UInt8, pauli_repr(mat(gate.content)))
             push!(gatedict, key => pm)
-            tab = tableau_simulate(tab, collect(gate.locs)=>pm)
+            tab = tableau_simulate(tab, gate.locs=>pm)
         end
     end
     return tab
