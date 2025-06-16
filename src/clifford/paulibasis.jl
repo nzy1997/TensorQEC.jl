@@ -56,6 +56,7 @@ julia> pauli_decomposition(mat(P"X" + 0.5 * P"Z"))
 The return value is a [`SumOfPaulis`](@ref) object, which is recovered from the matrix representation of the Pauli expression.
 """
 function pauli_decomposition(m::AbstractMatrix; atol=0)
+    m = _csc(m)
     N = log2i(size(m, 1))
 	coeffs = _pauli_decomposition(m)
     basis = pauli_basis(Val(N))
@@ -88,6 +89,7 @@ julia> pauli_repr(mat(P"X"))
 Because we have `XZX = -Z` and `XZY = -Y`.
 """
 function pauli_repr(m::AbstractMatrix{T}) where T
+    m = _csc(m)
 	nqubits = Int(log2(size(m, 1)))
 	paulis = pauli_basis(nqubits)
 	return [real(tr(mat(complex(T), pi) * m * mat(complex(T), pj) * m'))/size(m, 1) for pi in vec(paulis), pj in vec(paulis)]
@@ -138,6 +140,8 @@ function pauli_c2l(::Val{N}, indices) where N
 end
 
 # YaoAPI
+_csc(x) = x
+_csc(x::PermMatrix) = PermMatrixCSC(x)
 pauli_repr(m::AbstractBlock) = pauli_repr(mat(m))
 
 function pauli_decomposition(dm::DensityMatrix)
@@ -146,3 +150,4 @@ function pauli_decomposition(dm::DensityMatrix)
     return SumOfPaulis([real(c)=>p for (c, p) in res.items])
 end
 pauli_decomposition(reg::ArrayReg) = pauli_decomposition(density_matrix(reg))
+pauli_decomposition(block::AbstractBlock) = pauli_decomposition(mat(block))

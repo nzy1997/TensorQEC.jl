@@ -34,16 +34,16 @@ end
     i, x, y, z = Pauli(0), Pauli(1), Pauli(2), Pauli(3)
 	pm = TensorQEC.to_perm_matrix(Int8, Int, pauli_repr(H))
 	ps = PauliString((i, x))
-	ps2, val = TensorQEC.perm_of_paulistring(ps, [2]=>pm)
+	ps2, val = TensorQEC.perm_of_paulistring(ps, (2,)=>pm)
 	@test ps2 == PauliString((i, z))
 
 	pmcn = TensorQEC.to_perm_matrix(Int8, Int, TensorQEC.pauli_repr(ConstGate.CNOT))
 	ps = PauliString((x, i, y, x))
-	ps2, val = TensorQEC.perm_of_paulistring(ps, [4, 2]=>pmcn)
+	ps2, val = TensorQEC.perm_of_paulistring(ps, (4, 2)=>pmcn)
 	@test ps2.operators == (x, x, y, x)
 
 	ps = PauliString((x, z, y, x))
-	ps2, val = TensorQEC.perm_of_paulistring(ps, [3, 2]=>pmcn)
+	ps2, val = TensorQEC.perm_of_paulistring(ps, (3, 2)=>pmcn)
 	@test ps2.operators == (x, y, x, x)
 end
 
@@ -53,8 +53,8 @@ end
 	pg = PauliGroupElement(1, ps)
 	pm = TensorQEC.to_perm_matrix(Int8, Int, pauli_repr(ConstGate.CNOT))
 
-	pg2 = perm_of_pauligroup(pg, [2, 3]=>pm)
-	ps2, val = perm_of_paulistring(ps, [2, 3]=>pm)
+	pg2 = perm_of_pauligroup(pg, (2, 3)=>pm)
+	ps2, val = perm_of_paulistring(ps, (2, 3)=>pm)
 	@test pg2 == PauliGroupElement(1, ps2)
 end
 
