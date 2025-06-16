@@ -238,7 +238,7 @@ julia> 0.2 * p1 + p2
 0.92 * XZI + 0.7 * YZI + 0.1 * IXY
 
 julia> p1 * p2
-0.48 + 0.0im * III + 0.0 + 0.42im * ZII + 0.0 - 0.35im * YYY + 0.0 - 0.4im * XYY
+0.48 + 0.0im * III + 0.0 + 0.42im * ZII + 0.0 - 0.4im * XYY + 0.0 - 0.35im * YYY
 ```
 """
 struct SumOfPaulis{T<:Number, N} <: AbstractPauli{N}
@@ -260,15 +260,16 @@ Returns a sum of Pauli strings from a vector of pairs of coefficients and Pauli 
 Unlike `SumOfPaulis`, it will merge the same Pauli strings and sum up the coefficients.
 """
 function sumofpaulis(items::Vector{Pair{T, PauliString{N}}}) where {T, N}
-    res = Dict{PauliString{N}, T}()
+    items = sort(items, by=x->x.second)
+    res = Pair{T, PauliString{N}}[]
     for (c, p) in items
-        if haskey(res, p)
-            res[p] += c
+        if length(res) > 0 && res[end].second == p
+            res[end] = res[end].first + c => p
         else
-            res[p] = c
+            push!(res, c=>p)
         end
     end
-    return SumOfPaulis([c=>p for (p, c) in res])
+    return SumOfPaulis(res)
 end
 
 """
