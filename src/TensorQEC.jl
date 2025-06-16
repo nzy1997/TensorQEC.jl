@@ -10,6 +10,7 @@ using Combinatorics
 using DelimitedFiles
 using OMEinsum
 using Yao.YaoBlocks.Optimise
+using Yao.YaoBlocks.LuxurySparse: PermMatrixCSC
 using PrettyTables
 using Optimisers
 using BitBasis
@@ -31,7 +32,6 @@ export Mod2
 
 # tensor network
 export clifford_network, CliffordNetwork, generate_tensor_network, circuit2tensornetworks
-export ExtraTensor, UNITY4, PXY, PIZ, PXY_UNITY2, PIZ_UNITY2
 export PauliString, PauliGroupElement, isanticommute
 
 # inference

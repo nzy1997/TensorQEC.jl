@@ -39,10 +39,11 @@ to_perm_matrix(m::AbstractBlock; atol=1e-8) = to_perm_matrix(Int8, Int, m; atol)
 to_perm_matrix(::Type{T}, ::Type{Ti}, m::AbstractBlock; atol=1e-8) where {T, Ti} = to_perm_matrix(T, Ti, pauli_repr(m); atol)
 function to_perm_matrix(::Type{T}, ::Type{Ti}, m::AbstractMatrix; atol=1e-8) where {T, Ti}
     @assert all(j -> count(i->abs(i) > atol, view(m, :, j)) == 1, 1:size(m, 2))
+    @warn "TODO: fix?"
     perm = [findfirst(i->abs(i) > atol, view(m, :, j)) for j=1:size(m, 2)]
     vals = [_safe_convert(T, m[perm[j], j]) for j=1:size(m, 2)]
     @assert size(m, 1) <= typemax(Ti)
-    return PermMatrix{T, Ti}(perm, vals) |> LuxurySparse.staticize
+    return PermMatrixCSC{T, Ti}(perm, vals) |> LuxurySparse.staticize
 end
 function _safe_convert(::Type{T}, x::Complex) where T
     return _safe_convert(T, real(x)) + _safe_convert(T, imag(x)) * im
@@ -75,11 +76,11 @@ end
 # integer type should fit the size of the matrix
 struct CliffordTable{N, Ti}
     basis::Vector{PauliString{N}}
-    table::Vector{PermMatrix{Int8, Ti, Vector{Int8}, Vector{Ti}}}
+    table::Vector{PermMatrixCSC{Int8, Ti, Vector{Int8}, Vector{Ti}}}
 end
 
 """
-    perm_of_paulistring(ps::PauliString, operation::Pair{Vector{Int}, <:PermMatrix})
+    perm_of_paulistring(ps::PauliString, operation::Pair{NTuple{M, Int}, <:PermMatrixCSC}) where {M}
 
 Map the Pauli string `ps` by a permutation matrix `pm`. Return the mapped Pauli string and the phase factor.
 
@@ -91,18 +92,20 @@ Map the Pauli string `ps` by a permutation matrix `pm`. Return the mapped Pauli 
 - `ps`: The mapped Pauli string.
 - `val`: The phase factor.
 """
-function perm_of_paulistring(ps::PauliString, operation::Pair{Vector{Int}, <:PermMatrix})
+function perm_of_paulistring(ps::PauliString{N}, operation::Pair{NTuple{M, Int}, <:PermMatrixCSC}) where {N, M}
     pos, pm = operation
-    @assert 4^length(pos) == length(pm.perm)
-    v = collect(ps.operators)
-    ps_perm_num = 1 + sum(i->ps.operators[pos[i]].id * 4^(i-1), 1:length(pos))
-    v[pos]=[Pauli(mod(div(pm.perm[ps_perm_num]-1, 4^(j-1)), 4)) for j in 1:length(pos)]
-    return PauliString(v...), pm.vals[ps_perm_num]
+    @assert 4^M == length(pm.perm)
+    idx = pauli_c2l(Val(M), ntuple(k->ps.operators[pos[k]].id + 1, Val(M)))
+    ci = pauli_l2c(Val(M), pm.perm[idx])
+    paulis = ntuple(Val{N}()) do k
+        loc = findfirst(==(k), operation.first)
+        loc === nothing ? ps[k] : Pauli(ci[loc]-1)
+    end
+    return PauliString(paulis), pm.vals[idx]
 end
 _complex2int(x) = x==1+0im ? 0 : x==0+1im ? 1 : x==-1+0im ? 2 : 3
-function perm_of_pauligroup(pg::PauliGroupElement, operation::Pair{Vector{Int}, <:PermMatrix})
+function perm_of_pauligroup(pg::PauliGroupElement, operation::Pair{NTuple{M, Int}, <:PermMatrixCSC}) where {M}
     ps, val = perm_of_paulistring(pg.ps, operation)
-
     return PauliGroupElement(_mul_coeff(pg.coeff,_complex2int(val)), ps)
 end
 
@@ -143,18 +146,18 @@ Map the Pauli string `ps` by a quantum circuit `qc`.
 function clifford_simulate(ps::PauliString{N}, qc::ChainBlock) where N
     ps_history = PauliString{N}[]
     qc = simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
-    gatedict=Dict{UInt64, PermMatrix}()
+    gatedict=Dict{UInt64, PermMatrixCSC}()
     valf = 1 + 0im
     push!(ps_history, ps)
     for _gate in qc
         gate = toput(_gate)
         key = hash(gate.content)
         if haskey(gatedict, key) 
-            ps, val = perm_of_paulistring(ps, collect(gate.locs)=>gatedict[key])
+            ps, val = perm_of_paulistring(ps, gate.locs=>gatedict[key])
         else 
             pm = to_perm_matrix(Int8, UInt8, pauli_repr(mat(gate.content)))
             push!(gatedict, key => pm)
-            ps,val = perm_of_paulistring(ps, collect(gate.locs)=>pm)
+            ps,val = perm_of_paulistring(ps, gate.locs=>pm)
         end
         valf *= val
         push!(ps_history, ps)

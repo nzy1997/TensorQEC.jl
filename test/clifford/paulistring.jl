@@ -105,7 +105,7 @@ end
     # convert to sum of paulis
     reg = rand_state(6)
     dm = density_matrix(reg, 1:3)
-    sp = SumOfPaulis(dm)
+    sp = pauli_decomposition(dm)
     @test dm.state ≈ mat(yaoblock(sp))
 
     # commute and anticommute
