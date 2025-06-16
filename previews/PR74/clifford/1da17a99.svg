@@ -2,17 +2,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="204" height="225" viewBox="0 0 204 225">
 <defs>
 <g>
-<g id="glyph-494548-0-0">
+<g id="glyph-681847-0-0">
 <path d="M 1.578125 -11.671875 L 3.15625 -11.671875 L 3.15625 -6.890625 L 8.890625 -6.890625 L 8.890625 -11.671875 L 10.46875 -11.671875 L 10.46875 0 L 8.890625 0 L 8.890625 -5.5625 L 3.15625 -5.5625 L 3.15625 0 L 1.578125 0 Z M 1.578125 -11.671875 "/>
 </g>
-<g id="glyph-494548-0-1">
+<g id="glyph-681847-0-1">
 <path d="M 1.015625 -11.671875 L 2.703125 -11.671875 L 5.609375 -7.328125 L 8.515625 -11.671875 L 10.21875 -11.671875 L 6.46875 -6.0625 L 10.46875 0 L 8.765625 0 L 5.484375 -4.96875 L 2.1875 0 L 0.484375 0 L 4.640625 -6.234375 Z M 1.015625 -11.671875 "/>
 </g>
 </g>
 </defs>
 <path fill="none" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke="rgb(0%, 0%, 0%)" stroke-opacity="1" stroke-miterlimit="10" d="M 39 34.5 L 39 10.5 L 63 10.5 L 63 34.5 Z M 39 34.5 "/>
 <g fill="rgb(0%, 0%, 0%)" fill-opacity="1">
-<use xlink:href="#glyph-494548-0-0" x="44.984375" y="28.332031"/>
+<use xlink:href="#glyph-681847-0-0" x="44.984375" y="28.332031"/>
 </g>
 <path fill="none" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke="rgb(0%, 0%, 0%)" stroke-opacity="1" stroke-miterlimit="10" d="M 25.5 22.5 L 39 22.5 "/>
 <path fill="none" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke="rgb(0%, 0%, 0%)" stroke-opacity="1" stroke-miterlimit="10" d="M 63 22.5 L 76.5 22.5 "/>
@@ -44,7 +44,7 @@
 <path fill="none" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke="rgb(0%, 0%, 0%)" stroke-opacity="1" stroke-miterlimit="10" d="M 76.5 157.5 L 127.5 157.5 "/>
 <path fill="none" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke="rgb(0%, 0%, 0%)" stroke-opacity="1" stroke-miterlimit="10" d="M 141 34.5 L 141 10.5 L 165 10.5 L 165 34.5 Z M 141 34.5 "/>
 <g fill="rgb(0%, 0%, 0%)" fill-opacity="1">
-<use xlink:href="#glyph-494548-0-1" x="147.519531" y="28.332031"/>
+<use xlink:href="#glyph-681847-0-1" x="147.519531" y="28.332031"/>
 </g>
 <path fill="none" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke="rgb(0%, 0%, 0%)" stroke-opacity="1" stroke-miterlimit="10" d="M 127.5 22.5 L 141 22.5 "/>
 <path fill="none" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke="rgb(0%, 0%, 0%)" stroke-opacity="1" stroke-miterlimit="10" d="M 165 22.5 L 178.5 22.5 "/>
