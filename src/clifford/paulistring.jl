@@ -77,6 +77,8 @@ function PauliString(operators::Pauli...)
     return PauliString(operators)
 end
 function PauliString(n::Int, pairs::Pair...)
+    alllocs = vcat(collect.(first.(pairs))...)
+    @assert allunique(alllocs) "Locations must be unique, but got $alllocs"
     content = ntuple(n) do i
         idx = findfirst(pair -> i ∈ pair.first, pairs)
         if idx === nothing
@@ -377,6 +379,8 @@ yaoblock(x::Pauli) = x.id == 0 ? I2 : x.id == 1 ? X : x.id == 2 ? Y : Z
 yaoblock(x::PauliString) = kron(yaoblock.(x.operators)...)
 yaoblock(x::PauliGroupElement) = im^x.coeff * yaoblock(x.ps)
 yaoblock(x::SumOfPaulis) = sum([c * yaoblock(p) for (c, p) in x.items])
+PauliString(gate::YaoBlocks.PauliGate, gates...) = PauliString(Pauli(gate), Pauli.(gates)...)
+Pauli(gate::YaoBlocks.PauliGate) = gate == I2 ? Pauli(0) : gate == X ? Pauli(1) : gate == Y ? Pauli(2) : gate == Z ? Pauli(3) : error("Invalid Pauli gate: $gate")
 
 function SumOfPaulis(dm::DensityMatrix)
     res = SumOfPaulis(dm.state)
@@ -389,6 +393,17 @@ SumOfPaulis(reg::ArrayReg) = SumOfPaulis(density_matrix(reg))
 _mul_coeff(a::Int, b::Int) = (a + b) % 4
 
 # macro
+"""
+    @P_str(str::String)
+
+A macro to convert a string to a Pauli string.
+
+### Example
+```jldoctest; setup=:(using TensorQEC)
+julia> P"IX"
+IX
+```
+"""
 macro P_str(str::String)
     paulis = Pauli[]
     for c in str

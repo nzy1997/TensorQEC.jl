@@ -6,7 +6,6 @@ using Yao, Yao.YaoAPI
 using Yao.ConstGate: PauliGate
 using Base.Iterators: product
 using LinearAlgebra
-using SparseArrays: sparse
 using Combinatorics
 using DelimitedFiles
 using OMEinsum

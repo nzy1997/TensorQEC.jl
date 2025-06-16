@@ -10,6 +10,10 @@ using Test
             @test mat(Pauli(i) * Pauli(j)) ≈ mat(Pauli(i)) * mat(Pauli(j))
         end
     end
+    @test Pauli(Yao.I2) == Pauli(0)
+    @test Pauli(Yao.X) == Pauli(1)
+    @test Pauli(Yao.Y) == Pauli(2)
+    @test Pauli(Yao.Z) == Pauli(3)
     @test_throws AssertionError Pauli(4)
 end
 
@@ -17,6 +21,9 @@ end
     i, x, y, z = Pauli(0), Pauli(1), Pauli(2), Pauli(3)
     # constructor
     g = PauliString(i, y, z)
+    @test_throws AssertionError PauliString(4, (1, 2, 4)=>Pauli(1), 2=>Pauli(1))
+    @test_throws AssertionError PauliString(4, (1, 2, 2)=>Pauli(1), 4=>Pauli(1))
+    @test PauliString(Yao.I2, Yao.X) == PauliString(i, x)
     @test findfirst(x -> x == y, g) == 2
     @test g == PauliString((Pauli(0), Pauli(2), Pauli(3)))
     @test occupied_locs(yaoblock(g)) == (2, 3)
