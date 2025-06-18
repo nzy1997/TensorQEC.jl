@@ -62,11 +62,10 @@ TensorQEC.clifford_group(1)
 
 Each element in the Clifford group acts on pauli basis as a permutation matrix.
 For $n= 1, 2$, and $3$, this group contains $24$, $11520$, and $92897280$ elements, respectively.
-We can use [`to_perm_matrix`](@ref) to convert a Clifford gate into a permutation matrix in the Pauli basis.
+We can use [`CliffordGate`](@ref) to convert a Yao gate into a Clifford gate, which is characterized by a permutation (with phases) of Pauli basis.
 
 ````@example clifford
-pm = to_perm_matrix(H)
-pm.perm, pm.vals
+pm = CliffordGate(H)
 ````
 
 With the permutation matrix representation, we can efficienlly simulate a Clifford circuit.

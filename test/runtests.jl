@@ -102,5 +102,9 @@ end
     include("nonclifford/correction.jl")
 end
 
+@testset "deprecate" begin
+    include("deprecate.jl")
+end
+
 DocMeta.setdocmeta!(TensorQEC, :DocTestSetup, :(using TensorQEC); recursive=true)
 Documenter.doctest(TensorQEC; manual=false, fix=false)
