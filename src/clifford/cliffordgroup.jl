@@ -174,6 +174,63 @@ struct CliffordSimulateResult{N}
     end
 end
 
+struct CompiledCliffordCircuit{M1, M2}
+    sequence::Vector{Tuple{Int, Int, Int}}  # (howmany qubits, gate-idx, locs-idx)
+    single_qubit_gates::Vector{CliffordGate{M1}}
+    single_qubit_locs::Vector{Tuple{Int}}
+    two_qubit_gates::Vector{CliffordGate{M2}}
+    two_qubit_locs::Vector{Tuple{Int, Int}}
+end
+
+function compile_clifford_circuit(qc::ChainBlock)
+    sequence = Tuple{Int, Int, Int}[]
+    single_qubit_gates = typeof(CliffordGate(X))[]
+    single_qubit_locs = Tuple{Int}[]
+    two_qubit_gates = typeof(CliffordGate(ConstGate.CNOT))[]
+    two_qubit_locs = Tuple{Int, Int}[]
+
+    qc = simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
+    gatedict = Dict{UInt64, Int}()
+    for _gate in qc
+        gate = toput(_gate)
+        key = hash(gate.content)
+        if haskey(gatedict, key) 
+            cgate_idx = gatedict[key]
+        else 
+            if nqubits(gate.content) == 1
+                push!(single_qubit_gates, CliffordGate(gate.content))
+                cgate_idx = length(single_qubit_gates)
+            else
+                push!(two_qubit_gates, CliffordGate(gate.content))
+                cgate_idx = length(two_qubit_gates)
+            end
+            gatedict[key] = cgate_idx
+        end
+        if nqubits(gate.content) == 1
+            push!(single_qubit_locs, gate.locs)
+            push!(sequence, (1, cgate_idx, length(single_qubit_locs)))
+        else
+            push!(two_qubit_locs, gate.locs)
+            push!(sequence, (2, cgate_idx, length(two_qubit_locs)))
+        end
+    end
+    return CompiledCliffordCircuit(sequence, single_qubit_gates, single_qubit_locs, two_qubit_gates, two_qubit_locs)
+end
+function (cl::CompiledCliffordCircuit)(pg::PauliGroupElement{N}) where {N}
+    for i in 1:length(cl.sequence)
+        pg = _step(cl, pg, i)
+    end
+    return pg
+end
+function _step(cl::CompiledCliffordCircuit, pg::PauliGroupElement{N}, i::Int) where {N}
+    howmany, gate_idx, locs_idx = cl.sequence[i]
+    if howmany == 1
+        return cl.single_qubit_gates[gate_idx](pg, cl.single_qubit_locs[locs_idx])
+    else
+        return cl.two_qubit_gates[gate_idx](pg, cl.two_qubit_locs[locs_idx])
+    end
+end
+
 """
     clifford_simulate(paulistring, qc::ChainBlock)
     
@@ -189,19 +246,10 @@ Perform Clifford simulation with a Pauli string `paulistring` as the input.
 clifford_simulate(ps::PauliString{N}, qc::ChainBlock) where {N} = clifford_simulate(PauliGroupElement(0, ps), qc)
 function clifford_simulate(pg::PauliGroupElement{N}, qc::ChainBlock) where {N}
     history = PauliGroupElement{N}[]
-    qc = simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
-    gatedict = Dict{UInt64, CliffordGate}()
+    cl = compile_clifford_circuit(qc)
     push!(history, pg)
-    for _gate in qc
-        gate = toput(_gate)
-        key = hash(gate.content)
-        if haskey(gatedict, key) 
-            pg = gatedict[key](pg, gate.locs)
-        else 
-            pm = CliffordGate(gate.content)
-            push!(gatedict, key => pm)
-            pg = pm(pg, gate.locs)
-        end
+    for i in 1:length(cl.sequence)
+        pg = _step(cl, pg, i)
         push!(history, pg)
     end
     # TODO: remove the quantum circuit from the result

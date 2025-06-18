@@ -81,9 +81,18 @@ end
     @test pg2 == PauliGroupElement(1, pgs.ps)
 end
 
+@testset "compile_clifford_circuit" begin
+    i, x, y, z = Pauli(0), Pauli(1), Pauli(2), Pauli(3)
+    qc = chain(put(5, 1 => H), control(5, 1, 2 => Z), control(5, 3, 4 => X), put(5, 2 => H), control(5, 5, 3 => X), put(5, 1 => X))
+    cl = TensorQEC.compile_clifford_circuit(qc)
+    pg = PauliGroupElement(1, PauliString((z, y, i, y, x)))
+    pg2 = cl(pg)
+    @test mat(qc) * mat(pg) * mat(qc)' ≈ mat(pg2)
+end
+
 @testset "clifford_simulate" begin
     i, x, y, z = Pauli(0), Pauli(1), Pauli(2), Pauli(3)
-    qc = chain(put(5, 1 => H), control(5, 1, 2 => Z), control(5, 3, 4 => X), control(5, 5, 3 => X), put(5, 1 => X))
+    qc = chain(put(5, 1 => H), control(5, 1, 2 => Z), control(5, 3, 4 => X), put(5, 2 => H), control(5, 5, 3 => X), put(5, 1 => X))
     ps = PauliString((z, y, i, y, x))
 
     res = clifford_simulate(ps, qc)
