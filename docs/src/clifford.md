@@ -69,13 +69,12 @@ pm = CliffordGate(H)
 ````
 
 With the permutation matrix representation, we can efficienlly simulate a Clifford circuit.
-We first show how to apply a Clifford gate to a Pauli string by [`perm_of_paulistring`](@ref).
+We first show how to apply a Clifford gate to a Pauli string.
 Here we apply the Hadamard gate to the second qubit of Pauli string $I_1X_2$ and get $I_1Z_2$ with a phase $1$.
 
 ````@example clifford
 ps1 = P"IX"  # same as: PauliString(Pauli(0), Pauli(1))
-ps2, phase = perm_of_paulistring(ps1, (2,)=>pm)
-ps1, ps2, phase
+elem = pm(ps1, (2,))
 ````
 
 Put those all together, we can apply a Clifford circuit to a Pauli string by [`clifford_simulate`](@ref).

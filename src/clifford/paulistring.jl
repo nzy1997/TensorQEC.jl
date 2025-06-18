@@ -125,8 +125,8 @@ end
 function YaoAPI.iscommute(a::PauliString{N}, b::PauliString{N}) where N
     c = 0
     for (idx, idy) in zip(a.operators, b.operators)
-        coeff, _ = _mul(idx, idy)
-        c = _mul_coeff(coeff, c)
+        phase, _ = _mul(idx, idy)
+        c = _add_phase(phase, c)
     end
     return c ∈ (0, 2)
 end
@@ -144,7 +144,7 @@ YaoAPI.isunitary(ps::PauliString) = true
 
 YaoAPI.mat(ps::PauliString) = YaoAPI.mat(ComplexF64, ps)
 function YaoAPI.mat(::Type{T}, ps::PauliString{N}) where {T, N}
-    isempty(ps.operators) && return PermMatrixCSC(collect(Int, 1:2^N), fill(T(im^ps.coeff), 2^N))  # identity matrix (with phase)
+    isempty(ps.operators) && return PermMatrixCSC(collect(Int, 1:2^N), fill(T(im^ps.phase), 2^N))  # identity matrix (with phase)
     return reduce(kron, YaoAPI.mat.(T, ps.operators[end:-1:1]))
 end
 
@@ -154,15 +154,15 @@ end
 A Pauli group element is a Pauli string with a phase factor of `im^k` where `k` is in range 0-3.
 
 ### Fields
-- `coeff::Int`: the coefficient of the Pauli string, i.e. `im^{coeff}`. It should be in range 0-3.
+- `phase::Int`: the phase factor of the Pauli string, i.e. `im^{phase}`. It should be in range 0-3.
 - `ps::PauliString{N}`: the Pauli string.
 """
 struct PauliGroupElement{N} <: AbstractPauli{N}
-    coeff::Int
+    phase::Int
     ps::PauliString{N}
-    function PauliGroupElement(coeff::Int, ps::PauliString{N}) where N
-        @assert 0 <= coeff <= 3 "Invalid Pauli group element coefficient: $coeff (not in range 0-3)"
-        return new{N}(coeff, ps)
+    function PauliGroupElement(phase::Int, ps::PauliString{N}) where N
+        @assert 0 <= phase <= 3 "Invalid Pauli group element phase: $phase (not in range 0-3)"
+        return new{N}(phase, ps)
     end
 end
 coeff_type(::Type{PauliGroupElement{N}}) where N = Complex{Int}
@@ -172,17 +172,17 @@ PauliGroupElement(ps::PauliString) = PauliGroupElement(0, ps)
 
 Base.convert(::Type{PauliGroupElement{1}}, p::Pauli) = PauliGroupElement(0, PauliString(p))
 Base.convert(::Type{PauliGroupElement{N}}, p::PauliString{N}) where N = PauliGroupElement(0, p)
-Base.copy(pg::PauliGroupElement) = PauliGroupElement(pg.coeff, copy(pg.ps))
+Base.copy(pg::PauliGroupElement) = PauliGroupElement(pg.phase, copy(pg.ps))
 Base.length(pg::PauliGroupElement) = length(pg.ps)
 
 # Algebra operations for PauliGroupElement
 function Base.:(*)(a::PauliGroupElement{N}, b::PauliGroupElement{N}) where {N}
-    cc = _mul_coeff(a.coeff, b.coeff)
+    cc = _add_phase(a.phase, b.phase)
     pc = map(a.ps.operators, b.ps.operators) do x, y
-        coeff, idz = _mul(x, y)
-        (coeff, idz)
+        phase, idz = _mul(x, y)
+        (phase, idz)
     end
-    return PauliGroupElement(mapreduce(x -> x[1], _mul_coeff, pc, init=cc), PauliString(ntuple(i->pc[i][2], Val{N}())))
+    return PauliGroupElement(mapreduce(x -> x[1], _add_phase, pc, init=cc), PauliString(ntuple(i->pc[i][2], Val{N}())))
 end
 Base.one(pg::PauliGroupElement) = one(typeof(pg))
 Base.one(::Type{PauliGroupElement{N}}) where N = PauliGroupElement(0, PauliString(ntuple(i->Pauli(0), Val{N}())))
@@ -190,25 +190,25 @@ Base.one(::Type{PauliGroupElement{N}}) where N = PauliGroupElement(0, PauliStrin
 # Visualization
 Base.show(io::IO, ::MIME"text/plain", ps::PauliGroupElement) = show(io, ps)
 function Base.show(io::IO, ps::PauliGroupElement)
-    print(io, ("+1", "+i", "-1", "-i")[ps.coeff+1], " * ", ps.ps)
+    print(io, ("+1", "+i", "-1", "-i")[ps.phase+1], " * ", ps.ps)
 end
 
 # YaoAPI
-LinearAlgebra.ishermitian(ps::PauliGroupElement) = ps.coeff ∈ (0, 2)
-YaoAPI.isreflexive(ps::PauliGroupElement) = ps.coeff ∈ (0, 2)
+LinearAlgebra.ishermitian(ps::PauliGroupElement) = ps.phase ∈ (0, 2)
+YaoAPI.isreflexive(ps::PauliGroupElement) = ps.phase ∈ (0, 2)
 YaoAPI.isunitary(ps::PauliGroupElement) = true
 
 YaoAPI.mat(pg::PauliGroupElement) = YaoAPI.mat(ComplexF64, pg)
 function YaoAPI.mat(::Type{T}, pg::PauliGroupElement) where T
-    isempty(pg.ps.operators) && return PermMatrixCSC(collect(Int, 1:2^N), fill(T(im^pg.coeff), 2^N))  # identity matrix (with phase)
-    return im^pg.coeff * reduce(kron, YaoAPI.mat.(T, pg.ps.operators[end:-1:1]))
+    isempty(pg.ps.operators) && return PermMatrixCSC(collect(Int, 1:2^N), fill(T(im^pg.phase), 2^N))  # identity matrix (with phase)
+    return im^pg.phase * reduce(kron, YaoAPI.mat.(T, pg.ps.operators[end:-1:1]))
 end
 
 function YaoAPI.iscommute(a::PauliGroupElement{N}, b::PauliGroupElement{N}) where N
     c = 0
     for (idx, idy) in zip(a.ps.operators, b.ps.operators)
-        coeff, _ = _mul(idx, idy)
-        c = _mul_coeff(coeff, c)
+        phase, _ = _mul(idx, idy)
+        c = _add_phase(phase, c)
     end
     return c ∈ (0, 2)
 end
@@ -254,7 +254,7 @@ end
 Base.convert(::Type{SumOfPaulis{T, N}}, p::AbstractPauli{N}) where {T, N} = SumOfPaulis{promote_type(T, coeff_type(typeof(p))), N}(p)
 SumOfPaulis{T, N}(p::Pauli) where {T, N} = SumOfPaulis([one(T)=>PauliString(p)])
 SumOfPaulis{T, N}(p::PauliString) where {T, N} = SumOfPaulis([one(T)=>p])
-SumOfPaulis{T, N}(p::PauliGroupElement) where {T, N} = SumOfPaulis([T(im^p.coeff)=>p.ps])
+SumOfPaulis{T, N}(p::PauliGroupElement) where {T, N} = SumOfPaulis([T(im^p.phase)=>p.ps])
 SumOfPaulis{T, N}(p::SumOfPaulis{T2, N}) where {T, T2, N} = T === T2 ? p : SumOfPaulis([T(c)=>p for (c, p) in p.items])
 
 """
@@ -314,7 +314,7 @@ end
 
 
 function Base.:(*)(a::SumOfPaulis{T1, N}, b::SumOfPaulis{T2, N}) where {T1, T2, N}
-    return sumofpaulis([((coeff, p) = _mul(p1, p2); im^coeff * c1*c2=>p) for (c1, p1) in a.items for (c2, p2) in b.items])
+    return sumofpaulis([((phase, p) = _mul(p1, p2); im^phase * c1*c2=>p) for (c1, p1) in a.items for (c2, p2) in b.items])
 end
 Base.one(sp::SumOfPaulis) = one(typeof(sp))
 Base.one(::Type{SumOfPaulis{T, N}}) where {T, N} = SumOfPaulis([one(T)=>PauliString(ntuple(i->Pauli(0), Val{N}()))])
@@ -342,8 +342,8 @@ Base.promote_rule(::Type{SumOfPaulis{T, N}}, ::Type{PauliString{N}}) where {T, N
 Base.promote_rule(::Type{SumOfPaulis{T, N}}, ::Type{PauliGroupElement{N}}) where {T, N} = SumOfPaulis{T, N}
 
 function Base.:(*)(a::Pauli, b::Pauli)
-    coeff, idz = _mul(a, b)
-    return PauliGroupElement(coeff, PauliString((idz,)))
+    phase, idz = _mul(a, b)
+    return PauliGroupElement(phase, PauliString((idz,)))
 end
 function _mul(a::Pauli, b::Pauli)
     idx, idy = a.id, b.id
@@ -368,12 +368,12 @@ function _mul(a::Pauli, b::Pauli)
     end
 end
 function Base.:(*)(a::PauliString{N}, b::PauliString{N}) where {N}
-    coeff, ps = _mul(a, b)
-    return PauliGroupElement(coeff, ps)
+    phase, ps = _mul(a, b)
+    return PauliGroupElement(phase, ps)
 end
 function _mul(a::PauliString{N}, b::PauliString{N}) where {N}
     res = PauliGroupElement(0, a) * PauliGroupElement(0, b)
-    return (res.coeff, res.ps)
+    return (res.phase, res.ps)
 end
 
 function Base.:(*)(a::AbstractPauli, b::AbstractPauli)
@@ -406,13 +406,13 @@ Returns the Yao block corresponding to a Pauli operator.
 """
 yaoblock(x::Pauli) = x.id == 0 ? I2 : x.id == 1 ? X : x.id == 2 ? Y : Z
 yaoblock(x::PauliString) = kron(yaoblock.(x.operators)...)
-yaoblock(x::PauliGroupElement) = im^x.coeff * yaoblock(x.ps)
+yaoblock(x::PauliGroupElement) = im^x.phase * yaoblock(x.ps)
 yaoblock(x::SumOfPaulis) = sum([c * yaoblock(p) for (c, p) in x.items])
 PauliString(gate::YaoBlocks.PauliGate, gates...) = PauliString(Pauli(gate), Pauli.(gates)...)
 Pauli(gate::YaoBlocks.PauliGate) = gate == I2 ? Pauli(0) : gate == X ? Pauli(1) : gate == Y ? Pauli(2) : gate == Z ? Pauli(3) : error("Invalid Pauli gate: $gate")
 
 # used for multiplication of phase factors
-_mul_coeff(a::Int, b::Int) = (a + b) % 4
+_add_phase(a::Int, b::Int) = (a + b) % 4
 
 # macro
 """

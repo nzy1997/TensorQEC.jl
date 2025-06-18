@@ -21,8 +21,8 @@ end
 
 @testset "pauli group" begin
     @test size(pauli_group(1)) == (4, 4)
-    @test all(getfield.(pauli_group(1)[1, :], :coeff) .== 0)
-    @test all(getfield.(pauli_group(1)[2, :], :coeff) .== 1)
+    @test all(getfield.(pauli_group(1)[1, :], :phase) .== 0)
+    @test all(getfield.(pauli_group(1)[2, :], :phase) .== 1)
     @test size(pauli_group(2)) == (4, 16)
 end
 
@@ -32,23 +32,26 @@ end
     @test length(clifford_group(2)) == csize(2)
 end
 
-@testset "perm_of_paulistring" begin
+@testset "apply clifford gate" begin
     i, x, y, z = Pauli(0), Pauli(1), Pauli(2), Pauli(3)
     pm = CliffordGate(H)
     @test pm isa CliffordGate
     ps = PauliString((i, x))
-    ps2, val = TensorQEC.perm_of_paulistring(ps, (2,) => pm)
-    @test ps2 == PauliString((i, z))
+    elem = pm(ps, (2,))
+    @test elem.ps == PauliString((i, z))
+    @test elem.phase == 0
 
     pmcn = CliffordGate(ConstGate.CNOT)
     @test pmcn isa CliffordGate
     ps = PauliString((x, i, y, x))
-    ps2, val = TensorQEC.perm_of_paulistring(ps, (4, 2) => pmcn)
-    @test ps2.operators == (x, x, y, x)
+    elem = pmcn(ps, (4, 2))
+    @test elem.ps.operators == (x, x, y, x)
+    @test elem.phase == 0
 
     ps = PauliString((x, z, y, x))
-    ps2, val = TensorQEC.perm_of_paulistring(ps, (3, 2) => pmcn)
-    @test ps2.operators == (x, y, x, x)
+    elem = pmcn(ps, (3, 2))
+    @test elem.ps.operators == (x, y, x, x)
+    @test elem.phase == 0
 
     # asymmetric case
     pmasym = CliffordGate(ConstGate.S)
@@ -56,26 +59,26 @@ end
     @test mat(pmasym) == [1 0 0 0; 0 0 -1 0; 0 1 0 0; 0 0 0 1]
     ps = P"X"
     @test mat(ConstGate.S * X * ConstGate.S') == [0 -im; im 0]
-    ps2, val = TensorQEC.perm_of_paulistring(ps, (1,) => pmasym)
-    @test ps2 == P"Y"
-    @test val == 1
+    elem = pmasym(ps, (1,))
+    @test elem.ps == P"Y"
+    @test elem.phase == 0
     ps = P"Y"
     @test mat(ConstGate.S * Y * ConstGate.S') == [0 -1; -1 0]
-    ps2, val = TensorQEC.perm_of_paulistring(ps, (1,) => pmasym)
-    @test ps2 == P"X"
-    @test val == -1
+    elem = pmasym(ps, (1,))
+    @test elem.ps == P"X"
+    @test elem.phase == 2
 end
 
-@testset "perm_of_pauligroup" begin
+@testset "apply pauli group element" begin
     i, x, y, z = Pauli(0), Pauli(1), Pauli(2), Pauli(3)
     ps = PauliString((x, y, z, y, x, i))
     pg = PauliGroupElement(1, ps)
     pm = CliffordGate(ConstGate.CNOT)
     @test pm isa CliffordGate
 
-    pg2 = perm_of_pauligroup(pg, (2, 3) => pm)
-    ps2, val = perm_of_paulistring(ps, (2, 3) => pm)
-    @test pg2 == PauliGroupElement(1, ps2)
+    pg2 = pm(pg, (2, 3))
+    pgs = pm(ps, (2, 3))
+    @test pg2 == PauliGroupElement(1, pgs.ps)
 end
 
 @testset "clifford_simulate" begin
@@ -84,9 +87,8 @@ end
     ps = PauliString((z, y, i, y, x))
 
     res = clifford_simulate(ps, qc)
-    ps2 = res.output
-    val = res.phase
-    @test val * mat(qc) * mat(ps) * mat(qc)' ≈ mat(ps2)
+    pg2 = res.output
+    @test mat(qc) * mat(ps) * mat(qc)' ≈ mat(pg2)
 end
 
 @testset "annotate_history" begin
@@ -97,7 +99,7 @@ end
     ps0 = PauliString(27, 6 => y)
     res = clifford_simulate(ps0, qcm)
     annotate_history(res)
-    @test getfield.(res.output.operators, :id) .+ 1 == (1, 1, 1, 1, 1, 3, 1, 1, 1, 1, 1, 1, 4, 1, 1, 2, 2, 1, 1, 1, 1, 1, 2, 1, 1, 2, 2)
+    @test getfield.(res.output.ps.operators, :id) .+ 1 == (1, 1, 1, 1, 1, 3, 1, 1, 1, 1, 1, 1, 4, 1, 1, 2, 2, 1, 1, 1, 1, 1, 2, 1, 1, 2, 2)
 
     annotate_circuit_pics(res)
 end

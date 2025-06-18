@@ -98,7 +98,7 @@ end
 
 # all the elements in the Pauli group of size N
 function pauli_group(::Val{N}) where N
-    return [PauliGroupElement(coeff, (ci = pauli_l2c(Val(N), j); PauliString(ntuple(i->Pauli(ci[i]-1), Val{N}())))) for coeff in 0:3, j in 1:4^N]
+    return [PauliGroupElement(phase, (ci = pauli_l2c(Val(N), j); PauliString(ntuple(i->Pauli(ci[i]-1), Val{N}())))) for phase in 0:3, j in 1:4^N]
 end
 pauli_group(nqubits::Int) = pauli_group(Val(nqubits))
 

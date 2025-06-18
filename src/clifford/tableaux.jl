@@ -56,5 +56,5 @@ function tableau_simulate(ps::PauliString{N}, qc::ChainBlock) where N
             count += 1
         end
     end
-    return PauliGroupElement(_mul_coeff(res.coeff,count), res.ps)
+    return PauliGroupElement(_add_phase(res.phase, count), res.ps)
 end
