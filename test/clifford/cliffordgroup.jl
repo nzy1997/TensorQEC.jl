@@ -48,6 +48,7 @@ end
 
     # asymmetric case
     pmasym = TensorQEC.to_perm_matrix(Int8, Int, TensorQEC.pauli_repr(ConstGate.S))
+    @test pmasym == [1 0 0 0; 0 0 -1 0; 0 1 0 0; 0 0 0 1]
     ps = P"X"
     @test mat(ConstGate.S * X * ConstGate.S') == [0 -im; im 0]
     ps2, val = TensorQEC.perm_of_paulistring(ps, (1,) => pmasym)
