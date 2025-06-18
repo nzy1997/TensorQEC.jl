@@ -34,7 +34,7 @@ export pauli_basis, pauli_decomposition, pauli_repr
 export Pauli, SumOfPaulis, @P_str, yaoblock
 
 # clifford group
-export Clifford, clifford_simulate, perm_of_paulistring, paulistring_annotate, annotate_history, annotate_circuit_pics, perm_of_pauligroup, generate_group
+export CliffordGate, clifford_simulate, perm_of_paulistring, paulistring_annotate, annotate_history, annotate_circuit_pics, perm_of_pauligroup, generate_group
 
 # tensor network
 export clifford_network, CliffordNetwork, generate_tensor_network, circuit2tensornetworks

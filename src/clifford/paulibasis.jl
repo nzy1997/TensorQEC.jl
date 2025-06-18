@@ -72,7 +72,6 @@ end
 """
     pauli_repr(m::AbstractMatrix) -> Matrix
     pauli_repr(m::AbstractBlock) -> Matrix
-    pauli_repr(c::Clifford) -> PermMatrixCSC
 
 Returns the representation of a matrix in the Pauli basis.
 It should not be confused with [`pauli_decomposition`](@ref), this function returns a matrix that represents how a Pauli string is mapped to others by this matrix.

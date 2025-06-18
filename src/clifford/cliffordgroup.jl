@@ -2,17 +2,16 @@
 # https://www.nature.com/articles/s41534-022-00583-7
 
 """
-    Clifford{GT<:AbstractBlock}
+    CliffordGate{PM<:PermMatrixCSC{Int, Int}}
 
-A wrapper to mark a gate as a Clifford gate.
-When used in `pauli_repr`, it will return a permutation matrix instead of a general matrix.
+CliffordGate represented as a permutation matrix.
 
 ### Fields
-- `gate::GT`: The gate.
+- `mat::PM`: The permutation matrix.
 
 ### Examples
 ```jldoctest; setup=:(using TensorQEC)
-julia> pauli_repr(Clifford(H))
+julia> CliffordGate(H)
 LuxurySparse.PermMatrixCSC{Float64, Int64, StaticArraysCore.SVector{4, Float64}, StaticArraysCore.SVector{4, Int64}}
 (1, 1) = 1.0
 (4, 2) = 1.0
@@ -20,10 +19,14 @@ LuxurySparse.PermMatrixCSC{Float64, Int64, StaticArraysCore.SVector{4, Float64},
 (2, 4) = 1.0
 ```
 """
-struct Clifford{GT<:AbstractBlock}
-    gate::GT
+struct CliffordGate{PM<:PermMatrixCSC{Complex{Int}, Int}}
+    mat::PM
 end
-pauli_repr(c::Clifford) = to_perm_matrix(pauli_repr(c.gate))
+Yao.mat(c::CliffordGate) = c.mat
+Base.:(*)(c1::CliffordGate, c2::CliffordGate) = CliffordGate(c1.mat * c2.mat)
+
+# TODO: improve performance
+CliffordGate(g::AbstractBlock) = CliffordGate(to_perm_matrix(pauli_repr(g)))
 
 """
     clifford_group(n::Int)
@@ -35,14 +38,14 @@ clifford_group(n::Int) = generate_group(clifford_generators(n))
 function clifford_generators(n::Int)
     @assert n > 0
     if n == 1
-        return pauli_repr.(Clifford.([H, ConstGate.S]))
+        return CliffordGate.([H, ConstGate.S])
     else
-        return pauli_repr.(Clifford.(vcat(
+        return CliffordGate.(vcat(
             [put(n, i=>H) for i=1:n],
             [put(n, i=>ConstGate.S) for i=1:n],
             [put(n, (i, j)=>ConstGate.CNOT) for j=1:n for i=j+1:n],
             [put(n, (j, i)=>ConstGate.CNOT) for j=1:n for i=j+1:n]
-        )))
+        ))
     end
 end
 
@@ -111,8 +114,9 @@ Map the Pauli string `ps` by a permutation matrix `pm`. Return the mapped Pauli 
 - `ps`: The mapped Pauli string.
 - `val`: The phase factor.
 """
-function perm_of_paulistring(ps::PauliString{N}, operation::Pair{NTuple{M, Int}, <:PermMatrixCSC}) where {N, M}
-    pos, pm = operation
+function perm_of_paulistring(ps::PauliString{N}, operation::Pair{NTuple{M, Int}, <:CliffordGate}) where {N, M}
+    pos, gate = operation
+    pm = mat(gate)
     @assert 4^M == length(pm.perm)
     idx = pauli_c2l(Val(M), ntuple(k->ps.operators[pos[k]].id + 1, Val(M)))
     ci = pauli_l2c(Val(M), pm.perm[idx])
@@ -123,7 +127,7 @@ function perm_of_paulistring(ps::PauliString{N}, operation::Pair{NTuple{M, Int},
     return PauliString(paulis), pm.vals[idx]
 end
 _complex2int(x) = x==1+0im ? 0 : x==0+1im ? 1 : x==-1+0im ? 2 : 3
-function perm_of_pauligroup(pg::PauliGroupElement, operation::Pair{NTuple{M, Int}, <:PermMatrixCSC}) where {M}
+function perm_of_pauligroup(pg::PauliGroupElement, operation::Pair{NTuple{M, Int}, <:CliffordGate}) where {M}
     ps, val = perm_of_paulistring(pg.ps, operation)
     return PauliGroupElement(_mul_coeff(pg.coeff,_complex2int(val)), ps)
 end
@@ -165,7 +169,7 @@ Map the Pauli string `ps` by a quantum circuit `qc`.
 function clifford_simulate(ps::PauliString{N}, qc::ChainBlock) where {N}
     ps_history = PauliString{N}[]
     qc = simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
-    gatedict=Dict{UInt64, PermMatrixCSC}()
+    gatedict=Dict{UInt64, CliffordGate}()
     valf = 1 + 0im
     push!(ps_history, ps)
     for _gate in qc
@@ -174,7 +178,7 @@ function clifford_simulate(ps::PauliString{N}, qc::ChainBlock) where {N}
         if haskey(gatedict, key) 
             ps, val = perm_of_paulistring(ps, gate.locs=>gatedict[key])
         else 
-            pm = pauli_repr(Clifford(gate.content))
+            pm = CliffordGate(gate.content)
             push!(gatedict, key => pm)
             ps,val = perm_of_paulistring(ps, gate.locs=>pm)
         end

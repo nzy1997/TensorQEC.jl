@@ -18,20 +18,20 @@ function Base.show(io::IO, tab::Tableau{N}) where {N}
 end
 
 
-function tableau_simulate(tab::Tableau{N}, operation::Pair{NTuple{M,Int}, <:PermMatrixCSC}) where {M, N}
+function tableau_simulate(tab::Tableau{N}, operation::Pair{NTuple{M,Int}, <:CliffordGate}) where {M, N}
     return Tableau([perm_of_pauligroup(tab.tabx[i], operation) for i in 1:N], [perm_of_pauligroup(tab.tabz[i], operation) for i in 1:N])
 end
 
 function tableau_simulate(tab::Tableau{N}, qc::ChainBlock) where N
     qc = simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
-    gatedict=Dict{UInt64, PermMatrixCSC}()
+    gatedict=Dict{UInt64, CliffordGate}()
     for _gate in qc
         gate = toput(_gate)
         key = hash(gate.content)
         if haskey(gatedict, key) 
             tab = tableau_simulate(tab, gate.locs=>gatedict[key])
         else 
-            pm = pauli_repr(Clifford(gate.content))
+            pm = CliffordGate(gate.content)
             push!(gatedict, key => pm)
             tab = tableau_simulate(tab, gate.locs=>pm)
         end
