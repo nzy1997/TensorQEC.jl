@@ -23,6 +23,9 @@ using SCIP
 import Yao.YaoArrayRegister.StaticArrays: SizedVector
 import Yao.YaoArrayRegister.LuxurySparse
 
+# reexport some YaoAPI
+export mat
+
 # pauli basis
 export pauli_basis, pauli_decomposition, pauli_repr
 export Pauli, SumOfPaulis, @P_str, yaoblock

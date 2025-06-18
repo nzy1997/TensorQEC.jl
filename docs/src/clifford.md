@@ -75,7 +75,7 @@ Here we apply the Hadamard gate to the second qubit of Pauli string $I_1X_2$ and
 
 ````@example clifford
 ps1 = P"IX"  # same as: PauliString(Pauli(0), Pauli(1))
-ps2, phase = perm_of_paulistring(ps1, [2]=>pm)
+ps2, phase = perm_of_paulistring(ps1, (2,)=>pm)
 ps1, ps2, phase
 ````
 
