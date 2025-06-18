@@ -22,11 +22,26 @@ LuxurySparse.PermMatrixCSC{Float64, Int64, StaticArraysCore.SVector{4, Float64},
 struct CliffordGate{PM<:PermMatrixCSC{Complex{Int}, Int}}
     mat::PM
 end
-Yao.mat(c::CliffordGate) = c.mat
-Base.:(*)(c1::CliffordGate, c2::CliffordGate) = CliffordGate(c1.mat * c2.mat)
-
 # TODO: improve performance
 CliffordGate(g::AbstractBlock) = CliffordGate(to_perm_matrix(pauli_repr(g)))
+
+Yao.mat(c::CliffordGate) = c.mat
+Base.:(*)(c1::CliffordGate, c2::CliffordGate) = CliffordGate(c1.mat * c2.mat)
+YaoAPI.nqubits(c::CliffordGate) = log2i(size(c.mat, 1)) ÷ 2
+
+Base.show(io::IO, ::MIME"text/plain", c::CliffordGate) = show(io, c)
+function Base.show(io::IO, c::CliffordGate)
+    n = nqubits(c)
+    basis = pauli_basis(Val(n))
+    println(io, "CliffordGate(nqubits = $n)")
+    for (j, b) in enumerate(basis)
+        bi = basis[c.mat.perm[j]]
+        coeff = c.mat.vals[j]
+        print(io, " $(b) → ")
+        coeff == 1 ? print(io, bi) : coeff == -1 ? print(io, "-$(bi)") : real(coeff) ≈ 0 ? print(io, imag(coeff), "im * $(bi)") : imag(coeff) ≈ 0 ? print(io, real(coeff), " * $(bi)") : print(io, coeff, " * $(bi)")
+        j < length(basis) && println(io)
+    end
+end
 
 """
     clifford_group(n::Int)

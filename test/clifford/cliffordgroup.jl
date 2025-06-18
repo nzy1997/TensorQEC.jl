@@ -4,11 +4,15 @@ using TensorQEC: clifford_group, pauli_group, PermMatrixCSC
 @testset "perm repr" begin
     m = pauli_repr(H)
     pm = CliffordGate(H)
+    @test nqubits(pm) == 1
     @test mat(pm) ≈ m
+    @test string(pm) == "CliffordGate(nqubits = 1)\n I → I\n X → Z\n Y → -Y\n Z → X"
 
     m = pauli_repr(ConstGate.CNOT)
     pm = CliffordGate(ConstGate.CNOT)
     @test mat(pm) ≈ m
+    @test string(pm) == "CliffordGate(nqubits = 2)\n II → II\n XI → XX\n YI → YX\n ZI → ZI\n IX → IX\n XX → XI\n YX → YI\n ZX → ZX\n IY → ZY\n XY → YZ\n YY → -XZ\n ZY → IY\n IZ → ZZ\n XZ → -YY\n YZ → XY\n ZZ → IZ"
+    @test string(CliffordGate(ConstGate.S)) == "CliffordGate(nqubits = 1)\n I → I\n X → Y\n Y → -X\n Z → Z"
 end
 
 @testset "generate group" begin
