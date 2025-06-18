@@ -11,7 +11,7 @@ CliffordGate represented as a permutation matrix.
 
 ### Examples
 ```jldoctest
-julia> using Yao
+julia> using TensorQEC.Yao
 
 julia> CliffordGate(H)
 CliffordGate(nqubits = 1)
