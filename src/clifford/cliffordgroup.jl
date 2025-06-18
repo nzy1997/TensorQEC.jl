@@ -10,13 +10,15 @@ CliffordGate represented as a permutation matrix.
 - `mat::PM`: The permutation matrix.
 
 ### Examples
-```jldoctest; setup=:(using TensorQEC)
+```jldoctest
+julia> using Yao
+
 julia> CliffordGate(H)
-LuxurySparse.PermMatrixCSC{Float64, Int64, StaticArraysCore.SVector{4, Float64}, StaticArraysCore.SVector{4, Int64}}
-(1, 1) = 1.0
-(4, 2) = 1.0
-(3, 3) = -1.0
-(2, 4) = 1.0
+CliffordGate(nqubits = 1)
+ I → I
+ X → Z
+ Y → -Y
+ Z → X
 ```
 """
 struct CliffordGate{PM<:PermMatrixCSC{Complex{Int}, Int}}
