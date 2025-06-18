@@ -10,6 +10,7 @@ using Combinatorics
 using DelimitedFiles
 using OMEinsum
 using Yao.YaoBlocks.Optimise
+using Yao.YaoBlocks.LuxurySparse: PermMatrixCSC
 using PrettyTables
 using Optimisers
 using BitBasis
@@ -22,65 +23,67 @@ using SCIP
 import Yao.YaoArrayRegister.StaticArrays: SizedVector
 import Yao.YaoArrayRegister.LuxurySparse
 
-# pauli basis
-export pauli_basis, pauli_decomposition, pauli_repr
-export Pauli, SumOfPaulis, @P_str, yaoblock
+# reexport some YaoAPI
+export mat
 
 # Mod
 export Mod2
 
+# pauli basis
+export pauli_basis, pauli_decomposition, pauli_repr
+export Pauli, SumOfPaulis, @P_str, yaoblock
+
+# clifford group
+export CliffordGate, clifford_simulate, perm_of_paulistring, paulistring_annotate, annotate_history, annotate_circuit_pics, perm_of_pauligroup, generate_group
+
 # tensor network
 export clifford_network, CliffordNetwork, generate_tensor_network, circuit2tensornetworks
-export ExtraTensor, UNITY4, PXY, PIZ, PXY_UNITY2, PIZ_UNITY2
 export PauliString, PauliGroupElement, isanticommute
 
 # inference
-export syndrome_inference, measure_syndrome!,correction_pauli_string, generate_syndrome_dict,pauli_string_map_iter, inference, transformed_syndrome_dict
+export syndrome_inference, measure_syndrome!, correction_pauli_string, generate_syndrome_dict, pauli_string_map_iter, inference, transformed_syndrome_dict
 
 # codes 
-export stabilizers,ToricCode, SurfaceCode, ShorCode,SteaneCode,Code832, Code422, Code1573, Code513, BivariateBicycleCode,Color488,Color666
+export stabilizers, ToricCode, SurfaceCode, ShorCode, SteaneCode, Code832, Code422, Code1573, Code513, BivariateBicycleCode, Color488, Color666
 
 # encoder
-export CSSBimatrix,syndrome_transform, encode_stabilizers,place_qubits
+export CSSBimatrix, syndrome_transform, encode_stabilizers, place_qubits
 
 # measurement
-export measure_circuit_fault_tol,  measure_circuit_steane,measure_circuit, measure_circuit_steane_single_type
+export measure_circuit_fault_tol, measure_circuit_steane, measure_circuit, measure_circuit_steane_single_type
 
 # tablemake
-export make_table, save_table, load_table,correction_circuit,TruthTable,correction_dict
-
-# clifford group
-export pauli_group, clifford_group, clifford_simulate,to_perm_matrix,perm_of_paulistring,paulistring_annotate,annotate_history,annotate_circuit_pics,perm_of_pauligroup,generate_group
+export make_table, save_table, load_table, correction_circuit, TruthTable, correction_dict
 
 # simulation
-export ComplexConj, SymbolRecorder,IdentityRecorder, ein_circ, QCInfo, qc2enisum
-export coherent_error_unitary, error_quantum_circuit,toput, error_pairs,fidelity_tensornetwork, simulation_tensornetwork,error_quantum_circuit_pair_replace
+export ComplexConj, SymbolRecorder, IdentityRecorder, ein_circ, QCInfo, qc2enisum
+export coherent_error_unitary, error_quantum_circuit, toput, error_pairs, fidelity_tensornetwork, simulation_tensornetwork, error_quantum_circuit_pair_replace
 
 # ldpc
-export SimpleTannerGraph,syndrome_extraction,product_graph,CSSTannerGraph,plot_graph,dual_graph,get_graph,belief_propagation,random_ldpc, check_linear_indepent
-export tensor_infer,osd,mod2matrix_inverse,bp_osd,tensor_osd,check_logical_error
+export SimpleTannerGraph, syndrome_extraction, product_graph, CSSTannerGraph, plot_graph, dual_graph, get_graph, belief_propagation, random_ldpc, check_linear_indepent
+export tensor_infer, osd, mod2matrix_inverse, bp_osd, tensor_osd, check_logical_error
 
 # tableaux
-export Tableau, new_tableau,tableau_simulate
+export Tableau, new_tableau, tableau_simulate
 
 # error model
-export IndependentFlipError, IndependentDepolarizingError, random_error_qubits,SimpleSyndrome,CSSSyndrome,iid_error,CSSErrorPattern
-@const_gate CCZ::ComplexF64 = diagm([1, 1,1,1,1,1,1,-1])
+export IndependentFlipError, IndependentDepolarizingError, random_error_qubits, SimpleSyndrome, CSSSyndrome, iid_error, CSSErrorPattern
+@const_gate CCZ::ComplexF64 = diagm([1, 1, 1, 1, 1, 1, 1, -1])
 
 # decoder
-export BPOSD,BPDecoder,IPDecoder,MatchingDecoder,IPMatchingSolver,TNMAP,TableDecoder
+export BPOSD, BPDecoder, IPDecoder, MatchingDecoder, IPMatchingSolver, TNMAP, TableDecoder
 
 # decoding
-export decode,reduce2general,extract_decoding,general_syndrome,DecodingResult,compile,IndependentDepolarizingDecodingProblem,ClassicalDecodingProblem,GeneralDecodingProblem
+export decode, reduce2general, extract_decoding, general_syndrome, DecodingResult, compile, IndependentDepolarizingDecodingProblem, ClassicalDecodingProblem, GeneralDecodingProblem
 
 # threshold
 export multi_round_qec
 
 # code distance
-export code_distance,logical_operator
+export code_distance, logical_operator
 
 # error_learning
-export TrainningData,error_learning
+export TrainningData, error_learning
 
 # multiprocessing
 export multiprocess_run

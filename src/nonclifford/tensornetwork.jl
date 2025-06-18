@@ -61,8 +61,6 @@ function clifford_network(qc::ChainBlock)
 	return CliffordNetwork(factors, pins, collect(1:length(pins)), nvars)
 end
 
-@enum ExtraTensor UNITY4 PXY PIZ PXY_UNITY2 PIZ_UNITY2
-
 struct BoundarySpec{T}
 	pauli_coeffs::NTuple{4, T}
 	attach_unity::Bool

@@ -1,5 +1,6 @@
 using TensorQEC
 using Test
+using Documenter
 
 @testset "mod2" begin
     include("codes/mod2.jl")
@@ -100,3 +101,10 @@ end
 @testset "correction" begin
     include("nonclifford/correction.jl")
 end
+
+@testset "deprecate" begin
+    include("deprecate.jl")
+end
+
+DocMeta.setdocmeta!(TensorQEC, :DocTestSetup, :(using TensorQEC); recursive=true)
+Documenter.doctest(TensorQEC; manual=false, fix=false)

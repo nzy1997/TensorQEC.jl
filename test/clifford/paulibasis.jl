@@ -12,27 +12,30 @@ end
 end
 
 @testset "pauli_decomposition" begin
-	@test pauli_decomposition(Matrix(H)) == [0, 1, 0, 1] / sqrt(2)
-	@test pauli_decomposition(Matrix{Float64}(H)) == [0, 1, 0, 1] / sqrt(2)
-	@test pauli_decomposition(Matrix(kron(X, X))) == [0 0 0 0; 0 1 0 0; 0 0 0 0; 0 0 0 0]
+	@test TensorQEC._pauli_decomposition(Matrix(H)) == [0, 1, 0, 1] / sqrt(2)
+	@test TensorQEC._pauli_decomposition(Matrix{Float64}(H)) == [0, 1, 0, 1] / sqrt(2)
+	@test TensorQEC._pauli_decomposition(Matrix(kron(X, X))) == [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+	m = rand_unitary(ComplexF64, 4)
+	decomposed = TensorQEC._pauli_decomposition(m)
+	@test m ≈ sum(coeff * mat(pauli) for (coeff, pauli) in zip(decomposed, pauli_basis(2)))
 end
 
 @testset "density matrix" begin
 	reg = rand_state(6)
 	dm = density_matrix(reg, 1:3)
-	sp = SumOfPaulis(dm)
+	sp = pauli_decomposition(dm)
 	@test mat(yaoblock(sp)) ≈ dm.state
 end
 
 @testset "arrayreg to sumofpaulis" begin 
 	reg = rand_state(3)
 	dm = density_matrix(reg)
-	sp1 = SumOfPaulis(reg)
+	sp1 = pauli_decomposition(reg)
 	@test mat(yaoblock(sp1)) ≈ dm.state
 
 	reg = ghz_state(3)
 	dm = density_matrix(reg)
-	sp2 = SumOfPaulis(reg)
+	sp2 = pauli_decomposition(reg)
 	@test mat(yaoblock(sp2)) ≈ dm.state
 end
 
@@ -57,6 +60,6 @@ end
     i, x, y, z = Pauli(0), Pauli(1), Pauli(2), Pauli(3)
     @test PauliString(5, (2, 3)=>x) == PauliString(i, x, x, i, i)
     @test PauliString(5, (2, 3)=>x, 4=>y) == PauliString(i, x, x, y, i)
-    @test pauli_decomposition(X) ≈ [0, 1, 0, 0]
+    @test mat(pauli_decomposition(X)) ≈ mat(X)
     @test pauli_repr(X) ≈ Diagonal([1, 1, -1, -1])
 end

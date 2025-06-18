@@ -38,13 +38,13 @@ YaoAPI.mat(p::Pauli) = YaoAPI.mat(ComplexF64, p)
 function YaoAPI.mat(::Type{T}, p::Pauli) where T
     id = p.id
     if id == 0
-        return PermMatrix([1, 2], ones(T, 2))
+        return PermMatrixCSC([1, 2], ones(T, 2)) # identity
     elseif id == 1
-        return PermMatrix([2, 1], ones(T, 2))
+        return PermMatrixCSC([2, 1], ones(T, 2)) # X
     elseif id == 2
-        return PermMatrix([2, 1], T[-im, im])
+        return PermMatrixCSC([2, 1], T[im, -im]) # Y
     else
-        return PermMatrix([1, 2], T[1, -1])
+        return PermMatrixCSC([1, 2], T[1, -1]) # Z
     end
 end
 
@@ -144,7 +144,7 @@ YaoAPI.isunitary(ps::PauliString) = true
 
 YaoAPI.mat(ps::PauliString) = YaoAPI.mat(ComplexF64, ps)
 function YaoAPI.mat(::Type{T}, ps::PauliString{N}) where {T, N}
-    isempty(ps.operators) && return PermMatrix(collect(Int, 1:2^N), fill(T(im^ps.coeff), 2^N))  # identity matrix (with phase)
+    isempty(ps.operators) && return PermMatrixCSC(collect(Int, 1:2^N), fill(T(im^ps.coeff), 2^N))  # identity matrix (with phase)
     return reduce(kron, YaoAPI.mat.(T, ps.operators[end:-1:1]))
 end
 
@@ -200,7 +200,7 @@ YaoAPI.isunitary(ps::PauliGroupElement) = true
 
 YaoAPI.mat(pg::PauliGroupElement) = YaoAPI.mat(ComplexF64, pg)
 function YaoAPI.mat(::Type{T}, pg::PauliGroupElement) where T
-    isempty(pg.ps.operators) && return PermMatrix(collect(Int, 1:2^N), fill(T(im^pg.coeff), 2^N))  # identity matrix (with phase)
+    isempty(pg.ps.operators) && return PermMatrixCSC(collect(Int, 1:2^N), fill(T(im^pg.coeff), 2^N))  # identity matrix (with phase)
     return im^pg.coeff * reduce(kron, YaoAPI.mat.(T, pg.ps.operators[end:-1:1]))
 end
 
@@ -284,20 +284,6 @@ function sumofpaulis(items::Vector{Pair{T, PauliString{N}}}; atol=0) where {T, N
     return SumOfPaulis(res)
 end
 
-"""
-    SumOfPaulis(m::AbstractArray; atol=0)
-    SumOfPaulis(dm::DensityMatrix; atol=0)
-    SumOfPaulis(reg::ArrayReg; atol=0)
-
-Returns a pauli decomposition representation of a matrix `m`, a density matrix `dm`, or an array register `reg`.
-
-### Keyword Arguments
-- `atol::Float64`: the absolute tolerance for the coefficients. If the coefficient is less than `atol`, it will be ignored.
-"""
-function SumOfPaulis(m::AbstractMatrix; atol=0)
-	coeffs = pauli_decomposition(m)
-	return SumOfPaulis([coeffs[ci]=>PauliString(Pauli.(ci.I .- 1)) for ci in CartesianIndices(coeffs) if !isapprox(coeffs[ci], 0; atol=atol)] |> vec)
-end
 coeff_type(::Type{SumOfPaulis{T, N}}) where {T, N} = T
 Base.copy(sp::SumOfPaulis) = SumOfPaulis([c => copy(p) for (c, p) in sp.items])
 Base.show(io::IO, ::MIME"text/plain", sp::SumOfPaulis) = show(io, sp)
@@ -424,13 +410,6 @@ yaoblock(x::PauliGroupElement) = im^x.coeff * yaoblock(x.ps)
 yaoblock(x::SumOfPaulis) = sum([c * yaoblock(p) for (c, p) in x.items])
 PauliString(gate::YaoBlocks.PauliGate, gates...) = PauliString(Pauli(gate), Pauli.(gates)...)
 Pauli(gate::YaoBlocks.PauliGate) = gate == I2 ? Pauli(0) : gate == X ? Pauli(1) : gate == Y ? Pauli(2) : gate == Z ? Pauli(3) : error("Invalid Pauli gate: $gate")
-
-function SumOfPaulis(dm::DensityMatrix)
-    res = SumOfPaulis(dm.state)
-    # convert the coefficients to real numbers.
-    return SumOfPaulis([real(c)=>p for (c, p) in res.items])
-end
-SumOfPaulis(reg::ArrayReg) = SumOfPaulis(density_matrix(reg))
 
 # used for multiplication of phase factors
 _mul_coeff(a::Int, b::Int) = (a + b) % 4

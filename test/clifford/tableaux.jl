@@ -14,12 +14,12 @@ end
 @testset "tableau_simulate" begin
     i, x, y, z = Pauli(0), Pauli(1), Pauli(2), Pauli(3)
 	tab = new_tableau(2)
-	tab2 = tableau_simulate(tab, [1]=>to_perm_matrix(Int8, Int, TensorQEC.pauli_repr(H)))
+	tab2 = tableau_simulate(tab, (1,)=>CliffordGate(H))
 	@test getfield.(tab2.tabx,:ps) == [PauliString(2, 1=>z), PauliString(2, 2=>x)]
 	@test getfield.(tab2.tabz,:ps) == [PauliString(2, 1=>x), PauliString(2, 2=>z)]
 
 	tab = new_tableau(3)
-	tab2 = tableau_simulate(tab, [1,3]=>to_perm_matrix(Int8, Int, TensorQEC.pauli_repr(ConstGate.CNOT)))
+	tab2 = tableau_simulate(tab, (1,3)=>CliffordGate(ConstGate.CNOT))
 	@test getfield.(tab2.tabx,:ps) == [PauliString(3, (1,3)=>x), PauliString(3, 2=>x), PauliString(3, 3=>x)]
 	@test getfield.(tab2.tabz,:ps) == [PauliString(3, 1=>z), PauliString(3, 2=>z), PauliString(3, (1,3)=>z)]
 
