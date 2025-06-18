@@ -70,7 +70,9 @@ function _pauli_decomposition(m::AbstractMatrix{T}) where T
 end
 
 """
-    pauli_repr(m::AbstractMatrix)
+    pauli_repr(m::AbstractMatrix) -> Matrix
+    pauli_repr(m::AbstractBlock) -> Matrix
+    pauli_repr(c::Clifford) -> PermMatrixCSC
 
 Returns the representation of a matrix in the Pauli basis.
 It should not be confused with [`pauli_decomposition`](@ref), this function returns a matrix that represents how a Pauli string is mapped to others by this matrix.
@@ -111,7 +113,7 @@ function pauli_string_map_iter(ps::PauliString{N}, qc::ChainBlock) where N
         return ps
     end
     block = convert_to_put(qc[1])
-    return pauli_string_map_iter(map_pauli_string(ps, pauli_repr(mat(ComplexF64,block.content)),[block.locs...]),qc[2:end])
+    return pauli_string_map_iter(map_pauli_string(ps, pauli_repr(block.content),[block.locs...]),qc[2:end])
 end
 # map a Pauli string to another one, for Clifford simulation
 function map_pauli_string(ps::PauliString{N}, paulimapping::Matrix, qubits::Vector{Int}) where N

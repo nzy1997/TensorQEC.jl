@@ -1,15 +1,13 @@
 using TensorQEC, Test, TensorQEC.Yao
-using TensorQEC: pauli_repr
+using TensorQEC: clifford_group, pauli_group, PermMatrixCSC
 
 @testset "perm repr" begin
     m = pauli_repr(H)
-    pm = TensorQEC.to_perm_matrix(Int8, Int, m)
-    @test Matrix(pm) ≈ m
-    pm = TensorQEC.to_perm_matrix(H)
+    pm = pauli_repr(Clifford(H))
     @test Matrix(pm) ≈ m
 
     m = pauli_repr(ConstGate.CNOT)
-    pm = TensorQEC.to_perm_matrix(Int8, Int, m)
+    pm = pauli_repr(Clifford(ConstGate.CNOT))
     @test Matrix(pm) ≈ m
 end
 
@@ -32,12 +30,14 @@ end
 
 @testset "perm_of_paulistring" begin
     i, x, y, z = Pauli(0), Pauli(1), Pauli(2), Pauli(3)
-    pm = TensorQEC.to_perm_matrix(Int8, Int, pauli_repr(H))
+    pm = pauli_repr(Clifford(H))
+    @test pm isa PermMatrixCSC
     ps = PauliString((i, x))
     ps2, val = TensorQEC.perm_of_paulistring(ps, (2,) => pm)
     @test ps2 == PauliString((i, z))
 
-    pmcn = TensorQEC.to_perm_matrix(Int8, Int, TensorQEC.pauli_repr(ConstGate.CNOT))
+    pmcn = pauli_repr(Clifford(ConstGate.CNOT))
+    @test pmcn isa PermMatrixCSC
     ps = PauliString((x, i, y, x))
     ps2, val = TensorQEC.perm_of_paulistring(ps, (4, 2) => pmcn)
     @test ps2.operators == (x, x, y, x)
@@ -47,8 +47,9 @@ end
     @test ps2.operators == (x, y, x, x)
 
     # asymmetric case
-    pmasym = TensorQEC.to_perm_matrix(Int8, Int, TensorQEC.pauli_repr(ConstGate.S))
-    @test pmasym == [1 0 0 0; 0 0 -1 0; 0 1 0 0; 0 0 0 1]
+    pmasym = TensorQEC.pauli_repr(Clifford(ConstGate.S))
+    @test pmasym isa PermMatrixCSC
+    @test Matrix(pmasym) == [1 0 0 0; 0 0 -1 0; 0 1 0 0; 0 0 0 1]
     ps = P"X"
     @test mat(ConstGate.S * X * ConstGate.S') == [0 -im; im 0]
     ps2, val = TensorQEC.perm_of_paulistring(ps, (1,) => pmasym)
@@ -65,7 +66,8 @@ end
     i, x, y, z = Pauli(0), Pauli(1), Pauli(2), Pauli(3)
     ps = PauliString((x, y, z, y, x, i))
     pg = PauliGroupElement(1, ps)
-    pm = TensorQEC.to_perm_matrix(Int8, Int, pauli_repr(ConstGate.CNOT))
+    pm = pauli_repr(Clifford(ConstGate.CNOT))
+    @test pm isa PermMatrixCSC
 
     pg2 = perm_of_pauligroup(pg, (2, 3) => pm)
     ps2, val = perm_of_paulistring(ps, (2, 3) => pm)

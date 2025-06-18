@@ -31,7 +31,7 @@ function tableau_simulate(tab::Tableau{N}, qc::ChainBlock) where N
         if haskey(gatedict, key) 
             tab = tableau_simulate(tab, gate.locs=>gatedict[key])
         else 
-            pm = to_perm_matrix(Int8, UInt8, pauli_repr(mat(gate.content)))
+            pm = pauli_repr(Clifford(gate.content))
             push!(gatedict, key => pm)
             tab = tableau_simulate(tab, gate.locs=>pm)
         end
