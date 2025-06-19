@@ -32,14 +32,15 @@ export Mod2
 # pauli basis
 export pauli_basis, pauli_decomposition, pauli_repr
 export Pauli, SumOfPaulis, @P_str, yaoblock
+export PauliString, PauliGroupElement, isanticommute
 
 # clifford group
-export CliffordGate, clifford_simulate
-export paulistring_annotate, annotate_history, annotate_circuit_pics, generate_group
+export CliffordGate, clifford_simulate, compile_clifford_circuit
+export plot_error_propagation
+# export paulistring_annotate, annotate_history, annotate_circuit_pics, generate_group
 
 # tensor network
 export clifford_network, CliffordNetwork, generate_tensor_network, circuit2tensornetworks
-export PauliString, PauliGroupElement, isanticommute
 
 # inference
 export syndrome_inference, measure_syndrome!, correction_pauli_string, generate_syndrome_dict, pauli_string_map_iter, inference, transformed_syndrome_dict

@@ -113,6 +113,8 @@ Base.eachindex(ps::PauliString) = eachindex(ps.operators)
 Base.getindex(ps::PauliString, index::Integer) = getindex(ps.operators, index)
 Base.keys(ps::PauliString) = Base.OneTo(length(ps))
 
+Base.vcat(ps::PauliString{N}, ps2::PauliString{N}) where N = PauliString((ps.operators..., ps2.operators...))
+
 # visualization
 Base.show(io::IO, ::MIME"text/plain", ps::PauliString) = show(io, ps)
 function Base.show(io::IO, ps::PauliString)

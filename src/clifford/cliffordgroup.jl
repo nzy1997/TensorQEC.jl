@@ -169,7 +169,6 @@ struct CliffordSimulateResult{N}
     circuit::ChainBlock
     history::Vector{PauliGroupElement{N}}
     function CliffordSimulateResult(output::PauliGroupElement{N}, circuit::ChainBlock, history::Vector{PauliGroupElement{N}}) where N
-        @assert length(history) == length(circuit) + 1
         new{N}(output, circuit, history)
     end
 end

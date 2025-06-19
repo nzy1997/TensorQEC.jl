@@ -107,9 +107,9 @@ end
     qcm, st_pos = measure_circuit_steane(data_qubits[1], st)
     ps0 = PauliString(27, 6 => y)
     res = clifford_simulate(ps0, qcm)
-    annotate_history(res)
+    TensorQEC.annotate_history(res)
     @test getfield.(res.output.ps.operators, :id) .+ 1 == (1, 1, 1, 1, 1, 3, 1, 1, 1, 1, 1, 1, 4, 1, 1, 2, 2, 1, 1, 1, 1, 1, 2, 1, 1, 2, 2)
 
-    annotate_circuit_pics(res)
+    TensorQEC.annotate_circuit_pics(res)
 end
 
