@@ -4,7 +4,7 @@
 """
     CliffordGate{PM<:PermMatrixCSC{Int, Int}}
 
-CliffordGate represented as a permutation matrix.
+CliffordGate represented as a permutation matrix in the Pauli basis.
 It is a callable object that can be applied to a [`PauliString`](@ref) or a [`PauliGroupElement`](@ref).
 
 ### Fields
