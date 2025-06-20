@@ -53,7 +53,11 @@ function gaussian_elimination!(bimat::Bimatrix, rows::UnitRange, col_offset::Int
 				Q[k-rows.start+1, i-rows.start+1] = true
 			end
 		end
-		bimat.Q[rows, :] .= Q * bimat.Q[rows, :]
+        @show rank(Q)
+		#bimat.Q[rows, :] .= Q * bimat.Q[rows, :]
+        # Note: do not use row major order to access Julia matrix!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # fastmul!(view(bimat.Q, rows, :), cacheC, Q, cacheA, view(bimat.Q, rows, :), cacheB, true, false)
+        bitmul!(view(bimat.Q, rows, :), Q, view(bimat.Q, rows, :))
 	end
 	bimat
 end

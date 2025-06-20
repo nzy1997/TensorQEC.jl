@@ -20,3 +20,24 @@ using TensorQEC, Test
     @test one(a) == Mod2(true)
     @test iszero(a) == true
 end
+
+@testset "fastmul!" begin
+    A = Mod2.(rand(Bool, 100, 100))
+    B = Mod2.(rand(Bool, 100, 100))
+    C = Mod2.(zeros(Bool, 100, 100))
+    cacheA = zeros(Float32, 100, 100)
+    cacheB = zeros(Float32, 100, 100)
+    cacheC = zeros(Float32, 100, 100)
+    res1 = TensorQEC.fastmul!(C, cacheC, A, cacheA, B, cacheB, true, true)
+    res2 = A * B
+    @test res1 == res2
+end
+
+@testset "bitmul!" begin
+    A = Mod2.(rand(Bool, 1000, 1000))
+    B = Mod2.(rand(Bool, 1000, 1000))
+    C = Mod2.(zeros(Bool, 1000, 1000))
+    res1 = TensorQEC.bitmul!(C, A, B)
+    res2 = A * B
+    @test res1 == res2
+end

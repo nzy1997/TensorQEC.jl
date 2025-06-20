@@ -71,7 +71,7 @@ end
 
 @testset "CSS compile and decode" begin
     Random.seed!(123)
-    d = 3
+    d = 21
     tanner = CSSTannerGraph(SurfaceCode(d, d))
     em = iid_error(0.05,0.05,0.05,d*d)
     ep = random_error_qubits(em)
