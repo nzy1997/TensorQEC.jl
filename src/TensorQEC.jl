@@ -37,7 +37,6 @@ export PauliString, PauliGroupElement, isanticommute
 # clifford group
 export CliffordGate, clifford_simulate, compile_clifford_circuit
 export plot_error_propagation
-# export paulistring_annotate, annotate_history, annotate_circuit_pics, generate_group
 
 # tensor network
 export clifford_network, CliffordNetwork, generate_tensor_network, circuit2tensornetworks

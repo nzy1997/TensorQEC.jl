@@ -1,17 +1,15 @@
 function switch_qubits!(bimat::CSSBimatrix, i::Int, j::Int)
     bimat.ordering[i], bimat.ordering[j] = bimat.ordering[j], bimat.ordering[i]
     qubit_num = size(bimat.matrix, 2) ÷ 2
-    for row in axes(bimat.matrix, 1)
+    @inbounds for row in axes(bimat.matrix, 1)
         bimat.matrix[row, i], bimat.matrix[row, j] = bimat.matrix[row, j], bimat.matrix[row, i]
-    end
-    for row in axes(bimat.matrix, 1)
         bimat.matrix[row, qubit_num + i], bimat.matrix[row, qubit_num + j] = bimat.matrix[row, qubit_num + j], bimat.matrix[row, qubit_num + i]
     end
 end
 
 function switch_qubits!(bimat::SimpleBimatrix, i::Int, j::Int)
     bimat.ordering[i], bimat.ordering[j] = bimat.ordering[j], bimat.ordering[i]
-    for row in axes(bimat.matrix, 1)
+    @inbounds for row in axes(bimat.matrix, 1)
         bimat.matrix[row, i], bimat.matrix[row, j] = bimat.matrix[row, j], bimat.matrix[row, i]
     end
 end

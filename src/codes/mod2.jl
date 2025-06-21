@@ -38,15 +38,7 @@ Base.conj(x::Mod2) = x
 # conversion
 Base.Int64(x::Mod2) = x.x ? 1 : 0
 
-# monkey fix, use bit algebra to further speed up
-function fastmul!(C::AbstractMatrix{Mod2}, cacheC::AbstractMatrix{Float32}, A::AbstractMatrix{Mod2}, cacheA::AbstractMatrix{Float32}, B::AbstractMatrix{Mod2}, cacheB::AbstractMatrix{Float32}, alpha::Bool, beta::Bool)
-    cacheA .= Float32.(getfield.(A, :x))
-    cacheB .= Float32.(getfield.(B, :x))
-    mul!(cacheC, cacheA, cacheB, alpha, beta)
-    C .= _mod2.(cacheC)
-end
-_mod2(x::Float32) = Mod2(isodd(round(Int, x)))
-
+# using bit storage to speed up the matrix multiplication
 function bitmul!(C::AbstractMatrix{Mod2}, A::AbstractMatrix{Mod2}, B::AbstractMatrix{Mod2})
     ca = compresscol(A')
     cb = compresscol(B)
