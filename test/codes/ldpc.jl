@@ -78,4 +78,8 @@ end
     H = Transpose(Matrix(Bool[1 1 1; 0 1 1; 0 0 1]'))
     q = mod2matrix_inverse(H)
     @test q * H == Matrix{Bool}(I,3,3)
+
+    H = Matrix(Mod2[1 1 1; 0 1 1; 0 0 1])
+    q = inv(H)
+    @test q * H == Matrix{Mod2}(I,3,3)
 end

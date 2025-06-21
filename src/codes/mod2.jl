@@ -20,6 +20,7 @@ julia> Mod2(true) + Mod2(true)
 struct Mod2 <: Number
     x::Bool
 end
+Mod2(x::Mod2) = x
 
 # display
 Base.show(io::IO, x::Mod2) = print(io, x.x ? "1₂" : "0₂")
@@ -34,6 +35,11 @@ Base.zero(::Type{Mod2}) = Mod2(false)
 Base.one(::Type{Mod2}) = Mod2(true)
 Base.iszero(x::Mod2) = !x.x
 Base.conj(x::Mod2) = x
+Base.oneunit(::Type{Mod2}) = Mod2(true)
+Base.inv(x::Mod2) = iszero(x) ? error("Inverse of zero is undefined") : x
+Base.:(/)(x::Mod2, y::Mod2) = x * inv(y)
+Base.abs(x::Mod2) = x
+Base.:(<)(x::Mod2, y::Mod2) = x.x < y.x
 
 # conversion
 Base.Int64(x::Mod2) = x.x ? 1 : 0
