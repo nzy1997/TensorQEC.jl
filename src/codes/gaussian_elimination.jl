@@ -1,21 +1,19 @@
 function switch_qubits!(bimat::CSSBimatrix, i::Int, j::Int)
-	qubit_num = size(bimat.matrix, 2) ÷ 2
-	for row in axes(bimat.matrix, 1)
-		bimat.matrix[row, [i, j]] = bimat.matrix[row, [j, i]]
-	end
-	for row in axes(bimat.matrix, 1)
-		bimat.matrix[row, [qubit_num + i, qubit_num + j]] = bimat.matrix[row, [qubit_num + j, qubit_num + i]]
-	end
-	bimat.ordering[i], bimat.ordering[j] = bimat.ordering[j], bimat.ordering[i]
-	return bimat
+    bimat.ordering[i], bimat.ordering[j] = bimat.ordering[j], bimat.ordering[i]
+    qubit_num = size(bimat.matrix, 2) ÷ 2
+    for row in axes(bimat.matrix, 1)
+        bimat.matrix[row, i], bimat.matrix[row, j] = bimat.matrix[row, j], bimat.matrix[row, i]
+    end
+    for row in axes(bimat.matrix, 1)
+        bimat.matrix[row, qubit_num + i], bimat.matrix[row, qubit_num + j] = bimat.matrix[row, qubit_num + j], bimat.matrix[row, qubit_num + i]
+    end
 end
 
 function switch_qubits!(bimat::SimpleBimatrix, i::Int, j::Int)
+    bimat.ordering[i], bimat.ordering[j] = bimat.ordering[j], bimat.ordering[i]
     for row in axes(bimat.matrix, 1)
-	    bimat.matrix[row, i], bimat.matrix[row, j] = bimat.matrix[row, j], bimat.matrix[row, i]
+        bimat.matrix[row, i], bimat.matrix[row, j] = bimat.matrix[row, j], bimat.matrix[row, i]
     end
-	bimat.ordering[i], bimat.ordering[j] = bimat.ordering[j], bimat.ordering[i]
-	return bimat
 end
 
 """
@@ -34,7 +32,6 @@ Perform Gaussian elimination on a binary matrix.
 - `bimat`: The modified binary matrix after Gaussian elimination.
 """
 function gaussian_elimination!(bimat::Bimatrix, rows::UnitRange, col_offset::Int, qubit_offset::Int;allow_col_operation = true)
-    Q, matrix = Matrix(bimat.Q'), Matrix(bimat.matrix')  # convert to column major
     # Calculate the starting column for elimination
     start_col = col_offset + qubit_offset + 1
     zero_row = 0  # Counter for rows that are all zeros
@@ -97,7 +94,7 @@ function gaussian_elimination!(bimat::Bimatrix, rows::UnitRange, col_offset::Int
             end
         end
     end
-    bimat
+    return bimat
 end
 function gaussian_elimination!(bimat::CSSBimatrix)
 	qubit_num = size(bimat.matrix, 2) ÷ 2
