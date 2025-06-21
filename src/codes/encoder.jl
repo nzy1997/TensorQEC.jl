@@ -6,21 +6,21 @@ Since the encding process may alter the generators of stabilizer group, we intro
 The CSSBimatrix structure contains the following fields
 
 * `matrix`: The bimatrix representation of the stabilizers.
-* `Q`: The matrix records the Gaussian elimination process, whcih is used to recover the original stabilizers.
+* `Q`: The matrix records the Gaussian elimination process, which is used to recover the original stabilizers.
 * `ordering`: The ordering of qubits.
 * `xcodenum`: The number of X stabilizers.
 
 """
 struct CSSBimatrix <: Bimatrix
-	matrix::Matrix{Bool}
-	Q::Matrix{Mod2}
+	matrix::Transpose{Bool, Matrix{Bool}}
+	Q::Transpose{Mod2, Matrix{Mod2}}
 	ordering::Vector{Int}
 	xcodenum::Int
 end
 
 struct SimpleBimatrix <: Bimatrix
-    matrix::Matrix{Bool}
-	Q::Matrix{Mod2}
+    matrix::Transpose{Bool, Matrix{Bool}}
+	Q::Transpose{Mod2, Matrix{Mod2}}
 	ordering::Vector{Int}
 end
 

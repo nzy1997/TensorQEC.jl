@@ -79,6 +79,8 @@ end
     g = PauliString(x, y, z, i)
     @test iscommute(g, PauliString(i, z, x, i))
     @test isanticommute(g, PauliString(i, i, x, i))
+
+    @test vcat(g, g) == PauliString(x, y, z, i, x, y, z, i)
 end
 
 @testset "Sum of Paulis" begin

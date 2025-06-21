@@ -80,25 +80,29 @@ If a matrix has size `2^N x 2^N`, its Pauli basis representation will be a `4^N 
 ## Examples
 The Pauli operator flips the sign of `Y` and `Z` in the Pauli basis.
 ```jldoctest; setup=:(using TensorQEC)
-julia> pauli_repr(mat(P"X"))
+julia> using TensorQEC.Yao
+
+julia> pauli_repr(ConstGate.S)
 4×4 Matrix{Float64}:
- 1.0  0.0   0.0   0.0
- 0.0  1.0   0.0   0.0
- 0.0  0.0  -1.0   0.0
- 0.0  0.0   0.0  -1.0
+ 1.0  0.0   0.0  0.0
+ 0.0  0.0  -1.0  0.0
+ 0.0  1.0   0.0  0.0
+ 0.0  0.0   0.0  1.0
 ```
-Because we have `XZX = -Z` and `XZY = -Y`.
+Here, the `[2,3]` element of the matrix corresponds to `tr(XSYS')/2 = -1`,
+the `[3,2]` element of the matrix corresponds to `tr(YSXS')/2 = 1`, and the `[4,4]` element of the matrix corresponds to `tr(ZSZS')/2 = 1`.
 """
 function pauli_repr(m::AbstractMatrix{T}) where T
     m = _csc(m)
-	nqubits = Int(log2(size(m, 1)))
+    nqubits = Int(log2(size(m, 1)))
+    @assert 2^nqubits == size(m, 1) "`m` must be a matrix of size 2^k, got $(size(m))"
 	paulis = pauli_basis(nqubits)
 	return [real(tr(mat(complex(T), pi) * m * mat(complex(T), pj) * m'))/size(m, 1) for pi in vec(paulis), pj in vec(paulis)]
 end
 
 # all the elements in the Pauli group of size N
 function pauli_group(::Val{N}) where N
-    return [PauliGroupElement(coeff, (ci = pauli_l2c(Val(N), j); PauliString(ntuple(i->Pauli(ci[i]-1), Val{N}())))) for coeff in 0:3, j in 1:4^N]
+    return [PauliGroupElement(phase, (ci = pauli_l2c(Val(N), j); PauliString(ntuple(i->Pauli(ci[i]-1), Val{N}())))) for phase in 0:3, j in 1:4^N]
 end
 pauli_group(nqubits::Int) = pauli_group(Val(nqubits))
 

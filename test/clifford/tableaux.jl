@@ -27,6 +27,5 @@ end
 	ps = PauliString((z, y, i, y, x))
 	res = clifford_simulate(ps, qc)
 	res2 = tableau_simulate(ps, qc)
-	@test res.output == res2.ps
-	@test res.phase == im^res2.coeff
+	@test res.output == res2
 end
