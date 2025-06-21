@@ -107,9 +107,9 @@ function mod2matrix_inverse(H::Transpose{Bool, Matrix{Bool}})
     return bm.Q
 end
 
-function mod2matrix_inverse(H::Matrix{Mod2})
-    return mod2matrix_inverse(Transpose([a.x for a in Transpose(H)]))
-end
+# function Base.inv(H::Matrix{Mod2})
+#     return mod2matrix_inverse(Transpose([a.x for a in Transpose(H)]))
+# end
 
 function _check_linear_indepent(H::Transpose{Bool, Matrix{Bool}})
     bm = SimpleBimatrix(H, Transpose(Matrix{Mod2}(I, size(H,1), size(H,1))), collect(1:size(H,2)))

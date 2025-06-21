@@ -89,7 +89,7 @@ function osd(tanner::SimpleTannerGraph,order::Vector{Int},syndrome::Vector{Mod2}
         end
     end
 
-    hinv = mod2matrix_inverse(H)
+    hinv = inv(H)
 
     error = hinv * syndrome
     return [(i ∈ qubit_list) ? (error[findfirst(==(i),qubit_list)]) : Mod2(0)  for i in 1:tanner.nq]
