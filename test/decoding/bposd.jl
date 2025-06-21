@@ -14,13 +14,13 @@ using Random
 end
 
 @testset "check_linear_indepent" begin
-    H = Bool[1 1 1 0; 0 1 1 1]
+    H = Transpose(Matrix(Bool[1 1 1 0; 0 1 1 1]'))
     @test check_linear_indepent(H) == true
-    H = Bool[1 1 1 0; 0 1 1 0; 0 0 0 1; 1 0 0 0]
+    H = Transpose(Matrix(Bool[1 1 1 0; 0 1 1 0; 0 0 0 1; 1 0 0 0]'))
     @test check_linear_indepent(H) == false
-    H = Mod2[1 1 1 0; 0 1 1 1]
+    H = Transpose(Matrix(Mod2[1 1 1 0; 0 1 1 1]'))
     @test check_linear_indepent(H) == true
-    H = Mod2[1 1 1 0; 0 1 1 0; 0 0 0 1; 1 0 0 0]
+    H = Transpose(Matrix(Mod2[1 1 1 0; 0 1 1 0; 0 0 0 1; 1 0 0 0]'))
     @test check_linear_indepent(H) == false
 end
 

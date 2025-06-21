@@ -71,11 +71,11 @@ end
 end
 
 @testset "mod2matrix_inverse" begin
-    H = Bool[1 0 0; 0 0 1; 0 1 0]
+    H = Transpose(Matrix(Bool[1 0 0; 0 0 1; 0 1 0]'))
     q = mod2matrix_inverse(H)
     @test q * H == Matrix{Bool}(I,3,3)
 
-    H = Bool[1 1 1; 0 1 1; 0 0 1]
+    H = Transpose(Matrix(Bool[1 1 1; 0 1 1; 0 0 1]'))
     q = mod2matrix_inverse(H)
     @test q * H == Matrix{Bool}(I,3,3)
 end
