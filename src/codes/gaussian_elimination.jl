@@ -7,7 +7,9 @@ function switch_qubits!(bimat::CSSBimatrix, i::Int, j::Int)
 end
 
 function switch_qubits!(bimat::SimpleBimatrix, i::Int, j::Int)
-	bimat.matrix[:, [i, j]] = bimat.matrix[:, [j, i]]
+    for row in axes(bimat.matrix, 1)
+	    bimat.matrix[row, i], bimat.matrix[row, j] = bimat.matrix[row, j], bimat.matrix[row, i]
+    end
 	bimat.ordering[i], bimat.ordering[j] = bimat.ordering[j], bimat.ordering[i]
 	return bimat
 end
@@ -18,46 +20,45 @@ function gaussian_elimination!(bimat::Bimatrix, rows::UnitRange, col_offset::Int
 	zero_col = 0
 	for i in rows
 		if allow_col_operation
-			offset = i - rows.start -zero_row
-			j = findfirst(!iszero, bimat.matrix[i, start_col:end])
+			offset = i - rows.start - zero_row
+			j = findfirst(!iszero, view(bimat.matrix, i, start_col:size(bimat.matrix, 2)))
 			j === nothing && (zero_row += 1; continue)
 			switch_qubits!(bimat, qubit_offset + offset + 1, j + qubit_offset)
 		else
 			if i + zero_col > size(bimat.matrix, 2)
 				return bimat
 			end
-			j = findfirst(!iszero, bimat.matrix[i:end,i + zero_col])
+			j = findfirst(!iszero, view(bimat.matrix, i:size(bimat.matrix, 1), i + zero_col))
 			while (j === nothing)
 				zero_col += 1
 				if i + zero_col > size(bimat.matrix, 2)
 					return bimat
 				end
-				j = findfirst(!iszero, bimat.matrix[i:end,i + zero_col])
+				j = findfirst(!iszero, view(bimat.matrix, i:size(bimat.matrix, 1), i + zero_col))
 			end
 			j = i+j-1
 			if j != i
-				Q = Matrix{Mod2}(I, length(rows), length(rows))
-				Q[i,j] = true
-				Q[j,i] = true
-				Q[i,i] = false
-				Q[j,j] = false
-				bimat.Q[rows, :] .= Q * bimat.Q[rows, :]
-				bimat.matrix[ [i, j],:] = bimat.matrix[ [j, i],:]
+                for col in axes(bimat.Q, 2)
+                    # swap rows (i, j) in Q
+                    bimat.Q[i, col], bimat.Q[j, col] = bimat.Q[j, col], bimat.Q[i, col]
+                end
+                for col in axes(bimat.matrix, 2)
+                    # swap rows (i, j) in matrix
+                    bimat.matrix[i, col], bimat.matrix[j, col] = bimat.matrix[j, col], bimat.matrix[i, col]
+                end
 			end
 			offset = i - rows.start + zero_col
 		end
-		Q = Matrix{Mod2}(I, length(rows), length(rows))
 		for k in rows
 			if k != i && bimat.matrix[k, offset+start_col]  # got 1, eliminate by ⊻ current row (i) to the k-th row
-				bimat.matrix[k, :] .= xor.(bimat.matrix[k, :], bimat.matrix[i, :])
-				Q[k-rows.start+1, i-rows.start+1] = true
+				for col in axes(bimat.matrix, 2)
+					bimat.matrix[k, col] = bimat.matrix[k, col] ⊻ bimat.matrix[i, col]
+				end
+				for col in axes(bimat.Q, 2)
+					bimat.Q[k, col] = bimat.Q[k, col] + bimat.Q[i, col]
+				end
 			end
 		end
-        @show rank(Q)
-		#bimat.Q[rows, :] .= Q * bimat.Q[rows, :]
-        # Note: do not use row major order to access Julia matrix!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        # fastmul!(view(bimat.Q, rows, :), cacheC, Q, cacheA, view(bimat.Q, rows, :), cacheB, true, false)
-        bitmul!(view(bimat.Q, rows, :), Q, view(bimat.Q, rows, :))
 	end
 	bimat
 end
