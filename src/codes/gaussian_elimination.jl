@@ -37,7 +37,7 @@ function gaussian_elimination!(bimat::Bimatrix, rows::UnitRange, col_offset::Int
     zero_row = 0  # Counter for rows that are all zeros
     zero_col = 0  # Counter for columns that are all zeros
     
-    for i in rows
+    @inbounds for i in rows
         if allow_col_operation
             # Column operations allowed - we can swap qubits
             offset = i - rows.start - zero_row
@@ -103,27 +103,27 @@ function gaussian_elimination!(bimat::CSSBimatrix)
 	return bimat
 end
 
-function mod2matrix_inverse(H::Matrix{Bool})
-    bm = SimpleBimatrix(copy(H),Matrix{Mod2}(I, size(H,1), size(H,1)),collect(1:size(H,2)))
+function mod2matrix_inverse(H::Transpose{Bool, Matrix{Bool}})
+    bm = SimpleBimatrix(H, Transpose(Matrix{Mod2}(I, size(H,1), size(H,1))), collect(1:size(H,2)))
     gaussian_elimination!(bm, 1:size(bm.matrix,1), 0, 0;allow_col_operation = false)
     return bm.Q
 end
 
 function mod2matrix_inverse(H::Matrix{Mod2})
-    return mod2matrix_inverse([a.x for a in H])
+    return mod2matrix_inverse(Transpose([a.x for a in Transpose(H)]))
 end
 
-function _check_linear_indepent(H::Matrix{Bool})
-    bm = SimpleBimatrix(H,Matrix{Mod2}(I, size(H,1), size(H,1)),collect(1:size(H,2)))
+function _check_linear_indepent(H::Transpose{Bool, Matrix{Bool}})
+    bm = SimpleBimatrix(H, Transpose(Matrix{Mod2}(I, size(H,1), size(H,1))), collect(1:size(H,2)))
     gaussian_elimination!(bm, 1:size(bm.matrix,1), 0, 0)
-    return bm,!(bm.matrix[end,:] == fill(Mod2(0),size(H,2)))
+    return bm, !all(iszero, view(bm.matrix, size(bm.matrix,1), :))
 end
 
-function check_linear_indepent(H::Matrix{Bool})
+function check_linear_indepent(H::Transpose{Bool, Matrix{Bool}})
     _ , res= _check_linear_indepent(H)
     return res
 end
 
-function check_linear_indepent(H::Matrix{Mod2})
-    return check_linear_indepent([a.x for a in H])
+function check_linear_indepent(H::Transpose{Mod2, Matrix{Mod2}})
+    return check_linear_indepent(Transpose([a.x for a in H.parent]))
 end
