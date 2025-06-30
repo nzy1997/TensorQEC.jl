@@ -36,7 +36,6 @@ export PauliString, PauliGroupElement, isanticommute
 
 # clifford group
 export CliffordGate, clifford_simulate, compile_clifford_circuit
-export plot_error_propagation
 
 # tensor network
 export clifford_network, CliffordNetwork, generate_tensor_network, circuit2tensornetworks
@@ -51,7 +50,7 @@ export stabilizers, ToricCode, SurfaceCode, ShorCode, SteaneCode, Code832, Code4
 export CSSBimatrix, syndrome_transform, encode_stabilizers, place_qubits
 
 # measurement
-export measure_circuit_fault_tol, measure_circuit_steane, measure_circuit, measure_circuit_steane_single_type
+export measure_circuit_fault_tol, measure_circuit_steane, measure_circuit
 
 # tablemake
 export make_table, save_table, load_table, correction_circuit, TruthTable, correction_dict
@@ -61,8 +60,8 @@ export ComplexConj, SymbolRecorder, IdentityRecorder, ein_circ, QCInfo, qc2enisu
 export coherent_error_unitary, error_quantum_circuit, toput, error_pairs, fidelity_tensornetwork, simulation_tensornetwork, error_quantum_circuit_pair_replace
 
 # ldpc
-export SimpleTannerGraph, syndrome_extraction, product_graph, CSSTannerGraph, plot_graph, dual_graph, get_graph, belief_propagation, random_ldpc, check_linear_indepent
-export tensor_infer, osd, mod2matrix_inverse, bp_osd, tensor_osd, check_logical_error
+export SimpleTannerGraph, syndrome_extraction, product_graph, CSSTannerGraph, dual_graph, get_graph, belief_propagation, random_ldpc, check_linear_indepent
+export osd, mod2matrix_inverse, check_logical_error
 
 # tableaux
 export Tableau, new_tableau, tableau_simulate
@@ -72,10 +71,10 @@ export IndependentFlipError, IndependentDepolarizingError, random_error_qubits, 
 @const_gate CCZ::ComplexF64 = diagm([1, 1, 1, 1, 1, 1, 1, -1])
 
 # decoder
-export BPOSD, BPDecoder, IPDecoder, MatchingDecoder, IPMatchingSolver, TNMAP, TableDecoder
+export BPDecoder, IPDecoder, MatchingDecoder, IPMatchingSolver, TNMAP, TableDecoder
 
 # decoding
-export decode, reduce2general, extract_decoding, general_syndrome, DecodingResult, compile, IndependentDepolarizingDecodingProblem, ClassicalDecodingProblem, GeneralDecodingProblem
+export decode, reduce2general, extract_decoding, DecodingResult, compile, IndependentDepolarizingDecodingProblem, ClassicalDecodingProblem, GeneralDecodingProblem
 
 # threshold
 export multi_round_qec
@@ -85,9 +84,6 @@ export code_distance, logical_operator
 
 # error_learning
 export TrainningData, error_learning
-
-# multiprocessing
-export multiprocess_run
 
 include("codes/mod2.jl")
 include("clifford/paulistring.jl")
