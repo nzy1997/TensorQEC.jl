@@ -19,7 +19,7 @@ end
 
 
 function tableau_simulate(tab::Tableau{N}, operation::Pair{NTuple{M,Int}, <:CliffordGate}) where {M, N}
-    return Tableau([perm_of_pauligroup(tab.tabx[i], operation) for i in 1:N], [perm_of_pauligroup(tab.tabz[i], operation) for i in 1:N])
+    return Tableau([operation.second(tab.tabx[i], operation.first) for i in 1:N], [operation.second(tab.tabz[i], operation.first) for i in 1:N])
 end
 
 function tableau_simulate(tab::Tableau{N}, qc::ChainBlock) where N
@@ -56,5 +56,5 @@ function tableau_simulate(ps::PauliString{N}, qc::ChainBlock) where N
             count += 1
         end
     end
-    return PauliGroupElement(_mul_coeff(res.coeff,count), res.ps)
+    return PauliGroupElement(_add_phase(res.phase, count), res.ps)
 end

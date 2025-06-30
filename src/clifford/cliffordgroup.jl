@@ -4,7 +4,8 @@
 """
     CliffordGate{PM<:PermMatrixCSC{Int, Int}}
 
-CliffordGate represented as a permutation matrix.
+CliffordGate represented as a permutation matrix in the Pauli basis.
+It is a callable object that can be applied to a [`PauliString`](@ref) or a [`PauliGroupElement`](@ref).
 
 ### Fields
 - `mat::PM`: The permutation matrix.
@@ -13,12 +14,18 @@ CliffordGate represented as a permutation matrix.
 ```jldoctest
 julia> using TensorQEC.Yao
 
-julia> CliffordGate(H)
+julia> hgate = CliffordGate(H)
 CliffordGate(nqubits = 1)
  I → I
  X → Z
  Y → -Y
  Z → X
+
+julia> hgate(P"IX", (2,))
++1 * IZ
+
+julia> hgate(PauliGroupElement(1, P"IX"), (2,))
++i * IZ
 ```
 """
 struct CliffordGate{PM<:PermMatrixCSC{Complex{Int}, Int}}
@@ -76,7 +83,7 @@ Convert a general matrix to a permutation matrix.
 - `atol`: The tolerance to zeros in the matrix.
 
 ### Returns
-- `pm`: The permutation matrix. pm.perm is the permutation vector, pm.vals is the phase factor.
+- `pm`: The permutation matrix. pm.perm is the permutation vector, pm.vals is the leading coefficient.
 """
 function to_perm_matrix(m::AbstractMatrix; atol=1e-8)
     @assert all(j -> count(i->abs(i) > atol, view(m, :, j)) == 1, 1:size(m, 2))
@@ -119,34 +126,32 @@ struct CliffordTable{N, Ti}
 end
 
 """
-    perm_of_paulistring(ps::PauliString, operation::Pair{NTuple{M, Int}, <:PermMatrixCSC}) where {M}
+    (gate::CliffordGate)(ps::PauliString, pos::NTuple{M, Int}) where {M}
 
-Map the Pauli string `ps` by a permutation matrix `pm`. Return the mapped Pauli string and the phase factor.
+Map the Pauli string `ps` by a Clifford gate `gate`. Return the mapped Pauli group element.
 
 ### Arguments
 - `ps`: The Pauli string.
-- `operation`: A pair of the positions to apply the permutation and the permutation matrix.
+- `pos`: The positions to apply the permutation.
 
 ### Returns
-- `ps`: The mapped Pauli string.
-- `val`: The phase factor.
+- `pg`: The mapped Pauli group element.
 """
-function perm_of_paulistring(ps::PauliString{N}, operation::Pair{NTuple{M, Int}, <:CliffordGate}) where {N, M}
-    pos, gate = operation
+function (gate::CliffordGate)(ps::PauliString{N}, pos::NTuple{M, Int}) where {N, M}
     pm = mat(gate)
     @assert 4^M == length(pm.perm)
     idx = pauli_c2l(Val(M), ntuple(k->ps.operators[pos[k]].id + 1, Val(M)))
     ci = pauli_l2c(Val(M), pm.perm[idx])
     paulis = ntuple(Val{N}()) do k
-        loc = findfirst(==(k), operation.first)
+        loc = findfirst(==(k), pos)
         loc === nothing ? ps[k] : Pauli(ci[loc]-1)
     end
-    return PauliString(paulis), pm.vals[idx]
+    return PauliGroupElement(_complex2int(pm.vals[idx]), PauliString(paulis))
 end
 _complex2int(x) = x==1+0im ? 0 : x==0+1im ? 1 : x==-1+0im ? 2 : 3
-function perm_of_pauligroup(pg::PauliGroupElement, operation::Pair{NTuple{M, Int}, <:CliffordGate}) where {M}
-    ps, val = perm_of_paulistring(pg.ps, operation)
-    return PauliGroupElement(_mul_coeff(pg.coeff,_complex2int(val)), ps)
+function (gate::CliffordGate)(pg::PauliGroupElement, pos::NTuple{M, Int}) where {M}
+    elem = gate(pg.ps, pos)
+    return PauliGroupElement(_add_phase(pg.phase, elem.phase), elem.ps)
 end
 
 """
@@ -155,54 +160,99 @@ end
 The result of simulating a Pauli string by a Clifford circuit.
 
 ### Fields
-- `output::PauliString{N}`: A mapped Pauli string as the output.
-- `phase::ComplexF64`: The phase factor.
+- `output::PauliGroupElement{N}`: A mapped Pauli group element as the output.
 - `circuit::ChainBlock`: The circuit (simplified, with linear structure).
-- `history::Vector{PauliString{N}}`: The history of Pauli strings, its length is `length(circuit)+1`.
+- `history::Vector{PauliGroupElement{N}}`: The history of Pauli group elements, its length is `length(circuit)+1`.
 """
 struct CliffordSimulateResult{N}
-    output::PauliString{N}
-    phase::Complex{Int}
+    output::PauliGroupElement{N}
     circuit::ChainBlock
-    history::Vector{PauliString{N}}
-    function CliffordSimulateResult(output::PauliString{N}, phase::Complex{Int}, circuit::ChainBlock, history::Vector{PauliString{N}}) where N
-        @assert length(history) == length(circuit) + 1
-        new{N}(output, phase, circuit, history)
+    history::Vector{PauliGroupElement{N}}
+    function CliffordSimulateResult(output::PauliGroupElement{N}, circuit::ChainBlock, history::Vector{PauliGroupElement{N}}) where N
+        new{N}(output, circuit, history)
     end
 end
 
-"""
-    clifford_simulate(::Type{T} = ComplexF64, ps::PauliString, qc::ChainBlock) where {T}
-    
-Map the Pauli string `ps` by a quantum circuit `qc`. 
+struct CompiledCliffordCircuit{M1, M2}
+    sequence::Vector{Tuple{Int, Int, Int}}  # (howmany qubits, gate-idx, locs-idx)
+    single_qubit_gates::Vector{CliffordGate{M1}}
+    single_qubit_locs::Vector{Tuple{Int}}
+    two_qubit_gates::Vector{CliffordGate{M2}}
+    two_qubit_locs::Vector{Tuple{Int, Int}}
+end
 
-### Arguments
-- `ps`: The Pauli string.
-- `qc`: The quantum circuit.
+function compile_clifford_circuit(qc::ChainBlock)
+    sequence = Tuple{Int, Int, Int}[]
+    single_qubit_gates = typeof(CliffordGate(X))[]
+    single_qubit_locs = Tuple{Int}[]
+    two_qubit_gates = typeof(CliffordGate(ConstGate.CNOT))[]
+    two_qubit_locs = Tuple{Int, Int}[]
 
-### Returns
-- `result`: A [`CliffordSimulateResult`](@ref) records the output Pauli string, the phase factor, the simplified circuit, and the history of Pauli strings.
-"""
-function clifford_simulate(ps::PauliString{N}, qc::ChainBlock) where {N}
-    ps_history = PauliString{N}[]
     qc = simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
-    gatedict=Dict{UInt64, CliffordGate}()
-    valf = 1 + 0im
-    push!(ps_history, ps)
+    gatedict = Dict{UInt64, Int}()
     for _gate in qc
         gate = toput(_gate)
         key = hash(gate.content)
         if haskey(gatedict, key) 
-            ps, val = perm_of_paulistring(ps, gate.locs=>gatedict[key])
+            cgate_idx = gatedict[key]
         else 
-            pm = CliffordGate(gate.content)
-            push!(gatedict, key => pm)
-            ps,val = perm_of_paulistring(ps, gate.locs=>pm)
+            if nqubits(gate.content) == 1
+                push!(single_qubit_gates, CliffordGate(gate.content))
+                cgate_idx = length(single_qubit_gates)
+            else
+                push!(two_qubit_gates, CliffordGate(gate.content))
+                cgate_idx = length(two_qubit_gates)
+            end
+            gatedict[key] = cgate_idx
         end
-        valf *= val
-        push!(ps_history, ps)
+        if nqubits(gate.content) == 1
+            push!(single_qubit_locs, gate.locs)
+            push!(sequence, (1, cgate_idx, length(single_qubit_locs)))
+        else
+            push!(two_qubit_locs, gate.locs)
+            push!(sequence, (2, cgate_idx, length(two_qubit_locs)))
+        end
     end
-    return CliffordSimulateResult(ps, valf, qc, ps_history)
+    return CompiledCliffordCircuit(sequence, single_qubit_gates, single_qubit_locs, two_qubit_gates, two_qubit_locs)
+end
+function (cl::CompiledCliffordCircuit)(pg::PauliGroupElement{N}) where {N}
+    for i in 1:length(cl.sequence)
+        pg = _step(cl, pg, i)
+    end
+    return pg
+end
+function _step(cl::CompiledCliffordCircuit, pg::PauliGroupElement{N}, i::Int) where {N}
+    howmany, gate_idx, locs_idx = cl.sequence[i]
+    if howmany == 1
+        return cl.single_qubit_gates[gate_idx](pg, cl.single_qubit_locs[locs_idx])
+    else
+        return cl.two_qubit_gates[gate_idx](pg, cl.two_qubit_locs[locs_idx])
+    end
+end
+
+"""
+    clifford_simulate(paulistring, qc::ChainBlock)
+    
+Perform Clifford simulation with a Pauli string `paulistring` as the input.
+
+### Arguments
+- `paulistring`: The input Pauli string, which can be a [`PauliString`](@ref) or a [`PauliGroupElement`](@ref).
+- `qc`: The quantum circuit represented as a Yao's `ChainBlock`, its elements should be Clifford gates.
+
+### Returns
+- `result`: A [`CliffordSimulateResult`](@ref) records the output Pauli string, the phase factor, the simplified circuit, and the history of Pauli strings.
+"""
+clifford_simulate(ps::PauliString{N}, qc::ChainBlock) where {N} = clifford_simulate(PauliGroupElement(0, ps), qc)
+function clifford_simulate(pg::PauliGroupElement{N}, qc::ChainBlock) where {N}
+    history = PauliGroupElement{N}[]
+    cl = compile_clifford_circuit(qc)
+    push!(history, pg)
+    for i in 1:length(cl.sequence)
+        pg = _step(cl, pg, i)
+        push!(history, pg)
+    end
+    # TODO: remove the quantum circuit from the result
+    return CliffordSimulateResult(pg, qc, history)
 end
 
 function paulistring_annotate(ps::PauliString{N};color = "red") where N
@@ -236,12 +286,12 @@ end
 function generate_annotate_circuit(res::CliffordSimulateResult{N};color = "red") where N
     qcf = chain(N)
     pos = [1]
-    push!(qcf, paulistring_annotate(res.history[1];color))
+    push!(qcf, paulistring_annotate(res.history[1].ps;color))
     for i in 1:length(res.circuit)
         block = res.circuit[i]
         push!(qcf, block)
-        if !isempty(occupied_locs(block) ∩ findall(x -> x != Pauli(0), res.history[i+1]))
-            push!(qcf, paulistring_annotate(res.history[i+1];color))
+        if !isempty(occupied_locs(block) ∩ findall(x -> x != Pauli(0), res.history[i+1].ps))
+            push!(qcf, paulistring_annotate(res.history[i+1].ps;color))
             push!(pos, length(qcf))
         end
     end

@@ -10,4 +10,5 @@ using TensorQEC, Test, Yao
     gate = rand_unitary(4)
     @test pauli_mapping(gate) == reshape(pauli_repr(gate), fill(4, 2*log2i(size(gate, 1)))...)
     @test to_perm_matrix(H) == to_perm_matrix(pauli_repr(H))
+    @test perm_of_pauligroup(P"XXX", (1, 2)=>CliffordGate(ConstGate.CNOT)) == PauliGroupElement(P"XIX")
 end

@@ -69,13 +69,12 @@ pm = CliffordGate(H)
 ````
 
 With the permutation matrix representation, we can efficienlly simulate a Clifford circuit.
-We first show how to apply a Clifford gate to a Pauli string by [`perm_of_paulistring`](@ref).
+We first show how to apply a Clifford gate to a Pauli string.
 Here we apply the Hadamard gate to the second qubit of Pauli string $I_1X_2$ and get $I_1Z_2$ with a phase $1$.
 
 ````@example clifford
 ps1 = P"IX"  # same as: PauliString(Pauli(0), Pauli(1))
-ps2, phase = perm_of_paulistring(ps1, (2,)=>pm)
-ps1, ps2, phase
+elem = pm(ps1, (2,))
 ````
 
 Put those all together, we can apply a Clifford circuit to a Pauli string by [`clifford_simulate`](@ref).
@@ -104,15 +103,15 @@ Here, we use [`yaoblock`](@ref) to convert the Pauli string to a Yao block.
 
 We can check the result by
 
-````@example clifford
+```@example clifford
 CircuitStyles.barrier_for_chain[] = false  # disable barrier
-res.phase * mat(clifford_simulation_circuit) ≈ mat(yaoblock(ps2))
-````
+mat(clifford_simulation_circuit) ≈ mat(yaoblock(ps2))
+```
 
-We can also visualize the history of Pauli strings by [`annotate_history`](@ref).
+We can also visualize the history of Pauli strings by `TensorQEC.annotate_history`.
 
 ````@example clifford
-annotate_history(res)
+TensorQEC.annotate_history(res)
 ````
 
 [^Bravyi2022]: Bravyi, S., Latone, J.A., Maslov, D., 2022. 6-qubit optimal Clifford circuits. npj Quantum Inf 8, 1–12. https://doi.org/10.1038/s41534-022-00583-7
