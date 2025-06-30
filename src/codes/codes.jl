@@ -417,3 +417,7 @@ function stabilizers(c::TriangularColorCode)
 	end
 	return pauli_string
 end
+
+function stabilizers(c::AbstractQECC)
+	parity_matrix(c)
+end

@@ -1,5 +1,6 @@
 using Test, TensorQEC, TensorQEC.Yao, TensorQEC.LinearAlgebra
 using Random
+using QECCore
 
 @testset "toric code" begin
 	t = ToricCode(2, 3)

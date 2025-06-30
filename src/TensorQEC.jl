@@ -1,5 +1,6 @@
 module TensorQEC
 
+using QECCore
 using TensorInference
 using TensorInference: Factor
 using Yao, Yao.YaoAPI
