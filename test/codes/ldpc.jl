@@ -70,12 +70,12 @@ end
     r34ldpc = random_ldpc(3,4,6)
 end
 
-@testset "mod2matrix_inverse" begin
+@testset "inv" begin
     H = Transpose(Matrix(Bool[1 0 0; 0 0 1; 0 1 0]'))
-    q = mod2matrix_inverse(H)
+    q = inv(H)
     @test q * H == Matrix{Bool}(I,3,3)
 
     H = Transpose(Matrix(Bool[1 1 1; 0 1 1; 0 0 1]'))
-    q = mod2matrix_inverse(H)
+    q = inv(H)
     @test q * H == Matrix{Bool}(I,3,3)
 end
