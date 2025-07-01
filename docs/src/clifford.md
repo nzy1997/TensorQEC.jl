@@ -95,9 +95,8 @@ That implies that $\mathrm{CNOT} = \frac{1}{2} (I \otimes I + I \otimes X + Z \o
 [`pauli_repr`](@ref) returns the matrix representation of a quantum gate in the Pauli basis. For Hadamard gate H, we know that $HIH = I, HXH = Z, HYH = -Y, HZH = X$. We can convert $H$ into the Pauli basis.
 
 ````@example clifford
-pauli_repr(H) 
+pauli_repr(H)
 ````
-
 
 ## Clifford Group
 Clifford group is the set of all permutations of Pauli group, i.e. the `pauli_repr` of its elements are "permutation matrices" with phases.
