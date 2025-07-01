@@ -2,7 +2,7 @@
 In this section, we introduce the definition of Pauli strings and basic operations on them. We also introduce the Clifford group and how to simulate a Clifford circuit applied on Pauli strings.
 
 ## Pauli Strings
-A pauli string is a tensor product of Pauli operators acting on different qubits. [`PauliString`](@ref) is a subtype of [`CompositeBlock`] with a field `ids` storing the Pauli operators. We can define pauli string with [`PauliString`](@ref) or [`@P_str`](@ref) string literal.
+A pauli string is a tensor product of Pauli operators acting on different qubits. [`PauliString`](@ref) is a subtype of `CompositeBlock` with a field `ids` storing the Pauli operators. We can define pauli string with [`PauliString`](@ref) or [`@P_str`](@ref) string literal.
 
 ```@example clifford
 using TensorQEC, TensorQEC.Yao
@@ -25,6 +25,53 @@ We can use `Yao.mat` to get the matrix representation of a Pauli string.
 mat(ComplexF64, P"XZ") # X_1Z_2
 ````
 
+## Pauli Group Element
+[`PauliGroupElement`](@ref) is a Pauli string with a phase factor. It is a subtype of `AbstractPauli`.
+
+````@example clifford
+PauliGroupElement(1, P"XZ") # +i * XZ
+````
+
+The product of two Pauli strings is a Pauli group element.
+
+````@example clifford
+P"XZ" * P"YI" # +i * ZZ
+````
+
+`iscommute` and [`isanticommute`](@ref) also work for Pauli group element.
+
+````@example clifford
+iscommute(P"XZ" * P"YI", PauliGroupElement(1, P"XZ"))
+isanticommute(P"XZ" * P"YI",PauliGroupElement(1, P"XZ"))
+````
+
+We can also use `Yao.mat` to get the matrix representation of a Pauli group element.
+
+````@example clifford
+mat(ComplexF64, PauliGroupElement(1, P"XZ"))
+````
+
+## Linear Combination of Pauli strings
+[`SumOfPaulis`](@ref) is a linear combination of Pauli strings, i.e. $c_1 P_1 + c_2 P_2 + \cdots + c_n P_n$. It is a subtype of `AbstractPauli`.
+
+````@example clifford
+sp = SumOfPaulis([0.6=>P"IXY", 0.8=>P"ZZY"])
+````
+
+The sum of two Pauli strings or two Pauli group elements is a [`SumOfPaulis`](@ref).
+
+````@example clifford
+P"IXY" + P"ZZY"
+PauliGroupElement(1, P"XZ") + PauliGroupElement(2, P"YI")
+````
+
+We can also use `Yao.mat` to get the matrix representation of a [`SumOfPaulis`](@ref).
+
+````@example clifford
+mat(ComplexF64, sp)
+````
+
+
 ## Pauli Basis
 [`pauli_basis`](@ref) generates all the Pauli strings of a given length. Those Pauli strings are stored in a high-dimensional array.
 
@@ -32,7 +79,7 @@ mat(ComplexF64, P"XZ") # X_1Z_2
 pauli_basis(2)
 ````
 
-[`pauli_decomposition`](@ref) returns the coefficients of a matrix in the Pauli basis.
+[`pauli_decomposition`](@ref) returns the coefficients of a matrix in the Pauli basis. The returned coefficients are stored in a [`SumOfPaulis`](@ref).
 
 ````@example clifford
 pauli_decomposition(ConstGate.CNOT)
@@ -48,8 +95,9 @@ That implies that $\mathrm{CNOT} = \frac{1}{2} (I \otimes I + I \otimes X + Z \o
 [`pauli_repr`](@ref) returns the matrix representation of a quantum gate in the Pauli basis. For Hadamard gate H, we know that $HIH = I, HXH = Z, HYH = -Y, HZH = X$. We can convert $H$ into the Pauli basis.
 
 ````@example clifford
-pauli_repr(H)
+pauli_repr(H) 
 ````
+
 
 ## Clifford Group
 Clifford group is the set of all permutations of Pauli group, i.e. the `pauli_repr` of its elements are "permutation matrices" with phases.
