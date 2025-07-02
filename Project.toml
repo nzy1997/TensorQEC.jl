@@ -21,6 +21,7 @@ TensorInference = "c2297e78-99bd-40ad-871d-f50e56b81012"
 Yao = "5872b779-8223-5990-8dd0-5abbb0748c8c"
 
 [compat]
+Aqua = "0.8"
 BitBasis = "0.9.10"
 Combinatorics = "1"
 DelimitedFiles = "1"
@@ -42,9 +43,10 @@ Yao = "0.9"
 julia = "1"
 
 [extras]
+Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Documenter", "Random", "Test"]
+test = ["Aqua", "Documenter", "Random", "Test"]

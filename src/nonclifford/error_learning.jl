@@ -12,7 +12,7 @@ function probability_tn(qc::ChainBlock, final_state::Vector{Complex{Float64}})
     return optnet
 end
 
-function Yao.depolarizing_channel(n::Int, p_vec::AbstractVector)
+function n_qubit_depolarizing_channel(n::Int, p_vec::AbstractVector)
     return UnitaryChannel(vec(yaoblock.(pauli_basis(n))),p_vec)
 end
 
