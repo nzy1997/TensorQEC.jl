@@ -1,10 +1,9 @@
-using TensorQEC, Test, Yao
+using TensorQEC, Test, Yao, BitBasis
 
 @testset "deprecate" begin
     @test PauliGroup(P"XX") isa PauliGroupElement
     @test densitymatrix2sumofpaulis(rand_density_matrix(2)) isa SumOfPaulis
     @test arrayreg2sumofpaulis(rand_state(2)) isa SumOfPaulis
-    @test PauliString(1, 2, 3) == PauliString((Pauli(0), Pauli(1), Pauli(2)))
     @test paulistring(2, 1, 2) == PauliString(2, 2 => Pauli(0))
     @test apply!(ArrayReg(bit"00"), PauliString(2, 2 => Pauli(0))) == ArrayReg(bit"00")
     gate = rand_unitary(4)

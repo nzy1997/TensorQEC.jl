@@ -10,7 +10,7 @@ using TensorQEC.Yao.YaoBlocks.Optimise
     ccj = ComplexConj(ConstGate.X)
     @test ccj isa ComplexConj
     @test apply!(product_state(bit"1"), ccj) ≈ apply!(product_state(bit"1"), ConstGate.X)
-    @test conj(ccj) == ConstGate.X
+    @test TensorQEC.conjugate(ccj) == ConstGate.X
     @test copy(ccj) == ccj
 
     qc = chain(2, put(2, 1 => X), put(2, 2 => ccj))
