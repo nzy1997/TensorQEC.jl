@@ -103,14 +103,19 @@ function compile(decoder::TNMMAP, problem::IndependentDepolarizingDecodingProble
     return CompiledTNMMAP(mmap, tanner, lx, lz)
 end
 
-function decode(ct::CompiledTNMMAP, syndrome::CSSSyndrome)
-    qubit_num = nq(ct.tanner)
+function update_syndrome!(mmap::MMAPModel, syndrome::CSSSyndrome, qubit_num::Int)
     for (i,s) in enumerate(syndrome.sx)
-        ct.mmap.evidence[i+2*qubit_num] = s.x ? 1 : 0
+        mmap.evidence[i+2*qubit_num] = s.x ? 1 : 0
     end
     for (i,s) in enumerate(syndrome.sz)
-        ct.mmap.evidence[i+2*qubit_num+length(syndrome.sx)] = s.x ? 1 : 0
+        mmap.evidence[i+2*qubit_num+length(syndrome.sx)] = s.x ? 1 : 0
     end
+    return mmap
+end
+
+function decode(ct::CompiledTNMMAP, syndrome::CSSSyndrome)
+    qubit_num = nq(ct.tanner)
+    update_syndrome!(ct.mmap, syndrome, qubit_num)
     _, config = most_probable_config(ct.mmap)
     ex,ez = _mixed_integer_programming_for_one_solution(ct.tanner, syndrome)
     for i in axes(ct.lx,1)
