@@ -62,7 +62,7 @@ export coherent_error_unitary, error_quantum_circuit, toput, error_pairs, fideli
 
 # ldpc
 export SimpleTannerGraph, syndrome_extraction, product_graph, CSSTannerGraph, plot_graph, dual_graph, get_graph, belief_propagation, random_ldpc, check_linear_indepent
-export tensor_infer, osd, mod2matrix_inverse, bp_osd, tensor_osd, check_logical_error
+export tensor_infer, osd, bp_osd, tensor_osd, check_logical_error
 
 # tableaux
 export Tableau, new_tableau, tableau_simulate

@@ -101,14 +101,14 @@ function gaussian_elimination!(bimat::CSSBimatrix)
 	return bimat
 end
 
-function mod2matrix_inverse(H::Transpose{Bool, Matrix{Bool}})
+function Base.inv(H::Transpose{Bool, Matrix{Bool}})
     bm = SimpleBimatrix(Transpose(copy(H.parent)), Transpose(Matrix{Mod2}(I, size(H,1), size(H,1))), collect(1:size(H,2)))
     gaussian_elimination!(bm, 1:size(bm.matrix,1), 0, 0;allow_col_operation = false)
     return bm.Q
 end
 
-function mod2matrix_inverse(H::Matrix{Mod2})
-    return mod2matrix_inverse(Transpose([a.x for a in Transpose(H)]))
+function Base.inv(H::Matrix{Mod2})
+    return inv(Transpose([a.x for a in Transpose(H)]))
 end
 
 function _check_linear_indepent(H::Transpose{Bool, Matrix{Bool}})
