@@ -58,7 +58,7 @@ function SimpleTannerGraph(H::Matrix{Mod2})
 end
 
 """
-    CSSCSSTannerGraph(stgx::SimpleTannerGraph, stgz::SimpleTannerGraph)
+    CSSTannerGraph(stgx::SimpleTannerGraph, stgz::SimpleTannerGraph)
     CSSTannerGraph(nq::Int, stxs::Vector{Vector{Int}}, stzs::Vector{Vector{Int}})
     CSSTannerGraph(sts::Vector{PauliString{N}}) where N
     CSSTannerGraph(cqc::CSSQuantumCode)
