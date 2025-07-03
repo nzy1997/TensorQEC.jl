@@ -38,7 +38,7 @@ To use the decoder, we need to compile it first.
 ```@example tndecoder
 compiled_decoder = compile(decoder, tanner, error_model);
 ```
-At this time we generate the tensor network for the code and the error model, as shown in the following figure.
+At this time we generate the tensor network[^Piveteau] for the code and the error model, as shown in the following figure.
 ![](./images/tensornetwork.svg)
 
 The squares represent tensors, and the circles represent the indices of the tensors. All indices are of dimension 2. We use 7 indices to represent $X$ errors on qubits, and 7 indices to represent $Z$ errors on qubits. On each qubit, the distribution of this two types of errors is correlated. The green squares represent this correlation.
@@ -50,7 +50,7 @@ The gray circles represent the syndrome and the brown circles represent the logi
 Now we can update the syndrome into our tensor network.
 
 ```@example tndecoder
-uai = TensorQEC.update_syndrome!(compiled_decoder.mmap, syndrome, 7)
+mmap = TensorQEC.update_syndrome!(compiled_decoder.mmap, syndrome, 7)
 ```
 
 Now we can decode the syndrome:
@@ -78,8 +78,14 @@ check_logical_error(result.error_qubits, error_pattern, lx, lz)
 Here `false` means no logical error, and `true` means there is a logical error.
 
 
-
-
 ## Maximum A Posteriori (MAP) Decoder
 
-[`TNMAP`](@ref) is a tensor network based maximum a posteriori (MAP) decoder, which finds the most probable configuration of the error pattern.
+[`TNMAP`](@ref) is a tensor network based maximum a posteriori (MAP) decoder, which finds the most probable configuration of the error pattern. The decoding process is similar to the MMAP decoder.
+
+```@example tndecoder
+compiled_decoder = compile(TNMAP(), tanner, error_model);
+decode(compiled_decoder, syndrome)
+```
+
+
+[^Piveteau]: Piveteau, C.; Chubb, C. T.; Renes, J. M. Tensor Network Decoding Beyond 2D. PRX Quantum 2024, 5 (4), 040303. https://doi.org/10.1103/PRXQuantum.5.040303.
