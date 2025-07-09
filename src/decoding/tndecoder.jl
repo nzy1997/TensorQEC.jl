@@ -65,11 +65,15 @@ Base.@kwdef struct TNMMAP <: AbstractGeneralDecoder
     optimizer::CodeOptimizer = TreeSA()  # contraction order optimizer
 end
 
-struct CompiledTNMMAP{LT, AT} <: CompiledDecoder
-    mmap::MMAPModel{LT, AT}   # The tensor network model
+struct CompiledTNMMAP{CT, AT} <: CompiledDecoder
     tanner::CSSTannerGraph
     lx::Matrix{Mod2}
     lz::Matrix{Mod2}
+    optcode::CT
+    tensors::Vector{AT}
+    syndrome_indices::Vector{Int}
+    zero_tensor::AT
+    one_tensor::AT
 end
 
 # nvars is the number of variables in the tensor network. 
@@ -83,44 +87,70 @@ function compile(decoder::TNMMAP, problem::IndependentDepolarizingDecodingProble
     lzs = [findall(j->j.x,lz[i,:]) for i in axes(lz, 1)]
 
     nvars = 2 * qubit_num + ns(tanner) + size(lx,1) + size(lz,1)
-    # mars = [[i for i in 2 * qubit_num + ns(tanner)+1:nvars]]
-    cards = fill(2, nvars)
 
-    xfactors = [Factor(((c.+ qubit_num)...,i + 2 * qubit_num),parity_check_matrix(length(c))) for (i,c) in enumerate(tanner.stgx.s2q)]
-    zfactors = [Factor((c...,i + 2 * qubit_num + ns(tanner.stgx)),parity_check_matrix(length(c))) for (i,c) in enumerate(tanner.stgz.s2q)]
+    ixs = Vector{Vector{Int64}}()
+    tensors = Vector{Array{Float64}}()
+    for (i,c) in enumerate(tanner.stgx.s2q)
+        push!(ixs, [(c.+ qubit_num)...,i + 2 * qubit_num])
+        push!(tensors, parity_check_matrix(length(c)))
+    end
 
-    pfac = [Factor((i,i+qubit_num),[1-px-py-pz pz;px py]) for (i,(px,py,pz)) in enumerate(zip(problem.pvec.px,problem.pvec.py,problem.pvec.pz))]
-    
-    logicalx_checked_by_lz = [Factor((ilz...,i+2 * qubit_num + ns(tanner) + size(lz,1)),parity_check_matrix(length(ilz))) for (i,ilz) in enumerate(lzs)]
+    for (i,c) in enumerate(tanner.stgz.s2q)
+        push!(ixs, [c...,i + 2 * qubit_num + ns(tanner.stgx)])
+        push!(tensors, parity_check_matrix(length(c)))
+    end
 
-    logicalz_checked_by_lx = [Factor(((ilx.+ qubit_num)...,i+2 * qubit_num + ns(tanner)),parity_check_matrix(length(ilx))) for (i,ilx) in enumerate(lxs)]
-    factors = vcat(xfactors,zfactors,pfac,logicalx_checked_by_lz,logicalz_checked_by_lx)
+    for (i,(px,py,pz)) in enumerate(zip(problem.pvec.px,problem.pvec.py,problem.pvec.pz))
+        push!(ixs, [i,i+qubit_num])
+        push!(tensors, [1-px-py-pz pz;px py])
+    end
 
-    uai = UAIModel(nvars, cards, factors)
+    for (i,ilz) in enumerate(lzs)
+        push!(ixs, [ilz...,i + 2 * qubit_num + ns(tanner)+ size(lz,1)])
+        push!(tensors, parity_check_matrix(length(ilz)))
+    end
 
-    mmap = MMAPModel(uai; evidence = Dict([i+2*qubit_num => 0 for i in 1:ns(tanner)]) , queryvars = [i for i in 2 * qubit_num + ns(tanner)+1:nvars],optimizer = decoder.optimizer)
+    for (i,ilx) in enumerate(lxs)
+        push!(ixs, [(ilx.+ qubit_num)...,i + 2 * qubit_num + ns(tanner)])
+        push!(tensors, parity_check_matrix(length(ilx)))
+    end
 
-    return CompiledTNMMAP(mmap, tanner, lx, lz)
+    syndrome_indices = collect(2*qubit_num+1:2*qubit_num+ns(tanner))
+    iy = collect(2 * qubit_num + ns(tanner) +1:nvars)
+   
+    zero_tensor = [1.0, 0.0]
+    one_tensor = [0.0, 1.0]
+
+    for v in syndrome_indices
+        push!(ixs, [v])
+        push!(tensors, zero_tensor)
+    end
+    code = DynamicEinCode(ixs,iy)
+    size_dict = uniformsize(code, 2)
+    optcode = optimize_code(code, size_dict, decoder.optimizer)
+    return CompiledTNMMAP(tanner, lx, lz, optcode, tensors, syndrome_indices, zero_tensor, one_tensor)
 end
 
-function update_syndrome!(mmap::MMAPModel, syndrome::CSSSyndrome, qubit_num::Int)
+function update_syndrome!(tensors::Vector{AT}, syndrome::CSSSyndrome, zero_tensor::AT,one_tensor::AT) where AT
+    num_sx = length(syndrome.sx)
+    num_sz = length(syndrome.sz)
     for (i,s) in enumerate(syndrome.sx)
-        mmap.evidence[i+2*qubit_num] = s.x ? 1 : 0
+        tensors[end-num_sx-num_sz+i] = s.x ? one_tensor : zero_tensor
     end
     for (i,s) in enumerate(syndrome.sz)
-        mmap.evidence[i+2*qubit_num+length(syndrome.sx)] = s.x ? 1 : 0
+        tensors[end-num_sz+i] = s.x ? one_tensor : zero_tensor
     end
-    return mmap
+    return tensors
 end
 
 function decode(ct::CompiledTNMMAP, syndrome::CSSSyndrome)
-    qubit_num = nq(ct.tanner)
-    update_syndrome!(ct.mmap, syndrome, qubit_num)
-    _, config = most_probable_config(ct.mmap)
+    update_syndrome!(ct.tensors, syndrome, ct.zero_tensor, ct.one_tensor)
+    mar = ct.optcode(ct.tensors...)
     ex,ez = _mixed_integer_programming_for_one_solution(ct.tanner, syndrome)
+    _, pos = findmax(mar)
     for i in axes(ct.lx,1)
-        (sum(ct.lz[i,:].* ex).x == (config[ns(ct.tanner)+i+size(ct.lx,1)]  == 1)) || (ex += ct.lx[i,:])
-        (sum(ct.lx[i,:].* ez).x == (config[ns(ct.tanner)+i] == 1)) || (ez += ct.lz[i,:])
+        (sum(ct.lz[i,:].* ex).x == (pos.I[i+size(ct.lx,1)] == 2)) || (ex += ct.lx[i,:])
+        (sum(ct.lx[i,:].* ez).x == (pos.I[i] == 2)) || (ez += ct.lz[i,:])
     end
     return DecodingResult(true, CSSErrorPattern(ex,ez))
 end

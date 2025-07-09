@@ -95,3 +95,14 @@ end
     lx,lz = logical_operator(tanner)
     @test !check_logical_error(res.error_qubits, eq, lx, lz)
 end
+
+@testset "TNMMAP decoder marginal probability" begin
+    d = 3
+    tanner = CSSTannerGraph(SurfaceCode(d,d))
+    error_qubits = Mod2[1, 0, 0, 0, 0, 0, 0, 0, 0]
+    syd = syndrome_extraction(error_qubits, tanner.stgz)
+    lx,lz = logical_operator(tanner)
+    p_vector = fill(0.1, d*d)
+    ct = compile(TNMMAP(), tanner, IndependentDepolarizingError(p_vector,fill(0.0,d*d),fill(0.0,d*d)))
+    @test ct.optcode(ct.tensors...) ≈ [0.3972875040000002 0.004284496000000001; 0.0 0.0] atol=1e-10
+end
