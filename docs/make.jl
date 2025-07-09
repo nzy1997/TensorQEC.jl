@@ -35,6 +35,7 @@ makedocs(;
                 "Error Model and Syndrome Extraction" => "generated/error_model.md",
                 "Decoder Interface" => "generated/decoder.md",
                 "Mixed-Integer Programming Decoder" => "generated/ipdecoder.md",
+                "Tensor Network Decoder" => "tndecoder.md",
             ],
             "Performance Tips" => "performancetips.md",
         ],
