@@ -20,3 +20,12 @@ using TensorQEC, Test
     @test one(a) == Mod2(true)
     @test iszero(a) == true
 end
+
+@testset "bitmul!" begin
+    A = Mod2.(rand(Bool, 1000, 1000))
+    B = Mod2.(rand(Bool, 1000, 1000))
+    C = Mod2.(zeros(Bool, 1000, 1000))
+    res1 = TensorQEC.bitmul!(C, A, B)
+    res2 = A * B
+    @test res1 == res2
+end

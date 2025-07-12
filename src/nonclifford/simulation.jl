@@ -4,19 +4,19 @@ end
 ComplexConj(x::BT) where {D,BT<:AbstractBlock{D}} = ComplexConj{BT,D}(x)
 Yao.mat(::Type{T}, blk::ComplexConj) where {T} = conj(mat(T, content(blk)))
 
-Base.conj(x::Union{XGate, ZGate,HGate}) = x
-Base.conj(x::AbstractBlock) = ComplexConj(x)
-Base.conj(x::ComplexConj) = content(x)
+conjugate(x::Union{XGate, ZGate,HGate}) = x
+conjugate(x::AbstractBlock) = ComplexConj(x)
+conjugate(x::ComplexConj) = content(x)
 Base.copy(x::ComplexConj) = ComplexConj(copy(content(x)))
 YaoBlocks.chsubblocks(blk::ComplexConj, target::AbstractBlock) = ComplexConj(target)
 
-Base.conj(blk::ChainBlock{D}) where {D} =
-    ChainBlock(blk.n, AbstractBlock{D}[conj(b) for b in subblocks(blk)])
-Base.conj(x::PutBlock) = PutBlock(nqudits(x), conj(content(x)), x.locs)
+conjugate(blk::ChainBlock{D}) where {D} =
+    ChainBlock(blk.n, AbstractBlock{D}[conjugate(b) for b in subblocks(blk)])
+    conjugate(x::PutBlock) = PutBlock(nqudits(x), conjugate(content(x)), x.locs)
 
-Base.conj(blk::ControlBlock) =
-    ControlBlock(blk.n, blk.ctrl_locs, blk.ctrl_config, conj(blk.content), blk.locs)
-Base.conj(blk::GeneralMatrixBlock)= matblock(conj(blk.mat))
+conjugate(blk::ControlBlock) =
+    ControlBlock(blk.n, blk.ctrl_locs, blk.ctrl_config, conjugate(blk.content), blk.locs)
+conjugate(blk::GeneralMatrixBlock)= matblock(conj(blk.mat))
 function YaoBlocks.map_address(blk::ComplexConj, info::AddressInfo)
     ComplexConj(YaoBlocks.map_address(content(blk), info))
 end
@@ -98,7 +98,7 @@ function dm_circ!(qcf::ChainBlock, qc::ChainBlock)
     num_qubits = nqubits(qc)
     @assert 2 * num_qubits == nqubits(qcf)
     push!(qcf,subroutine(2*num_qubits, qc, 1:num_qubits))
-    push!(qcf,subroutine(2*num_qubits, conj(qc), num_qubits+1:2*num_qubits))
+    push!(qcf,subroutine(2*num_qubits, conjugate(qc), num_qubits+1:2*num_qubits))
     return qcf
 end
 

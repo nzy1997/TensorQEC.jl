@@ -1,6 +1,6 @@
 using Test
 using TensorQEC
-using TensorQEC: qc_probability, TrainingChannel, probability_tn_channel, channel2mat, channel2tensor, probability_channel, get_grad,generate_new_tensor,loss_function
+using TensorQEC: qc_probability, TrainingChannel, probability_tn_channel, channel2mat, channel2tensor, probability_channel, get_grad,generate_new_tensor,loss_function, n_qubit_depolarizing_channel
 using TensorQEC.Yao
 using TensorQEC.OMEinsum
 using Random
@@ -32,7 +32,7 @@ end
 end
 
 @testset "probability_tn_channel" begin
-    unitary_channel = depolarizing_channel(2, fill(1 / 16, 16))
+    unitary_channel = n_qubit_depolarizing_channel(2, fill(1 / 16, 16))
     qc = chain(put(2, (1, 2) => unitary_channel))
 
     reg = rand_state(2)
@@ -41,7 +41,7 @@ end
 
 @testset "generate_new_tensor" begin
     p2 = 0.02
-    unitary_channel2 = depolarizing_channel(2, [1 - 15 * p2, fill(p2, 15)...])
+    unitary_channel2 = n_qubit_depolarizing_channel(2, [1 - 15 * p2, fill(p2, 15)...])
 
     Random.seed!(1234)
     umat = rand_unitary(4)
@@ -51,14 +51,14 @@ end
     p3 = 0.01
     new_t = generate_new_tensor(optnet.tensors,p_pos,ComplexF64[0, 1, 0, 0],[[1 - 15 * p3, fill(p3, 15)...]])
 
-    unitary_channel2 = depolarizing_channel(2, [1 - 15 * p3, fill(p3, 15)...])
+    unitary_channel2 = n_qubit_depolarizing_channel(2, [1 - 15 * p3, fill(p3, 15)...])
     qc = chain(put(2, (1, 2) => matblock(umat)), put(2, (1, 2) => unitary_channel2))
     @test probability_channel(qc, ComplexF64[0, 1, 0, 0]) ≈  optnet.code(new_t...)[]
 end 
 
 @testset "error_learning" begin
     p2 = fill(0.02,15)
-    unitary_channel2 = depolarizing_channel(2, [1 - sum(p2), p2...])
+    unitary_channel2 = n_qubit_depolarizing_channel(2, [1 - sum(p2), p2...])
 
     Random.seed!(1234)
     umat = rand_unitary(4)
@@ -81,7 +81,7 @@ end
 
 @testset "error_learning" begin
     p2 = fill(0.1,3)
-    unitary_channel1 = depolarizing_channel(1, [1 - sum(p2), p2...])
+    unitary_channel1 = n_qubit_depolarizing_channel(1, [1 - sum(p2), p2...])
 
     Random.seed!(1234)
     umat = rand_unitary(4)
@@ -104,7 +104,7 @@ end
 
 @testset "get_grad" begin
     p2 = 0.02
-    unitary_channel2 = depolarizing_channel(2, [1 - 15 * p2, fill(p2, 15)...])
+    unitary_channel2 = n_qubit_depolarizing_channel(2, [1 - 15 * p2, fill(p2, 15)...])
 
     Random.seed!(1234)
     umat = rand_unitary(4)

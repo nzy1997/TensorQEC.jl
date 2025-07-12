@@ -19,6 +19,8 @@ julia> Mod2(true) + Mod2(true)
 """
 struct Mod2 <: Number
     x::Bool
+    Mod2(x::Bool) = new(x)
+    Mod2(x::Int) = new(Bool(x))
 end
 
 # display
@@ -37,3 +39,34 @@ Base.conj(x::Mod2) = x
 
 # conversion
 Base.Int64(x::Mod2) = x.x ? 1 : 0
+
+# using bit storage to speed up the matrix multiplication
+function bitmul!(C::AbstractMatrix{Mod2}, A::AbstractMatrix{Mod2}, B::AbstractMatrix{Mod2})
+    ca = compresscol(A')
+    cb = compresscol(B)
+    @inbounds for j in axes(C, 2)
+        for i in axes(C, 1)
+            n = 0
+            for k in axes(ca, 1)
+                n += count_ones(ca[k, i] & cb[k, j])
+            end
+            C[i, j] = Mod2(isodd(n))
+        end
+    end
+    return C
+end
+function compresscol(A::AbstractMatrix{Mod2})
+    m = ceil(Int, size(A, 1) / 64)
+    ca = zeros(UInt64, m, size(A, 2))
+    for j = axes(A, 2)
+        for idx = 1:m
+            entry = UInt64(0)
+            for k = 0:63
+                i = (idx - 1) * 64 + k + 1
+                i <= size(A, 1) && A[i, j].x && (entry += UInt(1) << k)
+            end
+            ca[idx, j] = entry
+        end
+    end
+    return ca
+end

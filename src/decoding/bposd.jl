@@ -80,7 +80,7 @@ function osd(tanner::SimpleTannerGraph,order::Vector{Int},syndrome::Vector{Mod2}
     hinv = 0
     qubit_list = [order[1]]
     for i in 1:length(order)
-        if check_linear_indepent(Matrix([H  tanner.H[:,order[i:i]]]'))
+        if check_linear_indepent(Transpose([H  tanner.H[:,order[i:i]]]))
             H = [H  tanner.H[:,order[i:i]]]
             push!(qubit_list,order[i])
         end
@@ -89,7 +89,7 @@ function osd(tanner::SimpleTannerGraph,order::Vector{Int},syndrome::Vector{Mod2}
         end
     end
 
-    hinv = mod2matrix_inverse(H)
+    hinv = inv(H)
 
     error = hinv * syndrome
     return [(i ∈ qubit_list) ? (error[findfirst(==(i),qubit_list)]) : Mod2(0)  for i in 1:tanner.nq]

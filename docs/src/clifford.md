@@ -2,7 +2,7 @@
 In this section, we introduce the definition of Pauli strings and basic operations on them. We also introduce the Clifford group and how to simulate a Clifford circuit applied on Pauli strings.
 
 ## Pauli Strings
-A pauli string is a tensor product of Pauli operators acting on different qubits. [`PauliString`](@ref) is a subtype of [`CompositeBlock`] with a field `ids` storing the Pauli operators. We can define pauli string with [`PauliString`](@ref) or [`@P_str`](@ref) string literal.
+A pauli string is a tensor product of Pauli operators acting on different qubits. [`PauliString`](@ref) is a subtype of `CompositeBlock` with a field `ids` storing the Pauli operators. We can define pauli string with [`PauliString`](@ref) or [`@P_str`](@ref) string literal.
 
 ```@example clifford
 using TensorQEC, TensorQEC.Yao
@@ -25,6 +25,53 @@ We can use `Yao.mat` to get the matrix representation of a Pauli string.
 mat(ComplexF64, P"XZ") # X_1Z_2
 ````
 
+## Pauli Group Element
+[`PauliGroupElement`](@ref) is a Pauli string with a phase factor. It is a subtype of `AbstractPauli`.
+
+````@example clifford
+PauliGroupElement(1, P"XZ") # +i * XZ
+````
+
+The product of two Pauli strings is a Pauli group element.
+
+````@example clifford
+P"XZ" * P"YI" # +i * ZZ
+````
+
+`iscommute` and [`isanticommute`](@ref) also work for Pauli group element.
+
+````@example clifford
+iscommute(P"XZ" * P"YI", PauliGroupElement(1, P"XZ"))
+isanticommute(P"XZ" * P"YI",PauliGroupElement(1, P"XZ"))
+````
+
+We can also use `Yao.mat` to get the matrix representation of a Pauli group element.
+
+````@example clifford
+mat(ComplexF64, PauliGroupElement(1, P"XZ"))
+````
+
+## Linear Combination of Pauli strings
+[`SumOfPaulis`](@ref) is a linear combination of Pauli strings, i.e. $c_1 P_1 + c_2 P_2 + \cdots + c_n P_n$. It is a subtype of `AbstractPauli`.
+
+````@example clifford
+sp = SumOfPaulis([0.6=>P"IXY", 0.8=>P"ZZY"])
+````
+
+The sum of two Pauli strings or two Pauli group elements is a [`SumOfPaulis`](@ref).
+
+````@example clifford
+P"IXY" + P"ZZY"
+PauliGroupElement(1, P"XZ") + PauliGroupElement(2, P"YI")
+````
+
+We can also use `Yao.mat` to get the matrix representation of a [`SumOfPaulis`](@ref).
+
+````@example clifford
+mat(ComplexF64, sp)
+````
+
+
 ## Pauli Basis
 [`pauli_basis`](@ref) generates all the Pauli strings of a given length. Those Pauli strings are stored in a high-dimensional array.
 
@@ -32,7 +79,7 @@ mat(ComplexF64, P"XZ") # X_1Z_2
 pauli_basis(2)
 ````
 
-[`pauli_decomposition`](@ref) returns the coefficients of a matrix in the Pauli basis.
+[`pauli_decomposition`](@ref) returns the coefficients of a matrix in the Pauli basis. The returned coefficients are stored in a [`SumOfPaulis`](@ref).
 
 ````@example clifford
 pauli_decomposition(ConstGate.CNOT)
@@ -69,13 +116,12 @@ pm = CliffordGate(H)
 ````
 
 With the permutation matrix representation, we can efficienlly simulate a Clifford circuit.
-We first show how to apply a Clifford gate to a Pauli string by [`perm_of_paulistring`](@ref).
+We first show how to apply a Clifford gate to a Pauli string.
 Here we apply the Hadamard gate to the second qubit of Pauli string $I_1X_2$ and get $I_1Z_2$ with a phase $1$.
 
 ````@example clifford
 ps1 = P"IX"  # same as: PauliString(Pauli(0), Pauli(1))
-ps2, phase = perm_of_paulistring(ps1, (2,)=>pm)
-ps1, ps2, phase
+elem = pm(ps1, (2,))
 ````
 
 Put those all together, we can apply a Clifford circuit to a Pauli string by [`clifford_simulate`](@ref).
@@ -104,15 +150,15 @@ Here, we use [`yaoblock`](@ref) to convert the Pauli string to a Yao block.
 
 We can check the result by
 
-````@example clifford
+```@example clifford
 CircuitStyles.barrier_for_chain[] = false  # disable barrier
-res.phase * mat(clifford_simulation_circuit) ≈ mat(yaoblock(ps2))
-````
+mat(clifford_simulation_circuit) ≈ mat(yaoblock(ps2))
+```
 
-We can also visualize the history of Pauli strings by [`annotate_history`](@ref).
+We can also visualize the history of Pauli strings by `TensorQEC.annotate_history`.
 
 ````@example clifford
-annotate_history(res)
+TensorQEC.annotate_history(res)
 ````
 
 [^Bravyi2022]: Bravyi, S., Latone, J.A., Maslov, D., 2022. 6-qubit optimal Clifford circuits. npj Quantum Inf 8, 1–12. https://doi.org/10.1038/s41534-022-00583-7
