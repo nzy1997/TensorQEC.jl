@@ -23,7 +23,7 @@ end
 @testset "probability_tn_channel" begin
     Random.seed!(1234)
     umat = rand_unitary(4)
-    unitary_channel = UnitaryChannel([matblock(umat), kron(X, X)], [1, 0])
+    unitary_channel = MixedUnitaryChannel([matblock(umat), kron(X, X)], [1, 0])
     qc = chain(put(3, 1 => H), put(3, 2 => H), control(3, 2, 3 => H), put(3, 1 => X), control(3, 1, 2 => Z), put(3, (1, 2) => unitary_channel))
 
     qc2 = chain(put(3, 1 => H), put(3, 2 => H), control(3, 2, 3 => H), put(3, 1 => X), control(3, 1, 2 => Z), put(3, (1, 2) => matblock(umat)))

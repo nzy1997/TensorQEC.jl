@@ -28,14 +28,14 @@ end
 
 @testset "tensor network mapping - 1 gate" begin
 	# create a circuit and convert it to the pauli basis
-	yaoqc = chain(cnot(2, 1, 2), put(1=>T), put(2=>H), put(2=>rand_unitary(2)), cnot(2, 1, 2))
+	yaoqc = chain(cnot(2, 1, 2), put(1=>T), put(2=>H), put(2=>matblock(rand_unitary(2))), cnot(2, 1, 2))
 	yaopauli = reshape(pauli_repr(mat(ComplexF64, yaoqc)), 4, 4, 4, 4)
 
 	# tensor network mapping of a quantum circuit
 	for ci in CartesianIndices((fill(4, 2)...,))
 		ps = [Yao.BitBasis._onehot(Float64, 4, ci.I[i]) for i in 1:2]
 		tn = TensorQEC.simple_circuit2tensornetworks(yaoqc, ps)
-        @test tn.nvars == 6
+        @test tn.nvars == 9
 		p1 = probability(tn)
 		p2 = yaopauli[ci.I..., :, :]
 		@test p1 ≈ p2
