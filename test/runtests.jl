@@ -2,6 +2,10 @@ using TensorQEC
 using Test
 using Documenter
 
+@testset "aqua" begin
+    include("aqua.jl")
+end
+
 @testset "mod2" begin
     include("codes/mod2.jl")
 end

@@ -12,13 +12,13 @@ function probability_tn(qc::ChainBlock, final_state::Vector{Complex{Float64}})
     return optnet
 end
 
-function Yao.depolarizing_channel(n::Int, p_vec::AbstractVector)
-    return UnitaryChannel(vec(yaoblock.(pauli_basis(n))),p_vec)
+function n_qubit_depolarizing_channel(n::Int, p_vec::AbstractVector)
+    return MixedUnitaryChannel(vec(yaoblock.(pauli_basis(n))),p_vec)
 end
 
 mutable struct TrainingChannel{D} <: AbstractRecoder{D}
     symbol::Int
-    uc::UnitaryChannel
+    uc::MixedUnitaryChannel
     input_indices
     output_indices
     tensor_pos
@@ -80,7 +80,7 @@ function probability_tn_channel(qc::ChainBlock, final_state::Vector{Complex{Floa
     channel_count = 0
     tc = Vector{TrainingChannel}()
     for gate in qc
-        if gate.content isa UnitaryChannel
+        if gate.content isa MixedUnitaryChannel
             channel_count += 1
             push!(tc, TrainingChannel(nqubits(gate.content),gate.content))
             push!(qc2, PutBlock(number_qubits, tc[channel_count],gate.locs))
@@ -99,11 +99,11 @@ function probability_tn_channel(qc::ChainBlock, final_state::Vector{Complex{Floa
     return optnet,getfield.(tc,:tensor_pos)
 end
 
-function channel2mat(uc::UnitaryChannel)
+function channel2mat(uc::MixedUnitaryChannel)
     return mat(sum([uc.probs[x]*kron(uc.operators[x],uc.operators[x]') for x in 1:length(uc.probs)]))
 end
 
-function channel2tensor(uc::UnitaryChannel)
+function channel2tensor(uc::MixedUnitaryChannel)
     k = 2*uc.n
     return cat([reshape(mat(x),(fill(2,k)...,1)) for x in uc.operators]...;dims = k+1),cat([reshape(mat(x'),(fill(2,k)...,1)) for x in uc.operators]...;dims = k+1),ComplexF64.(uc.probs)
 end

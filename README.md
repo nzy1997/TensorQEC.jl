@@ -30,6 +30,9 @@ pkg> add TensorQEC
 
 To update, just type `up` in the package mode.
 
+## Benchmark
+Repository [DecoderBenchmarks.jl](https://github.com/nzy1997/DecoderBenchmarks.jl) is set up to compare the performance of different decoders in different packages.
+
 ## Contribute
 
 Suggestions and Comments in the [_Issues_](https://github.com/nzy1997/TensorQEC.jl/issues) are welcome.

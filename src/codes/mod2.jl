@@ -19,6 +19,8 @@ julia> Mod2(true) + Mod2(true)
 """
 struct Mod2 <: Number
     x::Bool
+    Mod2(x::Bool) = new(x)
+    Mod2(x::Int) = new(Bool(x))
 end
 
 # display
