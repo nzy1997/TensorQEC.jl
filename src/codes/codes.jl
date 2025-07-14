@@ -418,6 +418,19 @@ function stabilizers(c::TriangularColorCode)
 	return pauli_string
 end
 
+# codes from QECCore
 function stabilizers(c::AbstractQECC)
-	parity_matrix(c)
+	pm = parity_matrix(c)
+	nq = size(pm, 2) ÷ 2
+	pauli_string = PauliString{nq}[]
+
+	for i in axes(pm, 1)
+		xs = findall(pm[i,1:nq])
+		zs = findall(pm[i,nq+1:end])
+		ys = xs ∩ zs
+		xs = setdiff(xs, ys)
+		zs = setdiff(zs, ys)
+		push!(pauli_string, PauliString(nq, xs => Pauli(1), ys => Pauli(2), zs => Pauli(3)))
+	end
+	return pauli_string
 end
