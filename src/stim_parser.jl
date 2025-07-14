@@ -1,3 +1,8 @@
+function parse_stim_file(file_path::String, qubit_number::Int)
+    content = read(file_path, String)
+    return parse_stim_string(content, qubit_number)
+end
+
 function parse_stim_string(content::String, qubit_number::Int)
     lines = split(content, '\n')
     qc = chain(qubit_number)
@@ -35,12 +40,21 @@ function parse_stim_string(content::String, qubit_number::Int)
             repeat_count = parse(Int, parts[2])
             @show repeat_count
             
-            # Find the block content
-            block_lines = String[]
-            i += 1  # Move to next line
-            brace_count = 0
+            # Check if the opening brace is on the same line
+            if endswith(line, "{")
+                # Brace is on the same line, start collecting from next line
+                block_content = String[]
+                i += 1  # Move to next line
+                brace_count = 1
+            else
+                # Brace should be on the next line
+                block_content = String[]
+                i += 1  # Move to next line
+                brace_count = 0
+            end
             
             while i <= length(lines)
+                @show i
                 block_line = strip(lines[i])
                 
                 if startswith(block_line, "#") || isempty(block_line)
@@ -66,132 +80,22 @@ function parse_stim_string(content::String, qubit_number::Int)
                 end
                 
                 if brace_count > 0
-                    push!(block_lines, block_line)
+                    push!(block_content, block_line)
                 end
                 
                 i += 1
             end
+            @show block_content
+            # Convert block content back to string for recursive parsing
+            block_str = join(block_content, "\n")
             
-            # Apply the block instructions repeat_count times
+
+            block_circuit = parse_stim_string(block_str, qubit_number)
             for _ in 1:repeat_count
-                for block_line in block_lines
-                    if isempty(block_line)
-                        continue
-                    end
-                    
-                    # Parse block instruction
-                    block_parts = split(block_line)
-                    if isempty(block_parts)
-                        continue
-                    end
-                    
-                    block_instruction_name = uppercase(block_parts[1])
-                    
-                    # Extract targets (skip instruction name)
-                    block_targets = block_parts[2:end]
-                    
-                    # Parse arguments if present
-                    block_arguments = Float64[]
-                    block_target_start = 2
-                    
-                    # Check if there are arguments in parentheses
-                    if length(block_parts) > 1 && startswith(block_parts[2], "(")
-                        # Find the closing parenthesis
-                        arg_parts = String[]
-                        paren_count = 0
-                        j = 2
-                        
-                        while j <= length(block_parts)
-                            part = block_parts[j]
-                            
-                            if startswith(part, "(")
-                                paren_count += 1
-                            end
-                            
-                            if endswith(part, ")")
-                                paren_count -= 1
-                                # Remove closing parenthesis
-                                if paren_count == 0
-                                    part = part[1:end-1]
-                                    if !isempty(part)
-                                        push!(arg_parts, part)
-                                    end
-                                    break
-                                end
-                            end
-                            
-                            push!(arg_parts, part)
-                            j += 1
-                        end
-                        
-                        # Parse arguments
-                        for part in arg_parts
-                            for arg_str in split(part, ",")
-                                arg_str = strip(arg_str)
-                                if !isempty(arg_str)
-                                    try
-                                        arg = parse(Float64, arg_str)
-                                        push!(block_arguments, arg)
-                                    catch
-                                        error("Invalid argument: $arg_str")
-                                    end
-                                end
-                            end
-                        end
-                        
-                        block_target_start = j + 1
-                    end
-                    
-                    # Extract targets after arguments
-                    block_targets = block_parts[block_target_start:end]
-                    
-                    # Parse targets and apply gates
-                    block_qubit_indices = Int[]
-                    
-                    for target in block_targets
-                        if isempty(target)
-                            continue
-                        end
-                        
-                        # Handle different target types
-                        if target == "*"
-                            # Combiner - skip for now
-                            continue
-                        elseif startswith(target, "rec[") && endswith(target, "]")
-                            # Measurement record target - skip for now
-                            continue
-                        elseif startswith(target, "sweep[") && endswith(target, "]")
-                            # Sweep bit target - skip for now
-                            continue
-                        elseif startswith(target, "!")
-                            # Inverted target
-                            try
-                                qubit_idx = parse(Int, target[2:end])
-                                push!(block_qubit_indices, qubit_idx)
-                            catch
-                                error("Invalid inverted target: $target")
-                            end
-                        elseif length(target) >= 2 && target[1] in ['X', 'Y', 'Z']
-                            # Pauli target
-                            try
-                                qubit_idx = parse(Int, target[2:end])
-                                push!(block_qubit_indices, qubit_idx)
-                            catch
-                                error("Invalid Pauli target: $target")
-                            end
-                        else
-                            # Regular qubit target
-                            try
-                                qubit_idx = parse(Int, target)
-                                push!(block_qubit_indices, qubit_idx)
-                            catch
-                                error("Invalid qubit target: $target")
-                            end
-                        end
-                    end
-                    
-                    # Apply the appropriate gate based on instruction name
-                    apply_gate!(qc, qubit_number, block_instruction_name, block_qubit_indices)
+
+                # Merge the block circuit into the main circuit
+                for gate in block_circuit
+                    push!(qc, gate)
                 end
             end
             
@@ -207,60 +111,51 @@ function parse_stim_string(content::String, qubit_number::Int)
         target_start = 2
         
         # Check if there are arguments in parentheses
-        if length(parts) > 1 && startswith(parts[2], "(")
-            # Find the closing parenthesis
-            arg_parts = String[]
-            paren_count = 0
-            j = 2
-            
-            while j <= length(parts)
-                part = parts[j]
-                
-                if startswith(part, "(")
-                    paren_count += 1
-                end
-                
-                if endswith(part, ")")
-                    paren_count -= 1
-                    # Remove closing parenthesis
-                    if paren_count == 0
-                        part = part[1:end-1]
-                        if !isempty(part)
-                            push!(arg_parts, part)
-                        end
+        if '(' in parts[1]
+           start_pos = findfirst('(', parts[1])
+           end_pos = findlast(')', parts[1])
+           instruction_name = uppercase(parts[1][1:start_pos-1])
+           if !isnothing(end_pos)
+                temp_string = parts[1][start_pos+1:end_pos-1]
+                target_start = 2
+           else
+                temp_string = parts[1][start_pos+1:end]
+                target_start = 2
+                while true
+                    if ')' in parts[target_start]
+                        temp_string *= parts[target_start][1:end-1]
+                        target_start += 1
                         break
+                    else
+                        temp_string *= parts[target_start]
+                        target_start += 1
                     end
                 end
-                
-                push!(arg_parts, part)
-                j += 1
-            end
-            
-            # Parse arguments
-            for part in arg_parts
-                for arg_str in split(part, ",")
-                    arg_str = strip(arg_str)
-                    if !isempty(arg_str)
-                        try
-                            arg = parse(Float64, arg_str)
-                            push!(arguments, arg)
-                        catch
-                            error("Invalid argument: $arg_str")
-                        end
-                    end
-                end
-            end
-            
-            target_start = j + 1
+           end
+           arguments = [parse(Float64, strip(arg)) for arg in split(temp_string, ",") if !isempty(strip(arg))]
         end
-        
-        # Extract targets after arguments
+     
         targets = parts[target_start:end]
+        
+        # Clean up targets that might have trailing parentheses
+        cleaned_targets = String[]
+        for target in targets
+            if isempty(target)
+                continue
+            end
+            # Remove any trailing parentheses that might have been left over
+            if endswith(target, ")")
+                target = target[1:end-1]
+            end
+            if !isempty(target)
+                push!(cleaned_targets, target)
+            end
+        end
         
         # Parse targets and apply gates
         qubit_indices = Int[]
         
-        for target in targets
+        for target in cleaned_targets
             if isempty(target)
                 continue
             end
@@ -303,7 +198,7 @@ function parse_stim_string(content::String, qubit_number::Int)
         end
         
         # Apply the appropriate gate based on instruction name
-        apply_gate!(qc, qubit_number, instruction_name, qubit_indices)
+        apply_gate!(qc, qubit_number, instruction_name, qubit_indices, arguments)
         
         i += 1
     end
@@ -312,7 +207,7 @@ function parse_stim_string(content::String, qubit_number::Int)
 end
 
 # Helper function to apply gates
-function apply_gate!(qc, qubit_number::Int, instruction_name::String, qubit_indices::Vector{Int})
+function apply_gate!(qc, qubit_number::Int, instruction_name::String, qubit_indices::Vector{Int}, arguments::Vector{Float64})
     if instruction_name == "H"
         for qubit in qubit_indices
             @show qubit
@@ -320,15 +215,15 @@ function apply_gate!(qc, qubit_number::Int, instruction_name::String, qubit_indi
         end
     elseif instruction_name == "X"
         for qubit in qubit_indices
-            qc = put(qc, qubit, X)
+            push!(qc, put(qubit_number, qubit+1 => X))
         end
     elseif instruction_name == "Y"
         for qubit in qubit_indices
-            qc = put(qc, qubit, Y)
+            push!(qc, put(qubit_number, qubit+1 => Y))
         end
     elseif instruction_name == "Z"
         for qubit in qubit_indices
-            qc = put(qc, qubit, Z)
+            push!(qc, put(qubit_number, qubit+1 => Z))
         end
     elseif instruction_name == "S"
         for qubit in qubit_indices
@@ -336,7 +231,7 @@ function apply_gate!(qc, qubit_number::Int, instruction_name::String, qubit_indi
         end
     elseif instruction_name == "T"
         for qubit in qubit_indices
-            qc = put(qc, qubit, T)
+            push!(qc, put(qubit_number, qubit+1 => ConstGate.T))
         end
     elseif instruction_name == "CNOT" || instruction_name == "CX"
         # CNOT requires pairs of qubits
@@ -357,20 +252,30 @@ function apply_gate!(qc, qubit_number::Int, instruction_name::String, qubit_indi
                 push!(qc, control(qubit_number, control_qubit+1, (target_qubit+1) => Z))
             end
         end
-    elseif instruction_name == "M" || instruction_name == "MR"
+    elseif instruction_name == "M"
         # Measurement operations
         push!(qc, Measure(qubit_number; locs = qubit_indices.+1))
+    elseif instruction_name == "MR"
+        # Measurement record operations
+        push!(qc, Measure(qubit_number; locs = qubit_indices.+1,resetto=bit"0"))
     elseif instruction_name == "R"
         # Reset operations
-        for qubit in qubit_indices
-            qc = put(qc, qubit, Reset)
-        end
+        push!(qc, Measure(qubit_number; locs = qubit_indices.+1,resetto=bit"0"))
     elseif instruction_name == "TICK"
         # TICK is just a timing marker - no quantum operation
         return
-    elseif startswith(instruction_name, "DEPOLARIZE")
-        # Noise operations - skip for now
-        return
+    elseif instruction_name == "DEPOLARIZE1"
+        for qubit in qubit_indices
+            push!(qc, put(qubit_number, qubit+1 => DepolarizingChannel(1, arguments[1])))
+        end
+    elseif instruction_name == "DEPOLARIZE2"
+        for i in 1:2:length(qubit_indices)
+            if i + 1 <= length(qubit_indices)
+                control_qubit = qubit_indices[i]
+                target_qubit = qubit_indices[i + 1]
+                push!(qc, put(qubit_number, (control_qubit+1, target_qubit+1) => DepolarizingChannel(2, arguments[1])))
+            end
+        end
     elseif instruction_name in ["DETECTOR", "OBSERVABLE_INCLUDE", "QUBIT_COORDS", "SHIFT_COORDS"]
         # Annotations - skip for now
         return
