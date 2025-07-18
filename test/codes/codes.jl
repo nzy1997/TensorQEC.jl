@@ -1,5 +1,6 @@
 using Test, TensorQEC, TensorQEC.Yao, TensorQEC.LinearAlgebra
 using Random
+using QECCore
 
 @testset "toric code" begin
 	t = ToricCode(2, 3)
@@ -181,4 +182,21 @@ end
 	st = stabilizers(Color666(d))
 	@test length(st) == 18
 	@test code_distance(CSSTannerGraph(st)) == d
+end
+
+@testset "QECCore" begin
+	st = stabilizers(Cleve8())
+	@test st isa Vector{PauliString{8}}
+	@test length(st) == 5
+
+	c = Toric(2,2)
+	st = stabilizers(c)
+	tanner = CSSTannerGraph(st)
+	@test code_distance(tanner) == 2
+	@test tanner.stgx.H == Mod2[1  0  1  0  1  1  0  0;
+	0  1  0  1  1  1  0  0;
+	1  0  1  0  0  0  1  1]
+	@test tanner.stgz.H == Mod2[1  1  0  0  1  0  1  0;
+	1  1  0  0  0  1  0  1;
+	0  0  1  1  1  0  1  0]
 end
