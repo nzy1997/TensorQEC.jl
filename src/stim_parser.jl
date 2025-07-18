@@ -24,7 +24,6 @@ function _parse_stim_string!(content::String, qubit_number::Int, measure_list::V
         # Remove inline comments (everything after #)
         if occursin("#", line)
             comment_start = findfirst("#", line)
-            @show comment_start
             line = strip(line[1:(comment_start.start-1)])
         end
         
@@ -37,13 +36,10 @@ function _parse_stim_string!(content::String, qubit_number::Int, measure_list::V
         
         instruction_name = uppercase(parts[1])
         
-        @show parts
-        
         # Check if this is a REPEAT block
         if instruction_name == "REPEAT"
             # Parse REPEAT block
             repeat_count = parse(Int, parts[2])
-            @show repeat_count
             
             # Check if the opening brace is on the same line
             if endswith(line, "{")
@@ -59,7 +55,6 @@ function _parse_stim_string!(content::String, qubit_number::Int, measure_list::V
             end
             
             while i <= length(lines)
-                @show i
                 block_line = strip(lines[i])
                 
                 if startswith(block_line, "#") || isempty(block_line)
@@ -90,7 +85,6 @@ function _parse_stim_string!(content::String, qubit_number::Int, measure_list::V
                 
                 i += 1
             end
-            @show block_content
             # Convert block content back to string for recursive parsing
             block_str = join(block_content, "\n")
             
@@ -172,7 +166,6 @@ function _parse_stim_string!(content::String, qubit_number::Int, measure_list::V
             elseif startswith(target, "rec[") && endswith(target, "]")
                 record_content = target[5:end-1]  # Remove "rec[" and "]"
                 push!(record_idx, parse(Int, record_content))
-                @show record_idx
             elseif startswith(target, "sweep[") && endswith(target, "]")
                 # Sweep bit target - skip for now
                 continue
@@ -204,7 +197,6 @@ function _parse_stim_string!(content::String, qubit_number::Int, measure_list::V
         end
         
         # Apply the appropriate gate based on instruction name
-        @show instruction_name qubit_indices arguments
         apply_gate!(qc, qubit_number, instruction_name, qubit_indices, arguments, measure_list, record_idx, measure_pos_list)
         
         i += 1
@@ -217,7 +209,6 @@ end
 function apply_gate!(qc, qubit_number::Int, instruction_name::String, qubit_indices::Vector{Int}, arguments::Vector{Float64}, measure_list::Vector{Measure}, record_idx::Vector{Int}, measure_pos_list::Vector{Int})
     if instruction_name == "H"
         for qubit in qubit_indices
-            @show qubit
             push!(qc, put(qubit_number,qubit+1 => H))
         end
     elseif instruction_name == "X"
@@ -250,7 +241,6 @@ function apply_gate!(qc, qubit_number::Int, instruction_name::String, qubit_indi
                 if i + 1 <= length(qubit_indices)
                     control_qubit = qubit_indices[i]
                     target_qubit = qubit_indices[i + 1]
-                    @show control_qubit, target_qubit
                     push!(qc, control(qubit_number, control_qubit+1, (target_qubit+1) => X))
                 end
             end
@@ -290,6 +280,12 @@ function apply_gate!(qc, qubit_number::Int, instruction_name::String, qubit_indi
         for qubit in qubit_indices
             m = Measure(qubit_number; locs = qubit+1,resetto=bit"0")
             push!(qc, m)
+        end
+    elseif instruction_name == "MX"
+        # Measurement record operations
+        for qubit in qubit_indices
+            m = Measure(qubit_number; locs = qubit+1, operator = X)
+            push!(qc, m)
             push!(measure_list, m)
             push!(measure_pos_list, qubit+1)
         end
@@ -311,7 +307,10 @@ function apply_gate!(qc, qubit_number::Int, instruction_name::String, qubit_indi
     elseif instruction_name == "DETECTOR"
         db = DetectorBlock{2}(measure_list[end + 1 .+ record_idx])
         push!(qc, put(qubit_number, measure_pos_list[end + 1 + record_idx[1]] => db))
-    elseif instruction_name in ["OBSERVABLE_INCLUDE", "QUBIT_COORDS", "SHIFT_COORDS"]
+    elseif instruction_name == "OBSERVABLE_INCLUDE"
+        ld = LogicalDetectorBlock{2}(measure_list[end + 1 .+ record_idx])
+        push!(qc, put(qubit_number, measure_pos_list[end + 1 + record_idx[1]] => ld))
+    elseif instruction_name in ["QUBIT_COORDS", "SHIFT_COORDS"]
         # Annotations - skip for now
         return
     else
