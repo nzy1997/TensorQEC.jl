@@ -43,8 +43,12 @@ end
 
 # DetectorBlock
 
-struct DetectorBlock{D,K, OT, LT, PT, RNG} <: TrivialGate{D}
-    vm::Vector{Measure{D,K, OT, LT, PT, RNG}}
+# struct DetectorBlock{D,K, OT, LT, PT, RNG} <: TrivialGate{D}
+#     vm::Vector{Measure{D,K, OT, LT, PT, RNG}}
+# end
+abstract type AbstractDetectorBlock{D} <: TrivialGate{D} end
+struct DetectorBlock{D} <: TrivialGate{D}
+    vm::Vector{Measure}
 end
 
 Yao.nqudits(sr::DetectorBlock) = 1

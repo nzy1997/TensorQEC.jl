@@ -4,10 +4,11 @@ function parse_stim_file(file_path::String, qubit_number::Int)
 end
 function parse_stim_string(content::String, qubit_number::Int)
     measure_list = Vector{Measure}()
-    return _parse_stim_string!(content, qubit_number, measure_list)
+    measure_pos_list = Vector{Int}()
+    return _parse_stim_string!(content, qubit_number, measure_list, measure_pos_list)
 end
 
-function _parse_stim_string!(content::String, qubit_number::Int, measure_list::Vector{Measure})
+function _parse_stim_string!(content::String, qubit_number::Int, measure_list::Vector{Measure}, measure_pos_list::Vector{Int})
     lines = split(content, '\n')
     qc = chain(qubit_number)
     
@@ -94,7 +95,7 @@ function _parse_stim_string!(content::String, qubit_number::Int, measure_list::V
             block_str = join(block_content, "\n")
             
 
-            block_circuit = _parse_stim_string!(block_str, qubit_number, measure_list)
+            block_circuit = _parse_stim_string!(block_str, qubit_number, measure_list, measure_pos_list)
             for _ in 1:repeat_count
 
                 # Merge the block circuit into the main circuit
@@ -204,7 +205,7 @@ function _parse_stim_string!(content::String, qubit_number::Int, measure_list::V
         
         # Apply the appropriate gate based on instruction name
         @show instruction_name qubit_indices arguments
-        apply_gate!(qc, qubit_number, instruction_name, qubit_indices, arguments, measure_list, record_idx)
+        apply_gate!(qc, qubit_number, instruction_name, qubit_indices, arguments, measure_list, record_idx, measure_pos_list)
         
         i += 1
     end
@@ -213,7 +214,7 @@ function _parse_stim_string!(content::String, qubit_number::Int, measure_list::V
 end
 
 # Helper function to apply gates
-function apply_gate!(qc, qubit_number::Int, instruction_name::String, qubit_indices::Vector{Int}, arguments::Vector{Float64}, measure_list::Vector{Measure}, record_idx::Vector{Int})
+function apply_gate!(qc, qubit_number::Int, instruction_name::String, qubit_indices::Vector{Int}, arguments::Vector{Float64}, measure_list::Vector{Measure}, record_idx::Vector{Int}, measure_pos_list::Vector{Int})
     if instruction_name == "H"
         for qubit in qubit_indices
             @show qubit
@@ -242,7 +243,6 @@ function apply_gate!(qc, qubit_number::Int, instruction_name::String, qubit_indi
     elseif instruction_name == "CNOT" || instruction_name == "CX"
         # CNOT requires pairs of qubits
         if !isempty(record_idx)
-            @show length(measure_list) record_idx
             c = condition(measure_list[end + record_idx[1]+1], X, nothing)
             push!(qc, put(qubit_number, qubit_indices.+1 => c))
         else
@@ -275,6 +275,7 @@ function apply_gate!(qc, qubit_number::Int, instruction_name::String, qubit_indi
             m = Measure(qubit_number; locs = qubit+1)
             push!(qc, m)
             push!(measure_list, m)
+            push!(measure_pos_list, qubit+1)
         end
     elseif instruction_name == "MR"
         # Measurement record operations
@@ -282,6 +283,7 @@ function apply_gate!(qc, qubit_number::Int, instruction_name::String, qubit_indi
             m = Measure(qubit_number; locs = qubit+1,resetto=bit"0")
             push!(qc, m)
             push!(measure_list, m)
+            push!(measure_pos_list, qubit+1)
         end
     elseif instruction_name == "R"
         # Reset operations
@@ -289,6 +291,7 @@ function apply_gate!(qc, qubit_number::Int, instruction_name::String, qubit_indi
             m = Measure(qubit_number; locs = qubit+1,resetto=bit"0")
             push!(qc, m)
             push!(measure_list, m)
+            push!(measure_pos_list, qubit+1)
         end
     elseif instruction_name == "TICK"
         # TICK is just a timing marker - no quantum operation
@@ -305,7 +308,10 @@ function apply_gate!(qc, qubit_number::Int, instruction_name::String, qubit_indi
                 push!(qc, put(qubit_number, (control_qubit+1, target_qubit+1) => DepolarizingChannel(2, arguments[1])))
             end
         end
-    elseif instruction_name in ["DETECTOR", "OBSERVABLE_INCLUDE", "QUBIT_COORDS", "SHIFT_COORDS"]
+    elseif instruction_name == "DETECTOR"
+        db = DetectorBlock{2}(measure_list[end + 1 .+ record_idx])
+        push!(qc, put(qubit_number, measure_pos_list[end + 1 + record_idx[1]] => db))
+    elseif instruction_name in ["OBSERVABLE_INCLUDE", "QUBIT_COORDS", "SHIFT_COORDS"]
         # Annotations - skip for now
         return
     else

@@ -48,12 +48,7 @@ REPEAT 3 {
     DETECTOR rec[-3] rec[-6]
     DETECTOR rec[-2] rec[-5]
     DETECTOR rec[-1] rec[-4]
-
-    REPEAT 3 {
-        X 0
-        X 2
-        X 4
-    }
+    
 }
 
 # Measure data qubits.
