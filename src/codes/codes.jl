@@ -4,7 +4,7 @@ abstract type CSSQuantumCode <: QuantumCode end
 """
 	SurfaceCode(m::Int, n::Int)
 
-Construct a surface code with `m` rows and `n` columns. 
+Construct a rotated surface code with `m` rows and `n` columns.
 """
 struct SurfaceCode <: CSSQuantumCode
     m::Int
@@ -44,7 +44,9 @@ function stabilizers(sc::SurfaceCode)
 		end
 	end
 	for i in 1:m÷2
-		push!(pauli_string, PauliString(m*n, (qubit_config[2*i-1+mod(n+1,2), n], qubit_config[2*i+mod(n+1,2), n])=>Pauli(1)))
+		if 2*i+mod(n+1,2) <= m
+			push!(pauli_string, PauliString(m*n, (qubit_config[2*i-1+mod(n+1,2), n], qubit_config[2*i+mod(n+1,2), n])=>Pauli(1)))
+		end
 		if 2*i+1 <= m
 			push!(pauli_string, PauliString(m*n, (qubit_config[2*i, 1], qubit_config[2*i+1, 1])=>Pauli(1)))
 		end
@@ -56,7 +58,7 @@ function stabilizers(sc::SurfaceCode)
 	end
 	for j in 1:n÷2
 		push!(pauli_string, PauliString(m*n, (qubit_config[1, 2*j-1], qubit_config[1, 2*j])=>Pauli(3)))
-		if 2*j+1 <= n
+		if 2*j + mod(m,2) <= n
 			push!(pauli_string, PauliString(m*n, (qubit_config[m, 2*j-1+mod(m,2)], qubit_config[m, 2*j+mod(m,2)])=>Pauli(3)))
 		end
 	end

@@ -51,6 +51,9 @@ end
 	end
 
 	@test code_distance(CSSTannerGraph(result)) == 3
+
+	tanner = CSSTannerGraph(SurfaceCode(6, 6))
+	@test code_distance(tanner) == 6
 end
 
 
