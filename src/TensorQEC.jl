@@ -121,6 +121,8 @@ include("decoding/matching.jl")
 # deprecate
 include("deprecate.jl")
 
+include("yaoblocks.jl")
+
 include("stim_parser.jl")
 
 end

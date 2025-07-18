@@ -2,8 +2,12 @@ function parse_stim_file(file_path::String, qubit_number::Int)
     content = read(file_path, String)
     return parse_stim_string(content, qubit_number)
 end
-
 function parse_stim_string(content::String, qubit_number::Int)
+    measure_list = Vector{Measure}()
+    return _parse_stim_string!(content, qubit_number, measure_list)
+end
+
+function _parse_stim_string!(content::String, qubit_number::Int, measure_list::Vector{Measure})
     lines = split(content, '\n')
     qc = chain(qubit_number)
     
@@ -90,7 +94,7 @@ function parse_stim_string(content::String, qubit_number::Int)
             block_str = join(block_content, "\n")
             
 
-            block_circuit = parse_stim_string(block_str, qubit_number)
+            block_circuit = _parse_stim_string!(block_str, qubit_number, measure_list)
             for _ in 1:repeat_count
 
                 # Merge the block circuit into the main circuit
@@ -154,7 +158,7 @@ function parse_stim_string(content::String, qubit_number::Int)
         
         # Parse targets and apply gates
         qubit_indices = Int[]
-        
+        record_idx = Int[]
         for target in cleaned_targets
             if isempty(target)
                 continue
@@ -165,8 +169,9 @@ function parse_stim_string(content::String, qubit_number::Int)
                 # Combiner - skip for now
                 continue
             elseif startswith(target, "rec[") && endswith(target, "]")
-                # Measurement record target - skip for now
-                continue
+                record_content = target[5:end-1]  # Remove "rec[" and "]"
+                push!(record_idx, parse(Int, record_content))
+                @show record_idx
             elseif startswith(target, "sweep[") && endswith(target, "]")
                 # Sweep bit target - skip for now
                 continue
@@ -198,7 +203,8 @@ function parse_stim_string(content::String, qubit_number::Int)
         end
         
         # Apply the appropriate gate based on instruction name
-        apply_gate!(qc, qubit_number, instruction_name, qubit_indices, arguments)
+        @show instruction_name qubit_indices arguments
+        apply_gate!(qc, qubit_number, instruction_name, qubit_indices, arguments, measure_list, record_idx)
         
         i += 1
     end
@@ -207,7 +213,7 @@ function parse_stim_string(content::String, qubit_number::Int)
 end
 
 # Helper function to apply gates
-function apply_gate!(qc, qubit_number::Int, instruction_name::String, qubit_indices::Vector{Int}, arguments::Vector{Float64})
+function apply_gate!(qc, qubit_number::Int, instruction_name::String, qubit_indices::Vector{Int}, arguments::Vector{Float64}, measure_list::Vector{Measure}, record_idx::Vector{Int})
     if instruction_name == "H"
         for qubit in qubit_indices
             @show qubit
@@ -235,32 +241,55 @@ function apply_gate!(qc, qubit_number::Int, instruction_name::String, qubit_indi
         end
     elseif instruction_name == "CNOT" || instruction_name == "CX"
         # CNOT requires pairs of qubits
-        for i in 1:2:length(qubit_indices)
-            if i + 1 <= length(qubit_indices)
-                control_qubit = qubit_indices[i]
-                target_qubit = qubit_indices[i + 1]
-                @show control_qubit, target_qubit
-                push!(qc, control(qubit_number, control_qubit+1, (target_qubit+1) => X))
+        if !isempty(record_idx)
+            @show length(measure_list) record_idx
+            c = condition(measure_list[end + record_idx[1]+1], X, nothing)
+            push!(qc, put(qubit_number, qubit_indices.+1 => c))
+        else
+            for i in 1:2:length(qubit_indices)
+                if i + 1 <= length(qubit_indices)
+                    control_qubit = qubit_indices[i]
+                    target_qubit = qubit_indices[i + 1]
+                    @show control_qubit, target_qubit
+                    push!(qc, control(qubit_number, control_qubit+1, (target_qubit+1) => X))
+                end
             end
         end
     elseif instruction_name == "CZ"
         # CZ requires pairs of qubits
-        for i in 1:2:length(qubit_indices)
-            if i + 1 <= length(qubit_indices)
-                control_qubit = qubit_indices[i]
-                target_qubit = qubit_indices[i + 1]
-                push!(qc, control(qubit_number, control_qubit+1, (target_qubit+1) => Z))
+        if !isempty(record_idx)
+            c = condition(measure_list[end + record_idx[1]+1], Z, nothing)
+            push!(qc, put(qubit_number, qubit_indices.+1 => c))
+        else
+            for i in 1:2:length(qubit_indices)
+                if i + 1 <= length(qubit_indices)
+                    control_qubit = qubit_indices[i]
+                    target_qubit = qubit_indices[i + 1]
+                    push!(qc, control(qubit_number, control_qubit+1, (target_qubit+1) => Z))
+                end
             end
         end
     elseif instruction_name == "M"
         # Measurement operations
-        push!(qc, Measure(qubit_number; locs = qubit_indices.+1))
+        for qubit in qubit_indices
+            m = Measure(qubit_number; locs = qubit+1)
+            push!(qc, m)
+            push!(measure_list, m)
+        end
     elseif instruction_name == "MR"
         # Measurement record operations
-        push!(qc, Measure(qubit_number; locs = qubit_indices.+1,resetto=bit"0"))
+        for qubit in qubit_indices
+            m = Measure(qubit_number; locs = qubit+1,resetto=bit"0")
+            push!(qc, m)
+            push!(measure_list, m)
+        end
     elseif instruction_name == "R"
         # Reset operations
-        push!(qc, Measure(qubit_number; locs = qubit_indices.+1,resetto=bit"0"))
+        for qubit in qubit_indices
+            m = Measure(qubit_number; locs = qubit+1,resetto=bit"0")
+            push!(qc, m)
+            push!(measure_list, m)
+        end
     elseif instruction_name == "TICK"
         # TICK is just a timing marker - no quantum operation
         return

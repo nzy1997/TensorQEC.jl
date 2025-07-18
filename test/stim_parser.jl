@@ -119,7 +119,7 @@ DETECTOR(5, 1) rec[-1] rec[-2] rec[-5]
 OBSERVABLE_INCLUDE(0) rec[-1]
 """
 
-qc = TensorQEC.parse_stim_string(circuit_str, 7)
+qc = TensorQEC.parse_stim_string(circuit_str, 7);
 vizcircuit(qc)
 circuit_str = """
 # Generated surface_code circuit.
@@ -229,3 +229,32 @@ qc = TensorQEC.parse_stim_string(circuit_str, 26)
 vizcircuit(qc)
 
 qc = TensorQEC.parse_stim_file("data/testcir.stim", 144);
+
+m = Measure(1)
+reg = ArrayReg(ComplexF64[0,1])
+c = TensorQEC.condition(m, X, nothing)
+@show c
+
+qc = chain(put(3, 1=>X), put(3, 3=>X))
+push!(qc,put(3,1 => m))
+push!(qc,put(3,3 => c))
+vizcircuit(qc)
+
+qc2 = chain(put(3, 1=>X), put(3, 3=>X))
+ccj = ComplexConj(X)
+push!(qc2,put(3,3 => ccj))
+vizcircuit(qc2)
+
+m1 = Measure(1)
+m2 = Measure(1)
+db = TensorQEC.DetectorBlock([m1,m2])
+
+using Yao
+qc3 = chain(2)
+push!(qc3,put(2,1 => Measure(1)))
+push!(qc3,put(2,2 => Measure(1)))
+vizcircuit(qc3)
+
+qc3 = chain(2)
+push!(qc3,put(2,(1,2) => Measure(2)))
+vizcircuit(qc3)
