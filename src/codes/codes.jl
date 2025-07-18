@@ -4,7 +4,7 @@ abstract type CSSQuantumCode <: QuantumCode end
 """
 	SurfaceCode(m::Int, n::Int)
 
-Construct a rotating surface code with `m` rows and `n` columns.
+Construct a rotated surface code with `m` rows and `n` columns.
 """
 struct SurfaceCode <: CSSQuantumCode
     m::Int
