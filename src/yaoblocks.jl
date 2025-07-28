@@ -1,8 +1,25 @@
+struct NumberedMeasure{BT<:Measure,D} <: AbstractContainer{BT,D}
+    m::BT
+    num::Int
+    function NumberedMeasure(m::BT, num::Int) where BT <: Measure
+        new{BT,nlevel(m)}(m, num)
+    end
+end
+
+Yao.nqudits(nm::NumberedMeasure) = nqudits(nm.m)
+Yao.print_block(io::IO, m::NumberedMeasure) = print(io, "M[$(m.num)]")
+Yao.content(m::NumberedMeasure) = m.m
+
+function YaoPlots.draw!(c::YaoPlots.CircuitGrid, p::NumberedMeasure, address, controls)
+    @assert length(controls) == 0
+    YaoPlots.draw!(c, p.m, address, controls)
+end
+
 struct ConditionBlock{N, BTT<:AbstractBlock{N}, BTF<:AbstractBlock{N}} <: CompositeBlock{N}
-    m::Measure
+    m::NumberedMeasure
     block_true::BTT
     block_false::BTF
-    function ConditionBlock(m::Measure, block_true::BTT, block_false::BTF) where {N, BTT<:AbstractBlock{N}, BTF<:AbstractBlock{N}}
+    function ConditionBlock(m::NumberedMeasure, block_true::BTT, block_false::BTF) where {N, BTT<:AbstractBlock{N}, BTF<:AbstractBlock{N}}
         new{N, BTT, BTF}(m, block_true, block_false)
     end
 end
@@ -40,15 +57,9 @@ function YaoPlots.draw!(c::YaoPlots.CircuitGrid, p::ConditionBlock, address, con
     YaoPlots._draw!(c, [controls..., (getindex.(Ref(address), occupied_locs(p)),bts1[1], "$(bts1[2]) or $(bts2[2])")])
 end
 
-
-# DetectorBlock
-
-# struct DetectorBlock{D,K, OT, LT, PT, RNG} <: TrivialGate{D}
-#     vm::Vector{Measure{D,K, OT, LT, PT, RNG}}
-# end
 abstract type AbstractDetectorBlock{D} <: TrivialGate{D} end
 struct DetectorBlock{D} <: AbstractDetectorBlock{D}
-    vm::Vector{Measure}
+    vm::Vector{NumberedMeasure}
 end
 
 Yao.nqudits(sr::AbstractDetectorBlock) = 1
@@ -60,7 +71,7 @@ function YaoPlots.draw!(c::YaoPlots.CircuitGrid, p::DetectorBlock, address, cont
 end
 
 struct LogicalDetectorBlock{D} <: AbstractDetectorBlock{D}
-    vm::Vector{Measure}
+    vm::Vector{NumberedMeasure}
 end
 
 Yao.print_block(io::IO, sr::LogicalDetectorBlock) = print(io, "LOGICAL($(length(sr.vm)))")

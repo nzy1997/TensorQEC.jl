@@ -19,6 +19,7 @@ SCIP = "82193955-e24f-5292-bf16-6f2c5261a85f"
 SimpleWeightedGraphs = "47aef6b3-ad0c-573a-a1e2-d07658019622"
 TensorInference = "c2297e78-99bd-40ad-871d-f50e56b81012"
 Yao = "5872b779-8223-5990-8dd0-5abbb0748c8c"
+YaoPlots = "32cfe2d9-419e-45f2-8191-2267705d8dbc"
 
 [compat]
 Aqua = "0.8"

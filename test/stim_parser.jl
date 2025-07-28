@@ -116,6 +116,7 @@ OBSERVABLE_INCLUDE(0) rec[-1]
 
 qc = TensorQEC.parse_stim_string(circuit_str, 7);
 vizcircuit(qc)
+
 circuit_str = """
 # Generated surface_code circuit.
 # task: rotated_memory_x
@@ -220,36 +221,18 @@ DETECTOR(4, 6, 1) rec[-1] rec[-2] rec[-10]
 OBSERVABLE_INCLUDE(0) rec[-3] rec[-6] rec[-9]
 """
 
-qc = TensorQEC.parse_stim_string(circuit_str, 26)
+qc = TensorQEC.parse_stim_string(circuit_str, 26);
 vizcircuit(qc)
 
 qc = TensorQEC.parse_stim_file("data/testcir.stim", 144);
-
-m = Measure(1)
-reg = ArrayReg(ComplexF64[0,1])
-c = TensorQEC.condition(m, X, nothing)
-@show c
-
-qc = chain(put(3, 1=>X), put(3, 3=>X))
-push!(qc,put(3,1 => m))
-push!(qc,put(3,3 => c))
 vizcircuit(qc)
 
-qc2 = chain(put(3, 1=>X), put(3, 3=>X))
-ccj = ComplexConj(X)
-push!(qc2,put(3,3 => ccj))
-vizcircuit(qc2)
+qc = chain(5, put(5, (1, 5) => quantum_channel(DepolarizingError(2, 0.1))))
+vizcircuit(qc)
 
-m1 = Measure(1)
-m2 = Measure(1)
-db = TensorQEC.DetectorBlock([m1,m2])
+using TensorQEC: NumberedMeasure
 
-using Yao
-qc3 = chain(2)
-push!(qc3,put(2,1 => Measure(1)))
-push!(qc3,put(2,2 => Measure(1)))
-vizcircuit(qc3)
-
-qc3 = chain(2)
-push!(qc3,put(2,(1,2) => Measure(2)))
-vizcircuit(qc3)
+m = NumberedMeasure(Measure(1), 1)
+m = NumberedMeasure(Measure(5;locs = 2), 1)
+qc = chain(5, m)
+vizcircuit(qc)

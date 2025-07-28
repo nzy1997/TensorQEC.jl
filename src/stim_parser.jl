@@ -3,19 +3,19 @@ function parse_stim_file(file_path::String, qubit_number::Int)
     return parse_stim_string(content, qubit_number)
 end
 function parse_stim_string(content::String, qubit_number::Int)
-    measure_list = Vector{Measure}()
+    measure_list = Vector{NumberedMeasure}()
     measure_pos_list = Vector{Int}()
     return _parse_stim_string!(content, qubit_number, measure_list, measure_pos_list)
 end
 
-function _parse_stim_string!(content::String, qubit_number::Int, measure_list::Vector{Measure}, measure_pos_list::Vector{Int})
+function _parse_stim_string!(content::String, qubit_number::Int, measure_list::Vector{NumberedMeasure}, measure_pos_list::Vector{Int})
     lines = split(content, '\n')
     qc = chain(qubit_number)
     
     i = 1
     while i <= length(lines)
         line = strip(lines[i])
-        @show line
+        # @show line
         if startswith(line, "#") || isempty(line)
             i += 1
             continue
@@ -206,7 +206,7 @@ function _parse_stim_string!(content::String, qubit_number::Int, measure_list::V
 end
 
 # Helper function to apply gates
-function apply_gate!(qc, qubit_number::Int, instruction_name::String, qubit_indices::Vector{Int}, arguments::Vector{Float64}, measure_list::Vector{Measure}, record_idx::Vector{Int}, measure_pos_list::Vector{Int})
+function apply_gate!(qc, qubit_number::Int, instruction_name::String, qubit_indices::Vector{Int}, arguments::Vector{Float64}, measure_list::Vector{NumberedMeasure}, record_idx::Vector{Int}, measure_pos_list::Vector{Int})
     if instruction_name == "H"
         for qubit in qubit_indices
             push!(qc, put(qubit_number,qubit+1 => H))
@@ -259,10 +259,10 @@ function apply_gate!(qc, qubit_number::Int, instruction_name::String, qubit_indi
                 end
             end
         end
-    elseif instruction_name == "M"
+    elseif instruction_name == "M" || instruction_name == "MZ"
         # Measurement operations
         for qubit in qubit_indices
-            m = Measure(qubit_number; locs = qubit+1)
+            m = NumberedMeasure(Measure(qubit_number; locs = qubit+1), length(measure_list)+1)
             push!(qc, m)
             push!(measure_list, m)
             push!(measure_pos_list, qubit+1)
@@ -270,7 +270,7 @@ function apply_gate!(qc, qubit_number::Int, instruction_name::String, qubit_indi
     elseif instruction_name == "MR"
         # Measurement record operations
         for qubit in qubit_indices
-            m = Measure(qubit_number; locs = qubit+1,resetto=bit"0")
+            m = NumberedMeasure(Measure(qubit_number; locs = qubit+1,resetto=bit"0"), length(measure_list)+1)
             push!(qc, m)
             push!(measure_list, m)
             push!(measure_pos_list, qubit+1)
@@ -281,10 +281,17 @@ function apply_gate!(qc, qubit_number::Int, instruction_name::String, qubit_indi
             m = Measure(qubit_number; locs = qubit+1,resetto=bit"0")
             push!(qc, m)
         end
+    elseif instruction_name == "RX"
+        # Reset operations
+        for qubit in qubit_indices
+            m = Measure(qubit_number; locs = qubit+1,resetto=bit"0")
+            push!(qc, m)
+            push!(qc,put(qubit_number, qubit+1 => H))
+        end
     elseif instruction_name == "MX"
         # Measurement record operations
         for qubit in qubit_indices
-            m = Measure(qubit_number; locs = qubit+1, operator = X)
+            m = NumberedMeasure(Measure(qubit_number; locs = qubit+1, operator = X), length(measure_list)+1)
             push!(qc, m)
             push!(measure_list, m)
             push!(measure_pos_list, qubit+1)
@@ -303,6 +310,10 @@ function apply_gate!(qc, qubit_number::Int, instruction_name::String, qubit_indi
                 target_qubit = qubit_indices[i + 1]
                 push!(qc, put(qubit_number, (control_qubit+1, target_qubit+1) => DepolarizingChannel(2, arguments[1])))
             end
+        end
+    elseif instruction_name == "X_ERROR"
+        for qubit in qubit_indices
+            push!(qc, put(qubit_number, qubit+1 => quantum_channel(BitFlipError(arguments[1]))))
         end
     elseif instruction_name == "DETECTOR"
         db = DetectorBlock{2}(measure_list[end + 1 .+ record_idx])
