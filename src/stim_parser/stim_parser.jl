@@ -331,6 +331,6 @@ function apply_gate!(qc, qubit_number::Int, instruction_name::String, qubit_indi
         # Annotations - skip for now
         return
     else
-        @warn "Unknown instruction: $instruction_name"
+        error("Unknown instruction: $instruction_name")
     end
 end
