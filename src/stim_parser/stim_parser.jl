@@ -71,12 +71,6 @@ function _parse_stim_string!(content::String, qubit_number::Int, measure_list::V
                     continue
                 end
                 
-                # Remove inline comments
-                if occursin("#", block_line)
-                    comment_start = findfirst("#", block_line)
-                    block_line = strip(block_line[1:(comment_start.start-1)])
-                end
-                
                 if block_line == "{" || endswith(block_line, "{")
                     brace_count += 1
                 elseif block_line == "}"
@@ -329,6 +323,8 @@ function apply_gate!(qc, qubit_number::Int, instruction_name::String, qubit_indi
         push!(qc, put(qubit_number, measure_pos_list[end + 1 + record_idx[1]] => ld))
     elseif instruction_name in ["QUBIT_COORDS", "SHIFT_COORDS"]
         # Annotations - skip for now
+        return
+    elseif instruction_name in ["{", "}"]
         return
     else
         error("Unknown instruction: $instruction_name")

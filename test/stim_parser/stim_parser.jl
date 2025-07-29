@@ -4,7 +4,7 @@ using Yao
 
 @testset "parse_stim_string" begin
     circuit_str = """
-        CNOT 0 1 2 3 4 5
+        CNOT 0 1 2 3 4 5 # A CNOT gate
         CNOT 2 1 4 3 6 5
         MR 1 3 5
 
@@ -13,14 +13,15 @@ using Yao
         DETECTOR rec[-1]
 
         REPEAT 2 {
-            CNOT 0 1 2 3 4 5
+            CNOT 0 1 2 3 4 5 # A CNOT gate
             CNOT 2 1 4 3 6 5
             MR 1 3 5
 
             DETECTOR rec[-3] rec[-6]
             DETECTOR rec[-2] rec[-5]
             DETECTOR rec[-1] rec[-4]
-            REPEAT 2 {
+            REPEAT 2 
+            {
             X 0 1 2 3 4 5 6
             }
         }
@@ -49,7 +50,7 @@ end
 # The following testing circuits are copied from https://github.com/quantumlib/Stim/blob/main/doc/file_format_stim_circuit.md
 @testset "teleportation.stim" begin
     qc = parse_stim_file(joinpath(@__DIR__, "test_circuits", "teleportation.stim"), 100);
-    # vizcircuit(qc)
+    vizcircuit(qc)
     @test qc isa ChainBlock
 end
 
