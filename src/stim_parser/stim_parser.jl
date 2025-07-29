@@ -1,3 +1,12 @@
+"""
+    parse_stim_file(file_path::String, qubit_number::Int)
+
+Parse a Stim file and return a Yao circuit.
+
+# Arguments
+- `file_path::String`: The path to the Stim file.
+- `qubit_number::Int`: The number of qubits in the circuit.
+"""
 function parse_stim_file(file_path::String, qubit_number::Int)
     content = read(file_path, String)
     return parse_stim_string(content, qubit_number)
@@ -16,6 +25,7 @@ function _parse_stim_string!(content::String, qubit_number::Int, measure_list::V
     while i <= length(lines)
         line = strip(lines[i])
         # @show line
+        # @show i
         if startswith(line, "#") || isempty(line)
             i += 1
             continue
@@ -56,7 +66,6 @@ function _parse_stim_string!(content::String, qubit_number::Int, measure_list::V
             
             while i <= length(lines)
                 block_line = strip(lines[i])
-                
                 if startswith(block_line, "#") || isempty(block_line)
                     i += 1
                     continue
@@ -68,17 +77,15 @@ function _parse_stim_string!(content::String, qubit_number::Int, measure_list::V
                     block_line = strip(block_line[1:(comment_start.start-1)])
                 end
                 
-                if block_line == "{"
+                if block_line == "{" || endswith(block_line, "{")
                     brace_count += 1
-                    i += 1
-                    continue
                 elseif block_line == "}"
                     brace_count -= 1
                     if brace_count == 0
                         break
                     end
                 end
-                
+               
                 if brace_count > 0
                     push!(block_content, block_line)
                 end
@@ -88,7 +95,6 @@ function _parse_stim_string!(content::String, qubit_number::Int, measure_list::V
             # Convert block content back to string for recursive parsing
             block_str = join(block_content, "\n")
             
-
             block_circuit = _parse_stim_string!(block_str, qubit_number, measure_list, measure_pos_list)
             for _ in 1:repeat_count
 

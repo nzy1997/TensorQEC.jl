@@ -85,6 +85,9 @@ export code_distance, logical_operator
 # error_learning
 export TrainningData, error_learning
 
+# stim parser
+export parse_stim_file
+
 include("codes/mod2.jl")
 include("clifford/paulistring.jl")
 include("clifford/cliffordgroup.jl")
@@ -123,6 +126,6 @@ include("deprecate.jl")
 
 include("yaoblocks.jl")
 
-include("stim_parser.jl")
+include("stim_parser/stim_parser.jl")
 
 end

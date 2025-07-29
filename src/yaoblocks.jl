@@ -14,6 +14,7 @@ function YaoPlots.draw!(c::YaoPlots.CircuitGrid, p::NumberedMeasure, address, co
     @assert length(controls) == 0
     YaoPlots.draw!(c, p.m, address, controls)
 end
+Yao.apply!(reg::AbstractRegister, m::NumberedMeasure) = apply!(reg, m.m)
 
 struct ConditionBlock{N, BTT<:AbstractBlock{N}, BTF<:AbstractBlock{N}} <: CompositeBlock{N}
     m::NumberedMeasure
@@ -27,14 +28,13 @@ end
 Yao.subblocks(c::ConditionBlock) = (c.m, c.block_true, c.block_false)
 Yao.chsubblocks(c::ConditionBlock, blocks) = ConditionBlock(blocks...)
 
-function _apply!(reg::AbstractRegister{B}, c::ConditionBlock) where B
-    if !isdefined(c.m, :results)
+function Yao.apply!(reg::AbstractRegister{B}, c::ConditionBlock) where B
+    @show c.m.m
+    if !isdefined(c.m.m, :results)
         println("Conditioned on a measurement that has not been performed.")
         throw(UndefRefError())
     end
-    for i = 1:B
-        viewbatch(reg, i) |> (c.m.results[i] == 0 ? c.block_false : c.block_true)
-    end
+    reg |> (c.m.m.results == 0 ? c.block_false : c.block_true)
     reg
 end
 
