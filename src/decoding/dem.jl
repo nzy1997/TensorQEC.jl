@@ -66,4 +66,3 @@ end
 # TODO:
 # 1. Compile measurement and detectors
 # 2. measurement block to put
-# 3. merge DETECTOR and OBSERVABLE_INCLUDE

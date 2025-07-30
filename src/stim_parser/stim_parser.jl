@@ -318,11 +318,11 @@ function apply_gate!(qc, qubit_number::Int, instruction_name::String, qubit_indi
         end
     elseif instruction_name == "DETECTOR"
         detector_num[1] += 1
-        db = DetectorBlock{2}(measure_list[end + 1 .+ record_idx], detector_num[1])
+        db = DetectorBlock{2}(measure_list[end + 1 .+ record_idx], detector_num[1], 0)
         push!(qc, put(qubit_number, measure_pos_list[end + 1 + record_idx[1]] => db))
     elseif instruction_name == "OBSERVABLE_INCLUDE"
         detector_num[1] += 1
-        ld = LogicalDetectorBlock{2}(measure_list[end + 1 .+ record_idx], detector_num)
+        ld = DetectorBlock{2}(measure_list[end + 1 .+ record_idx], detector_num[1], 1)
         push!(qc, put(qubit_number, measure_pos_list[end + 1 + record_idx[1]] => ld))
     elseif instruction_name in ["QUBIT_COORDS", "SHIFT_COORDS"]
         # Annotations - skip for now

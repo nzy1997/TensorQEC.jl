@@ -59,28 +59,17 @@ function YaoPlots.draw!(c::YaoPlots.CircuitGrid, p::ConditionBlock, address, con
     YaoPlots._draw!(c, [controls..., (getindex.(Ref(address), occupied_locs(p)),bts1[1], "$(bts1[2]) or $(bts2[2])")])
 end
 
-abstract type AbstractDetectorBlock{D} <: TrivialGate{D} end
-struct DetectorBlock{D} <: AbstractDetectorBlock{D}
+# abstract type AbstractDetectorBlock{D} <: TrivialGate{D} end
+struct DetectorBlock{D} <: TrivialGate{D}
     vm::Vector{NumberedMeasure}
     num::Int
+    detector_type::Int # 0: detector, 1: logical
 end
 
-Yao.nqudits(sr::AbstractDetectorBlock) = 1
-Yao.print_block(io::IO, sr::DetectorBlock) = print(io, "DETECTOR($(length(sr.vm)))")
+Yao.nqudits(sr::DetectorBlock) = 1
+Yao.print_block(io::IO, sr::DetectorBlock) = iszero(sr.detector_type) ? print(io, "DETECTOR($(sr.num))") : print(io, "LOGICAL($(sr.num))")
 
 function YaoPlots.draw!(c::YaoPlots.CircuitGrid, p::DetectorBlock, address, controls)
     @assert length(controls) == 0
-    YaoPlots._draw!(c, [(getindex.(Ref(address), (1,)), c.gatestyles.g, "DETECTOR($(length(p.vm)))")])
-end
-
-struct LogicalDetectorBlock{D} <: AbstractDetectorBlock{D}
-    vm::Vector{NumberedMeasure}
-    num::Int
-end
-
-Yao.print_block(io::IO, sr::LogicalDetectorBlock) = print(io, "LOGICAL($(length(sr.vm)))")
-
-function YaoPlots.draw!(c::YaoPlots.CircuitGrid, p::LogicalDetectorBlock, address, controls)
-    @assert length(controls) == 0
-    YaoPlots._draw!(c, [(getindex.(Ref(address), (1,)), c.gatestyles.g, "LOGICAL($(length(p.vm)))")])
+    YaoPlots._draw!(c, [(getindex.(Ref(address), (1,)), c.gatestyles.g, iszero(p.detector_type) ? "DETECTOR($(p.num))" : "LOGICAL($(p.num))")])
 end
