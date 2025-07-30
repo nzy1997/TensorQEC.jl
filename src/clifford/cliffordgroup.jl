@@ -174,7 +174,7 @@ struct CliffordSimulateResult{N}
 end
 
 struct CompiledCliffordCircuit{M1, M2}
-    sequence::Vector{Tuple{Int, Int, Int}}  # (howmany qubits, gate-idx, locs-idx)
+    sequence::Vector{Tuple{Int, Int, Int}}  # (howmany qubits, gate-idx, locs-idx) If qubit number is 0, then this is a trivial gate or a error gate,skip this gate when applying.
     single_qubit_gates::Vector{CliffordGate{M1}}
     single_qubit_locs::Vector{Tuple{Int}}
     two_qubit_gates::Vector{CliffordGate{M2}}
@@ -191,8 +191,16 @@ function compile_clifford_circuit(qc::ChainBlock)
     qc = simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
     gatedict = Dict{UInt64, Int}()
     for _gate in qc
+        if _gate isa NumberedMeasure 
+            push!(sequence, (0, 0, 0))
+            continue
+        end
         gate = toput(_gate)
         key = hash(gate.content)
+        if gate.content isa MixedUnitaryChannel 
+            push!(sequence, (0, 0, 0))
+            continue
+        end
         if haskey(gatedict, key) 
             cgate_idx = gatedict[key]
         else 
@@ -215,7 +223,9 @@ function compile_clifford_circuit(qc::ChainBlock)
     end
     return CompiledCliffordCircuit(sequence, single_qubit_gates, single_qubit_locs, two_qubit_gates, two_qubit_locs)
 end
-function (cl::CompiledCliffordCircuit)(pg::PauliGroupElement{N}) where {N}
+
+(cl::CompiledCliffordCircuit)(ps::PauliString) = cl(PauliGroupElement(0, ps))
+function (cl::CompiledCliffordCircuit)(pg::PauliGroupElement)
     for i in 1:length(cl.sequence)
         pg = _step(cl, pg, i)
     end
@@ -223,7 +233,9 @@ function (cl::CompiledCliffordCircuit)(pg::PauliGroupElement{N}) where {N}
 end
 function _step(cl::CompiledCliffordCircuit, pg::PauliGroupElement{N}, i::Int) where {N}
     howmany, gate_idx, locs_idx = cl.sequence[i]
-    if howmany == 1
+    if howmany == 0
+        return pg
+    elseif howmany == 1
         return cl.single_qubit_gates[gate_idx](pg, cl.single_qubit_locs[locs_idx])
     else
         return cl.two_qubit_gates[gate_idx](pg, cl.two_qubit_locs[locs_idx])

@@ -122,6 +122,8 @@ include("decoding/tndecoder.jl")
 include("decoding/ipdecoder.jl")
 include("decoding/matching.jl")
 
+include("decoding/dem.jl")
+
 # deprecate
 include("deprecate.jl")
 

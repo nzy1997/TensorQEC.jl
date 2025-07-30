@@ -14,10 +14,11 @@ end
 function parse_stim_string(content::String, qubit_number::Int)
     measure_list = Vector{NumberedMeasure}()
     measure_pos_list = Vector{Int}()
-    return _parse_stim_string!(content, qubit_number, measure_list, measure_pos_list)
+    detector_num = [0]
+    return _parse_stim_string!(content, qubit_number, measure_list, measure_pos_list, detector_num)
 end
 
-function _parse_stim_string!(content::String, qubit_number::Int, measure_list::Vector{NumberedMeasure}, measure_pos_list::Vector{Int})
+function _parse_stim_string!(content::String, qubit_number::Int, measure_list::Vector{NumberedMeasure}, measure_pos_list::Vector{Int}, detector_num::Vector{Int})
     lines = split(content, '\n')
     qc = chain(qubit_number)
     
@@ -89,7 +90,7 @@ function _parse_stim_string!(content::String, qubit_number::Int, measure_list::V
             # Convert block content back to string for recursive parsing
             block_str = join(block_content, "\n")
             
-            block_circuit = _parse_stim_string!(block_str, qubit_number, measure_list, measure_pos_list)
+            block_circuit = _parse_stim_string!(block_str, qubit_number, measure_list, measure_pos_list, detector_num)
             for _ in 1:repeat_count
 
                 # Merge the block circuit into the main circuit
@@ -197,7 +198,7 @@ function _parse_stim_string!(content::String, qubit_number::Int, measure_list::V
         end
         
         # Apply the appropriate gate based on instruction name
-        apply_gate!(qc, qubit_number, instruction_name, qubit_indices, arguments, measure_list, record_idx, measure_pos_list)
+        apply_gate!(qc, qubit_number, instruction_name, qubit_indices, arguments, measure_list, record_idx, measure_pos_list, detector_num)
         
         i += 1
     end
@@ -206,7 +207,7 @@ function _parse_stim_string!(content::String, qubit_number::Int, measure_list::V
 end
 
 # Helper function to apply gates
-function apply_gate!(qc, qubit_number::Int, instruction_name::String, qubit_indices::Vector{Int}, arguments::Vector{Float64}, measure_list::Vector{NumberedMeasure}, record_idx::Vector{Int}, measure_pos_list::Vector{Int})
+function apply_gate!(qc, qubit_number::Int, instruction_name::String, qubit_indices::Vector{Int}, arguments::Vector{Float64}, measure_list::Vector{NumberedMeasure}, record_idx::Vector{Int}, measure_pos_list::Vector{Int},detector_num::Vector{Int})
     if instruction_name == "H"
         for qubit in qubit_indices
             push!(qc, put(qubit_number,qubit+1 => H))
@@ -316,10 +317,12 @@ function apply_gate!(qc, qubit_number::Int, instruction_name::String, qubit_indi
             push!(qc, put(qubit_number, qubit+1 => quantum_channel(BitFlipError(arguments[1]))))
         end
     elseif instruction_name == "DETECTOR"
-        db = DetectorBlock{2}(measure_list[end + 1 .+ record_idx])
+        detector_num[1] += 1
+        db = DetectorBlock{2}(measure_list[end + 1 .+ record_idx], detector_num[1])
         push!(qc, put(qubit_number, measure_pos_list[end + 1 + record_idx[1]] => db))
     elseif instruction_name == "OBSERVABLE_INCLUDE"
-        ld = LogicalDetectorBlock{2}(measure_list[end + 1 .+ record_idx])
+        detector_num[1] += 1
+        ld = LogicalDetectorBlock{2}(measure_list[end + 1 .+ record_idx], detector_num)
         push!(qc, put(qubit_number, measure_pos_list[end + 1 + record_idx[1]] => ld))
     elseif instruction_name in ["QUBIT_COORDS", "SHIFT_COORDS"]
         # Annotations - skip for now

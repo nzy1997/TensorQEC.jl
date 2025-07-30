@@ -9,6 +9,8 @@ end
 Yao.nqudits(nm::NumberedMeasure) = nqudits(nm.m)
 Yao.print_block(io::IO, m::NumberedMeasure) = print(io, "M[$(m.num)]")
 Yao.content(m::NumberedMeasure) = m.m
+YaoBlocks.Optimise.to_basictypes(m::NumberedMeasure) = m
+Yao.chsubblocks(c::NumberedMeasure, block) = NumberedMeasure(block..., c.num)
 
 function YaoPlots.draw!(c::YaoPlots.CircuitGrid, p::NumberedMeasure, address, controls)
     @assert length(controls) == 0
@@ -60,6 +62,7 @@ end
 abstract type AbstractDetectorBlock{D} <: TrivialGate{D} end
 struct DetectorBlock{D} <: AbstractDetectorBlock{D}
     vm::Vector{NumberedMeasure}
+    num::Int
 end
 
 Yao.nqudits(sr::AbstractDetectorBlock) = 1
@@ -72,6 +75,7 @@ end
 
 struct LogicalDetectorBlock{D} <: AbstractDetectorBlock{D}
     vm::Vector{NumberedMeasure}
+    num::Int
 end
 
 Yao.print_block(io::IO, sr::LogicalDetectorBlock) = print(io, "LOGICAL($(length(sr.vm)))")
