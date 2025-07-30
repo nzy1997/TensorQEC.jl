@@ -22,6 +22,7 @@ end
     syn = syndrome_extraction(ep,tanner.stgz)
 
     decoder = TNMAP()
+    @show decoder
     res = decode(decoder,tanner.stgz,syn)
     @test syn == syndrome_extraction(res.error_qubits, tanner.stgz)
 end
@@ -63,6 +64,7 @@ end
     syd = syndrome_extraction(error_qubits, tanner.stgz)
     lx,lz = logical_operator(tanner)
     p_vector = fill(0.1, d*d)
+    @show TNMMAP()
     ct = compile(TNMMAP(), tanner, IndependentDepolarizingError(p_vector,fill(0.0,d*d),fill(0.0,d*d)))
     css_syd = CSSSyndrome(zeros(Mod2,(d*d-1)÷2),syd.s)
     tnres = decode(ct, css_syd)

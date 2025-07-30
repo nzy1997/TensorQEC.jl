@@ -110,5 +110,13 @@ end
     include("deprecate.jl")
 end
 
+@testset "yaoblocks" begin
+    include("yaoblocks.jl")
+end
+
+@testset "stim_parser" begin
+    include("stim_parser/stim_parser.jl")
+end
+
 DocMeta.setdocmeta!(TensorQEC, :DocTestSetup, :(using TensorQEC); recursive=true)
 Documenter.doctest(TensorQEC; manual=false, fix=false)

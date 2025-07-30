@@ -10,6 +10,9 @@ Base.@kwdef struct TNMAP <: AbstractGeneralDecoder
     optimizer::CodeOptimizer = TreeSA()  # contraction order optimizer
 end
 
+Base.show(io::IO, ::MIME"text/plain", p::TNMAP) = show(io, p)
+Base.show(io::IO, p::TNMAP) = print(io, "TNMAP")
+
 struct CompiledTNMAP{ET, FT} <: CompiledDecoder
     net::TensorNetworkModel{ET, FT}   # The tensor network model
     qubit_num::Int                    # The number of qubits in the Tanner graph
@@ -64,6 +67,9 @@ A tensor network based marginal maximum a posteriori (MMAP) decoder, which finds
 Base.@kwdef struct TNMMAP <: AbstractGeneralDecoder
     optimizer::CodeOptimizer = TreeSA()  # contraction order optimizer
 end
+
+Base.show(io::IO, ::MIME"text/plain", p::TNMMAP) = show(io, p)
+Base.show(io::IO, p::TNMMAP) = print(io, "TNMMAP")
 
 struct CompiledTNMMAP{CT, AT} <: CompiledDecoder
     tanner::CSSTannerGraph
