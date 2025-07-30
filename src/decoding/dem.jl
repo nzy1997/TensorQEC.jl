@@ -46,7 +46,7 @@ function forward_analysis(ps::PauliString, cqc::CompiledCliffordCircuit, i::Int,
             if isanticommute(pg, pgm)
                 push!(flipped_measure, qc[j].num)
             end
-        elseif qc[j].content isa AbstractDetectorBlock
+        elseif qc[j].content isa DetectorBlock
             count_m = 0
             for k in qc[j].content.vm
                 if k.num in flipped_measure
