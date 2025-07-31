@@ -37,10 +37,10 @@ end
 @testset "DetectorBlock" begin
     m1 = NumberedMeasure(Measure(1), 1)
     m2 = NumberedMeasure(Measure(1), 2)
-    c = TensorQEC.DetectorBlock{2}([m1, m2])
+    c = TensorQEC.DetectorBlock{2}([m1, m2], 1, 0)
     @show c
 
-    c2 = TensorQEC.LogicalDetectorBlock{2}([m1, m2])
+    c2 = TensorQEC.LogicalDetectorBlock{2}([m1, m2], 1, 1)
     @show c2
 
     qc = chain(1,m1,m2,c,c2)

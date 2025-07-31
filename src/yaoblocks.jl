@@ -14,6 +14,9 @@ Yao.chsubblocks(c::NumberedMeasure, block) = NumberedMeasure(block..., c.num)
 
 function YaoPlots.draw!(c::YaoPlots.CircuitGrid, p::NumberedMeasure, address, controls)
     @assert length(controls) == 0
+    f_vec = copy(c.frontier)
+    f_vec[address[1]] += 1
+    YaoPlots._texttop!(YaoPlots.CircuitGrid(f_vec, c.w_depth, c.w_line,c.gatestyles), address[1], CircuitStyles.boxsize(c.gatestyles.g)..., 0.25, "rec[$(p.num)]")
     YaoPlots.draw!(c, p.m, address, controls)
 end
 Yao.apply!(reg::AbstractRegister, m::NumberedMeasure) = apply!(reg, m.m)
@@ -67,9 +70,9 @@ struct DetectorBlock{D} <: TrivialGate{D}
 end
 
 Yao.nqudits(sr::DetectorBlock) = 1
-Yao.print_block(io::IO, sr::DetectorBlock) = iszero(sr.detector_type) ? print(io, "DETECTOR($(sr.num))") : print(io, "LOGICAL($(sr.num))")
+Yao.print_block(io::IO, sr::DetectorBlock) = iszero(sr.detector_type) ? print(io, "D[$(sr.num)]: rec$(getfield.(sr.vm, :num))") : print(io, "L[$(sr.num)]: rec$(getfield.(sr.vm, :num))")
 
 function YaoPlots.draw!(c::YaoPlots.CircuitGrid, p::DetectorBlock, address, controls)
     @assert length(controls) == 0
-    YaoPlots._draw!(c, [(getindex.(Ref(address), (1,)), c.gatestyles.g, iszero(p.detector_type) ? "DETECTOR($(p.num))" : "LOGICAL($(p.num))")])
+    YaoPlots._draw!(c, [(getindex.(Ref(address), (1,)), c.gatestyles.g, iszero(p.detector_type) ? "D[$(p.num)]: rec$(getfield.(p.vm, :num))" : "L[$(p.num)]: rec$(getfield.(p.vm, :num))")])
 end

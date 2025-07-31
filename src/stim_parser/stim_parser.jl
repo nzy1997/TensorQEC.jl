@@ -260,19 +260,27 @@ function apply_gate!(qc, qubit_number::Int, instruction_name::String, qubit_indi
                 end
             end
         end
-    elseif instruction_name == "M" || instruction_name == "MZ"
+    elseif instruction_name in ["M", "MZ", "MX", "MY", "MR"]
         # Measurement operations
         for qubit in qubit_indices
-            m = NumberedMeasure(Measure(qubit_number; locs = qubit+1), length(measure_list)+1)
-            push!(qc, m)
-            push!(measure_list, m)
-            push!(measure_pos_list, qubit+1)
-        end
-    elseif instruction_name == "MR"
-        # Measurement record operations
-        for qubit in qubit_indices
-            m = NumberedMeasure(Measure(qubit_number; locs = qubit+1,resetto=bit"0"), length(measure_list)+1)
-            push!(qc, m)
+            if instruction_name == "MX"
+                op = X
+            elseif instruction_name == "MY"
+                op = Y
+            else 
+                op = ComputationalBasis()
+            end
+            if instruction_name == "MR"
+                resetto = bit"0"
+            else
+                resetto = nothing
+            end
+            if isempty(arguments)
+                m = NumberedMeasure(Measure(1; operator = op, resetto = resetto), length(measure_list)+1)
+            else
+                m = NumberedMeasure(Measure(1; operator = op, error_prob = arguments[1], resetto = resetto), length(measure_list)+1)
+            end
+            push!(qc, put(qubit_number, qubit+1 => m))
             push!(measure_list, m)
             push!(measure_pos_list, qubit+1)
         end
@@ -288,14 +296,6 @@ function apply_gate!(qc, qubit_number::Int, instruction_name::String, qubit_indi
             m = Measure(qubit_number; locs = qubit+1,resetto=bit"0")
             push!(qc, m)
             push!(qc,put(qubit_number, qubit+1 => H))
-        end
-    elseif instruction_name == "MX"
-        # Measurement record operations
-        for qubit in qubit_indices
-            m = NumberedMeasure(Measure(qubit_number; locs = qubit+1, operator = X), length(measure_list)+1)
-            push!(qc, m)
-            push!(measure_list, m)
-            push!(measure_pos_list, qubit+1)
         end
     elseif instruction_name == "TICK"
         # TICK is just a timing marker - no quantum operation
