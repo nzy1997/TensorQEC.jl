@@ -191,16 +191,14 @@ function compile_clifford_circuit(qc::ChainBlock)
     qc = simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
     gatedict = Dict{UInt64, Int}()
     for _gate in qc
-        if _gate isa NumberedMeasure 
-            push!(sequence, (0, 0, 0))
-            continue
-        end
         gate = toput(_gate)
-        key = hash(gate.content)
-        if gate.content isa MixedUnitaryChannel 
+        if gate isa Measure || gate.content isa NumberedMeasure || gate.content isa MixedUnitaryChannel || gate.content isa DepolarizingChannel
             push!(sequence, (0, 0, 0))
             continue
         end
+
+        key = hash(gate.content)
+
         if haskey(gatedict, key) 
             cgate_idx = gatedict[key]
         else 

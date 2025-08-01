@@ -90,13 +90,9 @@ function _parse_stim_string!(content::String, qubit_number::Int, measure_list::V
             # Convert block content back to string for recursive parsing
             block_str = join(block_content, "\n")
             
-            block_circuit = _parse_stim_string!(block_str, qubit_number, measure_list, measure_pos_list, detector_num)
+            # block_circuit = _parse_stim_string!(block_str, qubit_number, measure_list, measure_pos_list, detector_num)
             for _ in 1:repeat_count
-
-                # Merge the block circuit into the main circuit
-                for gate in block_circuit
-                    push!(qc, gate)
-                end
+                push!(qc, _parse_stim_string!(block_str, qubit_number, measure_list, measure_pos_list, detector_num))
             end
             
             i += 1
@@ -231,6 +227,10 @@ function apply_gate!(qc, qubit_number::Int, instruction_name::String, qubit_indi
     elseif instruction_name == "T"
         for qubit in qubit_indices
             push!(qc, put(qubit_number, qubit+1 => ConstGate.T))
+        end
+    elseif instruction_name == "C_XYZ"
+        for qubit in qubit_indices
+            push!(qc, put(qubit_number, qubit+1 => matblock(ComplexF64[1-im  -1-im; 1-im  1+im]/2)))
         end
     elseif instruction_name == "CNOT" || instruction_name == "CX"
         # CNOT requires pairs of qubits
