@@ -160,3 +160,69 @@ function decode(ct::CompiledTNMMAP, syndrome::CSSSyndrome)
     end
     return DecodingResult(true, CSSErrorPattern(ex,ez))
 end
+
+struct CompiledDEMTNMMAP{CT, AT} <: CompiledDecoder
+    tanner::SimpleTannerGraph
+    l2q::Vector{Vector{Int}}
+    optcode::CT
+    tensors::Vector{AT}
+    syndrome_indices::Vector{Int}
+    zero_tensor::AT
+    one_tensor::AT
+end
+
+# nvars is the number of variables in the tensor network. 
+# |<--- error --->||<--- syndrome --->|<--- logical --->|
+function compile(decoder::TNMMAP, dem::DetectorErrorModel)
+    tanner = dem2tanner(dem)
+    l2q = [findall(x-> i ∈ x , dem.flipped_detectors) for i in dem.logical_list]
+
+    nvars = nq(tanner) + ns(tanner) + length(dem.logical_list)
+    ixs = Vector{Vector{Int64}}()
+    tensors = Vector{Array{Float64}}()
+    for (i,c) in enumerate(tanner.s2q)
+        push!(ixs, [c...,i + nq(tanner)])
+        push!(tensors, parity_check_matrix(length(c)))
+    end
+
+    for (i,c) in enumerate(l2q)
+        push!(ixs, [c...,i + nq(tanner)+ns(tanner)])
+        push!(tensors, parity_check_matrix(length(c)))
+    end
+
+    for (i,c) in enumerate(dem.error_rates)
+        push!(ixs, [i])
+        push!(tensors, [1-c c])
+    end
+
+    syndrome_indices = collect(nq(tanner)+1:nq(tanner)+ns(tanner))
+    iy = collect(nq(tanner)+ns(tanner)+1:nvars)
+    
+    zero_tensor = [1.0, 0.0]
+    one_tensor = [0.0, 1.0]
+    
+    for v in syndrome_indices
+        push!(ixs, [v])
+        push!(tensors, zero_tensor)
+    end
+    code = DynamicEinCode(ixs,iy)
+    size_dict = uniformsize(code, 2)
+    optcode = optimize_code(code, size_dict, decoder.optimizer)
+    # return code
+    return CompiledDEMTNMMAP(tanner, l2q, optcode, tensors, syndrome_indices, zero_tensor, one_tensor)
+end
+
+function update_syndrome!(tensors::Vector{AT}, syndrome::SimpleSyndrome, zero_tensor::AT,one_tensor::AT) where AT
+    ns = length(syndrome.s)
+    for (i,s) in enumerate(syndrome.s)
+        tensors[end-ns+i] = s.x ? one_tensor : zero_tensor
+    end
+    return tensors
+end
+
+function decode(ct::CompiledDEMTNMMAP, syndrome::SimpleSyndrome)
+    update_syndrome!(ct.tensors, syndrome, ct.zero_tensor, ct.one_tensor)
+    mar = ct.optcode(ct.tensors...)
+    _, pos = findmax(mar)
+    return pos
+end

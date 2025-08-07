@@ -126,3 +126,15 @@ end
 
 # TODO:
 # 1. Compile measurement and detectors
+
+function dem2tanner(dem::DetectorErrorModel)
+    nq = length(dem.error_rates)
+    q2s = [setdiff(v,dem.logical_list) for v in dem.flipped_detectors]
+    ns = maximum(dem.detector_list)
+    s2q = [findall(x-> i ∈ x , q2s) for i in 1:ns]
+    H = zeros(Mod2, ns, nq)
+    for i in 1:ns, j in s2q[i]
+        H[i, j] = 1
+    end
+    return SimpleTannerGraph(nq, ns, q2s, s2q, H)
+end
