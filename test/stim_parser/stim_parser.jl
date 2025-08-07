@@ -74,3 +74,8 @@ end
     qc = parse_stim_file(joinpath(@__DIR__, "test_circuits", "r=12,d=12,p=0.001,noise=si1000,c=bivariate_bicycle_X,nkd=[[144,12,12]],q=288,iscolored=True,A_poly=x^3+y+y^2,B_poly=y^3+x+x^2.stim"), 288);
     @test qc isa ChainBlock
 end
+
+@testset "dem.dem" begin
+    dem = TensorQEC.parse_dem_file(joinpath(@__DIR__, "test_circuits", "dem.dem"))
+    @test dem isa TensorQEC.DetectorErrorModel
+end

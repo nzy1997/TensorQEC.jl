@@ -333,3 +333,43 @@ function apply_gate!(qc, qubit_number::Int, instruction_name::String, qubit_indi
         error("Unknown instruction: $instruction_name")
     end
 end
+
+function parse_dem_file(file_path::String)
+    content = read(file_path, String)
+    return parse_dem_string(content)
+end
+
+function parse_dem_string(content::String)
+    lines = split(content, '\n')
+    error_rates = Vector{Float64}()
+    flipped_detectors = Vector{Vector{Int}}()
+    flipped_logicals = Vector{Vector{Int}}()
+    for line in lines
+        if isempty(line)
+            continue
+        end
+        s = split(line)
+        if startswith(s[1], "error(")
+            num = parse(Float64, s[1][7:end-1])
+            push!(error_rates, num)
+            detectors = Vector{Int}()
+            logicals = Vector{Int}()
+            for j in 2:length(s)
+                if startswith(s[j], "D")
+                    push!(detectors, parse(Int, s[j][2:end])+1)
+                end
+                if startswith(s[j], "L")
+                    push!(logicals, parse(Int, s[j][2:end])+1)
+                end
+            end
+            push!(flipped_detectors, detectors)
+            push!(flipped_logicals, logicals)
+        elseif startswith(s[1], "repeat")
+            error("Repeat is not supported, use `circuit.detector_error_model(flatten_loops=True)` to flatten the loops in stim")
+        end
+    end
+    largest_detector = maximum(maximum.(flipped_detectors))
+    flipped_logicals = broadcast(x -> x .+ largest_detector, flipped_logicals)
+    largest_logical = maximum(broadcast(x -> isempty(x) ? 0 : maximum(x), flipped_logicals))
+    return DetectorErrorModel(error_rates, flipped_detectors .∪ flipped_logicals, collect(1:largest_detector), collect(largest_detector+1:largest_logical))
+end
