@@ -116,13 +116,13 @@ include("codes/gaussian_elimination.jl")
 include("nonclifford/correction.jl")
 
 # decoders
+include("decoding/dem.jl")
 include("decoding/general_decoding.jl")
 include("decoding/bposd.jl")
 include("decoding/tndecoder.jl")
 include("decoding/ipdecoder.jl")
 include("decoding/matching.jl")
 
-include("decoding/dem.jl")
 
 # deprecate
 include("deprecate.jl")

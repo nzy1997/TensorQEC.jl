@@ -66,6 +66,7 @@ A tensor network based marginal maximum a posteriori (MMAP) decoder, which finds
 """
 Base.@kwdef struct TNMMAP <: AbstractGeneralDecoder
     optimizer::CodeOptimizer = TreeSA()  # contraction order optimizer
+    factorize::Bool = false # whether to factorize the tensors to rank-3 tensors
 end
 
 Base.show(io::IO, ::MIME"text/plain", p::TNMMAP) = show(io, p)
@@ -172,31 +173,29 @@ struct CompiledDEMTNMMAP{CT, AT} <: CompiledDecoder
 end
 
 # nvars is the number of variables in the tensor network. 
-# |<--- error --->||<--- syndrome --->|<--- logical --->|
+# |<--- error --->|<--- syndrome --->|<--- logical --->|<--- (auxiliary variables) --->|
 function compile(decoder::TNMMAP, dem::DetectorErrorModel)
     tanner = dem2tanner(dem)
     l2q = [findall(x-> i ∈ x , dem.flipped_detectors) for i in dem.logical_list]
 
     nvars = nq(tanner) + ns(tanner) + length(dem.logical_list)
+    iy = collect(nq(tanner) + ns(tanner)+1:nvars)
     ixs = Vector{Vector{Int64}}()
     tensors = Vector{Array{Float64}}()
     for (i,c) in enumerate(tanner.s2q)
-        push!(ixs, [c...,i + nq(tanner)])
-        push!(tensors, parity_check_matrix(length(c)))
+        nvars = push_check_node!(ixs, tensors, c, i + nq(tanner), nvars, decoder.factorize)
     end
 
     for (i,c) in enumerate(l2q)
-        push!(ixs, [c...,i + nq(tanner)+ns(tanner)])
-        push!(tensors, parity_check_matrix(length(c)))
+        nvars = push_check_node!(ixs, tensors, c, i + nq(tanner)+ns(tanner), nvars, decoder.factorize)
     end
 
     for (i,c) in enumerate(dem.error_rates)
         push!(ixs, [i])
-        push!(tensors, [1-c c])
+        push!(tensors, [1-c, c])
     end
 
     syndrome_indices = collect(nq(tanner)+1:nq(tanner)+ns(tanner))
-    iy = collect(nq(tanner)+ns(tanner)+1:nvars)
     
     zero_tensor = [1.0, 0.0]
     one_tensor = [0.0, 1.0]
@@ -212,17 +211,52 @@ function compile(decoder::TNMMAP, dem::DetectorErrorModel)
     return CompiledDEMTNMMAP(tanner, l2q, optcode, tensors, syndrome_indices, zero_tensor, one_tensor)
 end
 
-function update_syndrome!(tensors::Vector{AT}, syndrome::SimpleSyndrome, zero_tensor::AT,one_tensor::AT) where AT
+function push_check_node!(ixs::Vector{Vector{Int64}}, tensors::Vector{Array{Float64}}, c::Vector{Int64}, check_node_index::Int, nvars::Int,factorize::Bool)
+    c_length = length(c)
+    if !factorize || (c_length == 2)
+        if c_length > 20
+            error("The number of qubits in the check node is too large, please set factorize to true to factorize the tensors to rank-3 tensors.")
+        end
+        push!(ixs, [c...,check_node_index])
+        push!(tensors, parity_check_matrix(c_length))
+    else
+        push!(ixs, [c[1],c[2],nvars+1])
+        push!(tensors, parity_check_matrix(2))
+        for j in 3:1:c_length-1
+            push!(ixs, [nvars+j-1, c[j], nvars+j-2])
+            push!(tensors, parity_check_matrix(2))
+        end
+        push!(ixs, [check_node_index, c[c_length], nvars+c_length-2])
+        push!(tensors, parity_check_matrix(2))
+        nvars += c_length - 2
+    end
+    return nvars
+end
+
+function update_syndrome!(ct::CompiledDEMTNMMAP, syndrome::SimpleSyndrome)
     ns = length(syndrome.s)
     for (i,s) in enumerate(syndrome.s)
-        tensors[end-ns+i] = s.x ? one_tensor : zero_tensor
+        ct.tensors[end-ns+i] = s.x ? ct.one_tensor : ct.zero_tensor
     end
-    return tensors
+    return ct
 end
 
 function decode(ct::CompiledDEMTNMMAP, syndrome::SimpleSyndrome)
-    update_syndrome!(ct.tensors, syndrome, ct.zero_tensor, ct.one_tensor)
+    update_syndrome!(ct, syndrome)
     mar = ct.optcode(ct.tensors...)
     _, pos = findmax(mar)
-    return pos
+
+    ep = _mixed_integer_programming_for_one_solution(ct.tanner.H, syndrome.s)
+    if pos isa CartesianIndex
+        for (i,l) in enumerate(ct.l2q)
+            if sum(x -> ep[x], l).x == (pos.I[i] == 1)
+                ep[l] .+= Mod2(1)
+            end
+        end
+    elseif pos isa Int
+        if sum(x -> ep[x], ct.l2q[1]).x == (pos == 1)
+            ep[ct.l2q[1]] .+= Mod2(1)
+        end
+    end
+    return DecodingResult(true, ep)
 end
