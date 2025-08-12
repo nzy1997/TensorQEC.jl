@@ -186,7 +186,7 @@ function sa_energy_hard(ops_config::Vector{Bool}, sap::SpinGlassSA, bit_config::
     bit_config_copy = copy(bit_config)
     for (j,b) in enumerate(ops_config)
         if b
-            bit_config_copy[getview(sap.logp,j)] .+= Mod2(1)
+            bit_config_copy[getview(sap.ops,j)] .+= Mod2(1)
         end
     end
     return -sa_energy(bit_config_copy, sap)
