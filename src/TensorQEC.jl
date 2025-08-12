@@ -15,7 +15,7 @@ using Yao.YaoBlocks.LuxurySparse: PermMatrixCSC
 using PrettyTables
 using Optimisers
 using BitBasis
-# using Random
+using Random
 
 using Graphs
 using SimpleWeightedGraphs
@@ -121,6 +121,7 @@ include("decoding/bposd.jl")
 include("decoding/tndecoder.jl")
 include("decoding/ipdecoder.jl")
 include("decoding/matching.jl")
+include("decoding/mcmc.jl")
 
 # deprecate
 include("deprecate.jl")
