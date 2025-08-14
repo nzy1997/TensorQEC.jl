@@ -41,11 +41,30 @@ function detector_error_model(qc::ChainBlock)
             end
         elseif gate isa PutBlock && gate.content isa DepolarizingChannel
             @assert gate.content.n == 1 "Depolarizing channel is not supported for multiple qubits"
+            @assert gate.content.p <= 0.75 "Can't analyze single-qubit over-mixing depolarizing errors (probability > 3/4)"
             ps = PauliString(num_qubits,gate.locs[1]=>Pauli(1))
-            push_to_dict!(detector_error_map, forward_analysis(ps, cqc, i, qc), gate.content.p*2/3)
+            xdetectors = forward_analysis(ps, cqc, i, qc)
+
+            ps = PauliString(num_qubits,gate.locs[1]=>Pauli(2))
+            ydetectors = forward_analysis(ps, cqc, i, qc)
 
             ps = PauliString(num_qubits,gate.locs[1]=>Pauli(3))
-            push_to_dict!(detector_error_map, forward_analysis(ps, cqc, i, qc), gate.content.p*2/3)
+            zdetectors = forward_analysis(ps, cqc, i, qc)
+
+            if isempty(xdetectors)
+                @assert ydetectors == zdetectors "X and Z detectors are not consistent"
+                push_to_dict!(detector_error_map, ydetectors, gate.content.p*2/3)
+            elseif isempty(ydetectors)
+                @assert xdetectors == zdetectors "X and Z detectors are not consistent"
+                push_to_dict!(detector_error_map, xdetectors, gate.content.p*2/3)
+            elseif isempty(zdetectors)
+                @assert xdetectors == ydetectors "X and Y detectors are not consistent"
+                push_to_dict!(detector_error_map, xdetectors, gate.content.p*2/3)
+            else
+                push_to_dict!(detector_error_map, xdetectors, (1-sqrt(1-4*gate.content.p/3))/2)
+                push_to_dict!(detector_error_map, ydetectors, (1-sqrt(1-4*gate.content.p/3))/2)
+                push_to_dict!(detector_error_map, zdetectors, (1-sqrt(1-4*gate.content.p/3))/2)
+            end
         elseif gate isa PutBlock && gate.content isa DetectorBlock && gate.content.detector_type == 0 
             push!(dl, gate.content.num)
         elseif gate isa PutBlock && gate.content isa DetectorBlock && gate.content.detector_type == 1
