@@ -52,19 +52,19 @@ function YaoPlots.draw!(c::YaoPlots.CircuitGrid, p::SymbolRecorder, address, con
     YaoPlots._draw!(c, [(getindex.(Ref(address), (1,)), c.gatestyles.g, "$(p.symbol)")])
 end
 
-function YaoToEinsum.add_gate!(eb::YaoToEinsum.EinBuilder{T}, b::PutBlock{D,C,SymbolRecorder{D}}) where {T,D,C}
+function YaoToEinsum.eat_gate!(eb::YaoToEinsum.EinBuilder{VectorMode, T}, b::PutBlock{D,C,SymbolRecorder{D}}) where {T,D,C}
     lj = eb.slots[b.locs[1]]
     b.content.symbol = lj
     return eb
 end
 
-function YaoToEinsum.add_gate!(eb::YaoToEinsum.EinBuilder{T}, b::PutBlock{D,C,IdentityRecorder{D}}) where {T,D,C}
+function YaoToEinsum.eat_gate!(eb::YaoToEinsum.EinBuilder{VectorMode, T}, b::PutBlock{D,C,IdentityRecorder{D}}) where {T,D,C}
     b.content.symbol = length(eb.tensors)+1
     m = T[[1 0]; [0 1]]
     k = 1 
     locs = [b.locs[1]] 
     nlabels = [YaoToEinsum.newlabel!(eb) for _=1:k]
-    YaoToEinsum.add_tensor!(eb, reshape(Matrix{T}(m), fill(2, 2k)...), [nlabels..., eb.slots[locs]...])
+    YaoToEinsum.push_normal_tensor!(eb, reshape(Matrix{T}(m), fill(2, 2k)...), [nlabels..., eb.slots[locs]...])
     eb.slots[locs] .= nlabels
     return eb
 end

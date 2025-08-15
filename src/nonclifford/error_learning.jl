@@ -32,7 +32,7 @@ function YaoPlots.draw!(c::YaoPlots.CircuitGrid, p::TrainingChannel, address, co
     YaoPlots._draw!(c, [(getindex.(Ref(address), (1,)), c.gatestyles.g, "TrainingChannel")])
 end
 
-function YaoToEinsum.add_gate!(eb::YaoToEinsum.EinBuilder{T}, b::PutBlock{D,C,TrainingChannel{D}}) where {T,D,C}
+function YaoToEinsum.eat_gate!(eb::YaoToEinsum.EinBuilder{VectorMode, T}, b::PutBlock{D,C,TrainingChannel{D}}) where {T,D,C}
     locs = collect(b.locs)
 
     k = length(locs)
@@ -47,7 +47,7 @@ function YaoToEinsum.add_gate!(eb::YaoToEinsum.EinBuilder{T}, b::PutBlock{D,C,Tr
 end
 
 TrainingChannel(; nlevel=2) = TrainingChannel{nlevel}(nothing)
-function YaoToEinsum.add_gate!(eb::YaoToEinsum.EinBuilder{T}, b::PutBlock{D,C,ComplexConj{TrainingChannel{D},D}}) where {T,D,C}
+function YaoToEinsum.eat_gate!(eb::YaoToEinsum.EinBuilder{VectorMode, T}, b::PutBlock{D,C,ComplexConj{TrainingChannel{D},D}}) where {T,D,C}
     locs = collect(b.locs)
     k = length(locs)
     nlabels = [YaoToEinsum.newlabel!(eb) for _=1:k]
@@ -58,9 +58,9 @@ function YaoToEinsum.add_gate!(eb::YaoToEinsum.EinBuilder{T}, b::PutBlock{D,C,Co
     label_vec1 = [b.content.content.output_indices...,b.content.content.input_indices...,plabel]
     label_vec2 = [eb.slots[locs]..., nlabels...,plabel]
 
-    YaoToEinsum.add_tensor!(eb, ops1, label_vec1)
-    YaoToEinsum.add_tensor!(eb, ops2, label_vec2)
-    YaoToEinsum.add_tensor!(eb, probs, [plabel])
+    YaoToEinsum.push_normal_tensor!(eb, ops1, label_vec1)
+    YaoToEinsum.push_normal_tensor!(eb, ops2, label_vec2)
+    YaoToEinsum.push_normal_tensor!(eb, probs, [plabel])
 
     b.content.content.tensor_pos = length(eb.tensors)
     eb.slots[locs] .= nlabels
@@ -125,13 +125,13 @@ function generate_new_tensor(old_tensors::Vector{AbstractArray{ComplexF64}},p_po
     return new_t
 end
 
-function get_grad(code::SlicedEinsum, p::Float64,tensors::Vector{AbstractArray{ComplexF64}},p_pos::Vector{Int})
-    p_app,grad = OMEinsum.cost_and_gradient(code,(tensors...,))
+function get_grad(code::Union{SlicedEinsum, NestedEinsum}, p::Float64,tensors::Vector{AbstractArray{ComplexF64}},p_pos::Vector{Int})
+    p_app,grad = OMEinsum.cost_and_gradient(code, (tensors...,))
     # return [2*(real(p_app[])-p).* (grad[x]) for x in p_pos] #,(real(p_app[])-p)^2
     return [-p*1 ./ (real(p_app[])) .* (grad[x]) for x in p_pos]
 end
 
-function get_grad(code::SlicedEinsum,tensors::Vector{AbstractArray{ComplexF64}},p_pos::Vector{Int}, td::TrainningData,pvec::Vector{Vector{Float64}})
+function get_grad(code::Union{SlicedEinsum, NestedEinsum}, tensors::Vector{AbstractArray{ComplexF64}},p_pos::Vector{Int}, td::TrainningData,pvec::Vector{Vector{Float64}})
     pvec_input = [[1 - sum(x), x...] for x in pvec]
     temp = sum([get_grad(code,td.pvec[x],generate_new_tensor(tensors,p_pos,td.states[x],pvec_input),p_pos) for x in 1:length(td.pvec)])
     return [x[2:end] .- x[1] for x in temp]
