@@ -111,7 +111,7 @@ end
 
 @testset "dem TNMMAP" begin
     dem = TensorQEC.parse_dem_file(joinpath(@__DIR__, "..", "stim_parser", "test_circuits", "dem.dem"))
-    ct = compile(TNMMAP(TreeSA(), true,true), dem)
+    ct = compile(TNMMAP(TreeSA(), true), dem)
 
     Random.seed!(12323)
     ep = random_error_qubits(IndependentFlipError(dem.error_rates))

@@ -7,7 +7,7 @@ In this section, we introduce the tensor network decoder.
 [`TNMMAP`](@ref) is a tensor network based marginal maximum a posteriori (MMAP) decoder, which finds the most probable logical sector after marginalizing out the error pattern on qubits. We can generate a `TNMMAP` decoder by `TNMMAP()`.
 ```@example tndecoder
 using TensorQEC, TensorQEC.OMEinsum
-decoder = TNMMAP(TreeSA())
+decoder = TNMMAP(TreeSA(), true)
 ```
 Here `TreeSA()` is the default optimizer for optimizing the tensor network contraction order.
 

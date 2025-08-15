@@ -57,17 +57,26 @@ function decode(ct::CompiledTNMAP, syndrome::SimpleSyndrome)
 end
 
 """
-    TNMMAP(;optimizer::CodeOptimizer=default_optimizer()) <: AbstractGeneralDecoder
+    NoOptimizer() <: CodeOptimizer
+
+A dummy optimizer that does not optimize the tensor network contraction order.
+"""
+struct NoOptimizer <: CodeOptimizer end
+
+Base.show(io::IO, ::MIME"text/plain", p::NoOptimizer) = show(io, p)
+Base.show(io::IO, p::NoOptimizer) = print(io, "NoOptimizer")
+"""
+    TNMMAP(;optimizer::CodeOptimizer=TreeSA(), factorize::Bool=false) <: AbstractGeneralDecoder
 
 A tensor network based marginal maximum a posteriori (MMAP) decoder, which finds the most probable logical sector after marginalizing out the error pattern on qubits.
 
 ### Keyword Arguments
 - `optimizer::CodeOptimizer = TreeSA()`: The optimizer to use for optimizing the tensor network contraction order.
+- `factorize::Bool = false`: Whether to factorize the tensors to rank-3 tensors.
 """
 Base.@kwdef struct TNMMAP <: AbstractGeneralDecoder
     optimizer::CodeOptimizer = TreeSA()  # contraction order optimizer
     factorize::Bool = false # whether to factorize the tensors to rank-3 tensors
-    optimize::Bool = true # whether to optimize the tensor network contraction order
 end
 
 Base.show(io::IO, ::MIME"text/plain", p::TNMMAP) = show(io, p)
@@ -135,7 +144,9 @@ function compile(decoder::TNMMAP, problem::IndependentDepolarizingDecodingProble
     end
     code = DynamicEinCode(ixs,iy)
     size_dict = uniformsize(code, 2)
-    code = decoder.optimize ? optimize_code(code, size_dict, decoder.optimizer) : code
+    if !isa(decoder.optimizer, NoOptimizer)
+        code = optimize_code(code, size_dict, decoder.optimizer)
+    end
     return CompiledTNMMAP(tanner, lx, lz, code, tensors, syndrome_indices, zero_tensor, one_tensor)
 end
 
@@ -207,7 +218,9 @@ function compile(decoder::TNMMAP, dem::DetectorErrorModel)
     end
     code = DynamicEinCode(ixs,iy)
     size_dict = uniformsize(code, 2)
-    code = decoder.optimize ? optimize_code(code, size_dict, decoder.optimizer) : code
+    if !isa(decoder.optimizer, NoOptimizer)
+        code = optimize_code(code, size_dict, decoder.optimizer)
+    end
     return CompiledDEMTNMMAP(tanner, l2q, code, tensors, syndrome_indices, zero_tensor, one_tensor)
 end
 
