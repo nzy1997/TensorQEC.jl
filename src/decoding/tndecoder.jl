@@ -57,15 +57,26 @@ function decode(ct::CompiledTNMAP, syndrome::SimpleSyndrome)
 end
 
 """
-    TNMMAP(;optimizer::CodeOptimizer=default_optimizer()) <: AbstractGeneralDecoder
+    NoOptimizer() <: CodeOptimizer
+
+A dummy optimizer that does not optimize the tensor network contraction order.
+"""
+struct NoOptimizer <: CodeOptimizer end
+
+Base.show(io::IO, ::MIME"text/plain", p::NoOptimizer) = show(io, p)
+Base.show(io::IO, p::NoOptimizer) = print(io, "NoOptimizer")
+"""
+    TNMMAP(;optimizer::CodeOptimizer=TreeSA(), factorize::Bool=false) <: AbstractGeneralDecoder
 
 A tensor network based marginal maximum a posteriori (MMAP) decoder, which finds the most probable logical sector after marginalizing out the error pattern on qubits.
 
 ### Keyword Arguments
 - `optimizer::CodeOptimizer = TreeSA()`: The optimizer to use for optimizing the tensor network contraction order.
+- `factorize::Bool = false`: Whether to factorize the tensors to rank-3 tensors.
 """
 Base.@kwdef struct TNMMAP <: AbstractGeneralDecoder
     optimizer::CodeOptimizer = TreeSA()  # contraction order optimizer
+    factorize::Bool = false # whether to factorize the tensors to rank-3 tensors
 end
 
 Base.show(io::IO, ::MIME"text/plain", p::TNMMAP) = show(io, p)
@@ -75,7 +86,7 @@ struct CompiledTNMMAP{CT, AT} <: CompiledDecoder
     tanner::CSSTannerGraph
     lx::Matrix{Mod2}
     lz::Matrix{Mod2}
-    optcode::CT
+    code::CT
     tensors::Vector{AT}
     syndrome_indices::Vector{Int}
     zero_tensor::AT
@@ -133,8 +144,10 @@ function compile(decoder::TNMMAP, problem::IndependentDepolarizingDecodingProble
     end
     code = DynamicEinCode(ixs,iy)
     size_dict = uniformsize(code, 2)
-    optcode = optimize_code(code, size_dict, decoder.optimizer)
-    return CompiledTNMMAP(tanner, lx, lz, optcode, tensors, syndrome_indices, zero_tensor, one_tensor)
+    if !isa(decoder.optimizer, NoOptimizer)
+        code = optimize_code(code, size_dict, decoder.optimizer)
+    end
+    return CompiledTNMMAP(tanner, lx, lz, code, tensors, syndrome_indices, zero_tensor, one_tensor)
 end
 
 function update_syndrome!(tensors::Vector{AT}, syndrome::CSSSyndrome, zero_tensor::AT,one_tensor::AT) where AT
@@ -151,7 +164,7 @@ end
 
 function decode(ct::CompiledTNMMAP, syndrome::CSSSyndrome)
     update_syndrome!(ct.tensors, syndrome, ct.zero_tensor, ct.one_tensor)
-    mar = ct.optcode(ct.tensors...)
+    mar = ct.code(ct.tensors...)
     ex,ez = _mixed_integer_programming_for_one_solution(ct.tanner, syndrome)
     _, pos = findmax(mar)
     for i in axes(ct.lx,1)
@@ -159,4 +172,104 @@ function decode(ct::CompiledTNMMAP, syndrome::CSSSyndrome)
         (sum(ct.lx[i,:].* ez).x == (pos.I[i] == 2)) || (ez += ct.lz[i,:])
     end
     return DecodingResult(true, CSSErrorPattern(ex,ez))
+end
+
+struct CompiledDEMTNMMAP{CT, AT} <: CompiledDecoder
+    tanner::SimpleTannerGraph
+    l2q::Vector{Vector{Int}}
+    code::CT
+    tensors::Vector{AT}
+    syndrome_indices::Vector{Int}
+    zero_tensor::AT
+    one_tensor::AT
+end
+
+# nvars is the number of variables in the tensor network. 
+# |<--- error --->|<--- syndrome --->|<--- logical --->|<--- (auxiliary variables) --->|
+function compile(decoder::TNMMAP, dem::DetectorErrorModel)
+    tanner = dem2tanner(dem)
+    l2q = [findall(x-> i ∈ x , dem.flipped_detectors) for i in dem.logical_list]
+
+    nvars = nq(tanner) + ns(tanner) + length(dem.logical_list)
+    iy = collect(nq(tanner) + ns(tanner)+1:nvars)
+    ixs = Vector{Vector{Int64}}()
+    tensors = Vector{Array{Float64}}()
+    for (i,c) in enumerate(tanner.s2q)
+        nvars = push_check_node!(ixs, tensors, c, i + nq(tanner), nvars, decoder.factorize)
+    end
+
+    for (i,c) in enumerate(l2q)
+        nvars = push_check_node!(ixs, tensors, c, i + nq(tanner)+ns(tanner), nvars, decoder.factorize)
+    end
+
+    for (i,c) in enumerate(dem.error_rates)
+        push!(ixs, [i])
+        push!(tensors, [1-c, c])
+    end
+
+    syndrome_indices = collect(nq(tanner)+1:nq(tanner)+ns(tanner))
+    
+    zero_tensor = [1.0, 0.0]
+    one_tensor = [0.0, 1.0]
+    
+    for v in syndrome_indices
+        push!(ixs, [v])
+        push!(tensors, zero_tensor)
+    end
+    code = DynamicEinCode(ixs,iy)
+    size_dict = uniformsize(code, 2)
+    if !isa(decoder.optimizer, NoOptimizer)
+        code = optimize_code(code, size_dict, decoder.optimizer)
+    end
+    return CompiledDEMTNMMAP(tanner, l2q, code, tensors, syndrome_indices, zero_tensor, one_tensor)
+end
+
+function push_check_node!(ixs::Vector{Vector{Int64}}, tensors::Vector{Array{Float64}}, c::Vector{Int64}, check_node_index::Int, nvars::Int,factorize::Bool)
+    c_length = length(c)
+    if !factorize || (c_length == 2)
+        if c_length > 20
+            error("The number of qubits in the check node is too large, please set factorize to true to factorize the tensors to rank-3 tensors.")
+        end
+        push!(ixs, [c...,check_node_index])
+        push!(tensors, parity_check_matrix(c_length))
+    else
+        push!(ixs, [c[1],c[2],nvars+1])
+        push!(tensors, parity_check_matrix(2))
+        for j in 3:1:c_length-1
+            push!(ixs, [nvars+j-1, c[j], nvars+j-2])
+            push!(tensors, parity_check_matrix(2))
+        end
+        push!(ixs, [check_node_index, c[c_length], nvars+c_length-2])
+        push!(tensors, parity_check_matrix(2))
+        nvars += c_length - 2
+    end
+    return nvars
+end
+
+function update_syndrome!(ct::CompiledDEMTNMMAP, syndrome::SimpleSyndrome)
+    ns = length(syndrome.s)
+    for (i,s) in enumerate(syndrome.s)
+        ct.tensors[end-ns+i] = s.x ? ct.one_tensor : ct.zero_tensor
+    end
+    return ct
+end
+
+function decode(ct::CompiledDEMTNMMAP, syndrome::SimpleSyndrome)
+    update_syndrome!(ct, syndrome)
+    mar = ct.code(ct.tensors...)
+    _, pos = findmax(mar)
+
+    ep = _mixed_integer_programming_for_one_solution(ct.tanner.H, syndrome.s)
+    if pos isa CartesianIndex
+        for (i,l) in enumerate(ct.l2q)
+            if sum(x -> ep[x], l).x == (pos.I[i] == 1)
+                ep[l] .+= Mod2(1)
+            end
+        end
+    elseif pos isa Int
+        if sum(x -> ep[x], ct.l2q[1]).x == (pos == 1)
+            ep[ct.l2q[1]] .+= Mod2(1)
+        end
+    end
+    return DecodingResult(true, ep)
 end

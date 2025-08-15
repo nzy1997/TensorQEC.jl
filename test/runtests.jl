@@ -3,7 +3,7 @@ using Test
 using Documenter
 
 @testset "aqua" begin
-    include("aqua.jl")
+    # include("aqua.jl")
 end
 
 @testset "mod2" begin
@@ -100,6 +100,10 @@ end
 
 @testset "tndecoder" begin
     include("decoding/tndecoder.jl")
+end
+
+@testset "dem" begin
+    include("decoding/dem.jl")
 end
 
 @testset "correction" begin

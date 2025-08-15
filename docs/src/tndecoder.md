@@ -7,7 +7,7 @@ In this section, we introduce the tensor network decoder.
 [`TNMMAP`](@ref) is a tensor network based marginal maximum a posteriori (MMAP) decoder, which finds the most probable logical sector after marginalizing out the error pattern on qubits. We can generate a `TNMMAP` decoder by `TNMMAP()`.
 ```@example tndecoder
 using TensorQEC, TensorQEC.OMEinsum
-decoder = TNMMAP(TreeSA())
+decoder = TNMMAP(TreeSA(), true)
 ```
 Here `TreeSA()` is the default optimizer for optimizing the tensor network contraction order.
 
@@ -47,10 +47,10 @@ All purple squares represent the parity tensor, which elements are 1 if the inpu
 
 The gray circles represent the syndrome and the brown circles represent the logical operators. The marginal maximum a posteriori (MMAP) decoding problem is to find the most probable logical sector, given the syndrome and marginalize out the error pattern on qubits.
 
-The contraction order of the tensor network is optimized by the optimizer `decoder.optimizer` and the optimal contraction order is stored in `compiled_decoder.optcode`.
+The contraction order of the tensor network is optimized by the optimizer `decoder.optimizer` and the optimal contraction order is stored in `compiled_decoder.code`.
 
 ```@example tndecoder
-contraction_complexity(compiled_decoder.optcode,uniformsize(compiled_decoder.optcode, 2))
+contraction_complexity(compiled_decoder.code,uniformsize(compiled_decoder.code, 2))
 ```
 
 Now we can decode the syndrome. The decoding process is to update the syndrome into the tensor network, and then contract the tensor network to get the marginal probability. According to the maximum marginal probability, we can get the most probable logical sector.
