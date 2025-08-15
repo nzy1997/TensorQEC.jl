@@ -47,10 +47,10 @@ All purple squares represent the parity tensor, which elements are 1 if the inpu
 
 The gray circles represent the syndrome and the brown circles represent the logical operators. The marginal maximum a posteriori (MMAP) decoding problem is to find the most probable logical sector, given the syndrome and marginalize out the error pattern on qubits.
 
-The contraction order of the tensor network is optimized by the optimizer `decoder.optimizer` and the optimal contraction order is stored in `compiled_decoder.optcode`.
+The contraction order of the tensor network is optimized by the optimizer `decoder.optimizer` and the optimal contraction order is stored in `compiled_decoder.code`.
 
 ```@example tndecoder
-contraction_complexity(compiled_decoder.optcode,uniformsize(compiled_decoder.optcode, 2))
+contraction_complexity(compiled_decoder.code,uniformsize(compiled_decoder.code, 2))
 ```
 
 Now we can decode the syndrome. The decoding process is to update the syndrome into the tensor network, and then contract the tensor network to get the marginal probability. According to the maximum marginal probability, we can get the most probable logical sector.

@@ -106,12 +106,12 @@ end
     lx,lz = logical_operator(tanner)
     p_vector = fill(0.1, d*d)
     ct = compile(TNMMAP(), tanner, IndependentDepolarizingError(p_vector,fill(0.0,d*d),fill(0.0,d*d)))
-    @test ct.optcode(ct.tensors...) ≈ [0.3972875040000002 0.004284496000000001; 0.0 0.0] atol=1e-10
+    @test ct.code(ct.tensors...) ≈ [0.3972875040000002 0.004284496000000001; 0.0 0.0] atol=1e-10
 end
 
 @testset "dem TNMMAP" begin
     dem = TensorQEC.parse_dem_file(joinpath(@__DIR__, "..", "stim_parser", "test_circuits", "dem.dem"))
-    ct = compile(TNMMAP(TreeSA(), true), dem)
+    ct = compile(TNMMAP(TreeSA(), true,true), dem)
 
     Random.seed!(12323)
     ep = random_error_qubits(IndependentFlipError(dem.error_rates))

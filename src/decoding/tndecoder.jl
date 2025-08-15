@@ -67,6 +67,7 @@ A tensor network based marginal maximum a posteriori (MMAP) decoder, which finds
 Base.@kwdef struct TNMMAP <: AbstractGeneralDecoder
     optimizer::CodeOptimizer = TreeSA()  # contraction order optimizer
     factorize::Bool = false # whether to factorize the tensors to rank-3 tensors
+    optimize::Bool = true # whether to optimize the tensor network contraction order
 end
 
 Base.show(io::IO, ::MIME"text/plain", p::TNMMAP) = show(io, p)
@@ -76,7 +77,7 @@ struct CompiledTNMMAP{CT, AT} <: CompiledDecoder
     tanner::CSSTannerGraph
     lx::Matrix{Mod2}
     lz::Matrix{Mod2}
-    optcode::CT
+    code::CT
     tensors::Vector{AT}
     syndrome_indices::Vector{Int}
     zero_tensor::AT
@@ -134,8 +135,8 @@ function compile(decoder::TNMMAP, problem::IndependentDepolarizingDecodingProble
     end
     code = DynamicEinCode(ixs,iy)
     size_dict = uniformsize(code, 2)
-    optcode = optimize_code(code, size_dict, decoder.optimizer)
-    return CompiledTNMMAP(tanner, lx, lz, optcode, tensors, syndrome_indices, zero_tensor, one_tensor)
+    code = decoder.optimize ? optimize_code(code, size_dict, decoder.optimizer) : code
+    return CompiledTNMMAP(tanner, lx, lz, code, tensors, syndrome_indices, zero_tensor, one_tensor)
 end
 
 function update_syndrome!(tensors::Vector{AT}, syndrome::CSSSyndrome, zero_tensor::AT,one_tensor::AT) where AT
@@ -152,7 +153,7 @@ end
 
 function decode(ct::CompiledTNMMAP, syndrome::CSSSyndrome)
     update_syndrome!(ct.tensors, syndrome, ct.zero_tensor, ct.one_tensor)
-    mar = ct.optcode(ct.tensors...)
+    mar = ct.code(ct.tensors...)
     ex,ez = _mixed_integer_programming_for_one_solution(ct.tanner, syndrome)
     _, pos = findmax(mar)
     for i in axes(ct.lx,1)
@@ -165,7 +166,7 @@ end
 struct CompiledDEMTNMMAP{CT, AT} <: CompiledDecoder
     tanner::SimpleTannerGraph
     l2q::Vector{Vector{Int}}
-    optcode::CT
+    code::CT
     tensors::Vector{AT}
     syndrome_indices::Vector{Int}
     zero_tensor::AT
@@ -206,9 +207,8 @@ function compile(decoder::TNMMAP, dem::DetectorErrorModel)
     end
     code = DynamicEinCode(ixs,iy)
     size_dict = uniformsize(code, 2)
-    optcode = optimize_code(code, size_dict, decoder.optimizer)
-    # return code
-    return CompiledDEMTNMMAP(tanner, l2q, optcode, tensors, syndrome_indices, zero_tensor, one_tensor)
+    code = decoder.optimize ? optimize_code(code, size_dict, decoder.optimizer) : code
+    return CompiledDEMTNMMAP(tanner, l2q, code, tensors, syndrome_indices, zero_tensor, one_tensor)
 end
 
 function push_check_node!(ixs::Vector{Vector{Int64}}, tensors::Vector{Array{Float64}}, c::Vector{Int64}, check_node_index::Int, nvars::Int,factorize::Bool)
@@ -243,7 +243,7 @@ end
 
 function decode(ct::CompiledDEMTNMMAP, syndrome::SimpleSyndrome)
     update_syndrome!(ct, syndrome)
-    mar = ct.optcode(ct.tensors...)
+    mar = ct.code(ct.tensors...)
     _, pos = findmax(mar)
 
     ep = _mixed_integer_programming_for_one_solution(ct.tanner.H, syndrome.s)
