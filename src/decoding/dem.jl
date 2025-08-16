@@ -14,8 +14,8 @@ function Base.show(io::IO, dem::DetectorErrorModel)
         push!(fd, dem.flipped_detectors[i] ∩ dem.detector_list)
         push!(fl, dem.flipped_detectors[i] ∩ dem.logical_list)
     end
-	header = ["Error", "Detectors", "Logicals"]
-	pt = pretty_table(io, hcat(dem.error_rates, fd, fl); header)
+	header = ["Error Index","Probability", "Detectors", "Logicals"]
+	pt = pretty_table(io, hcat(1:length(dem.error_rates), dem.error_rates, fd, fl); header)
 	return nothing
 end
 
