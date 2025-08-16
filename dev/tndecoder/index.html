@@ -12,42 +12,42 @@ st = stabilizers(steane)</code></pre><pre class="documenter-example-output"><cod
 using Random
 Random.seed!(1)
 error_pattern = random_error_qubits(error_model)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">XIIIIII
-</code></pre><p>Now we can measure the syndrome:</p><pre><code class="language-julia hljs">syndrome = syndrome_extraction(error_pattern, tanner)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">CSSSyndrome(Mod2[0₂, 0₂, 0₂], Mod2[1₂, 0₂, 0₂])</code></pre><p>To use the decoder, we need to compile it first.</p><pre><code class="language-julia hljs">compiled_decoder = compile(decoder, tanner, error_model);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">TensorQEC.CompiledTNMMAP{OMEinsum.SlicedEinsum{Int64, OMEinsum.DynamicNestedEinsum{Int64}}, Array{Float64}}(CSSTannerGraph(SimpleTannerGraph(7, 3, [[1], [2], [1, 2], [3], [1, 3], [2, 3], [1, 2, 3]], [[1, 3, 5, 7], [2, 3, 6, 7], [4, 5, 6, 7]], Mod2[1₂ 0₂ … 0₂ 1₂; 0₂ 1₂ … 1₂ 1₂; 0₂ 0₂ … 1₂ 1₂]), SimpleTannerGraph(7, 3, [[1], [2], [1, 2], [3], [1, 3], [2, 3], [1, 2, 3]], [[1, 3, 5, 7], [2, 3, 6, 7], [4, 5, 6, 7]], Mod2[1₂ 0₂ … 0₂ 1₂; 0₂ 1₂ … 1₂ 1₂; 0₂ 0₂ … 1₂ 1₂])), Mod2[0₂ 0₂ … 1₂ 0₂], Mod2[0₂ 0₂ … 1₂ 0₂], OMEinsum.SlicedEinsum{Int64, OMEinsum.DynamicNestedEinsum{Int64}}(Int64[], 22∘12∘10∘13, 10∘12∘13∘21 -&gt; 21∘22
-├─ 13∘3∘5∘22∘6, 6∘13∘5∘3∘12∘10 -&gt; 22∘12∘10∘13
-│  ├─ 6∘13, 3∘5∘6∘22 -&gt; 13∘3∘5∘22∘6
-│  │  ├─ 6∘13
-│  │  └─ 3∘5∘6∘22
-│  └─ 5∘3∘12∘14∘10∘7, 3∘10∘5∘12∘6∘7∘13∘14 -&gt; 6∘13∘5∘3∘12∘10
-│     ├─ 10∘1∘5∘7∘3, 7∘1∘10∘12∘14 -&gt; 5∘3∘12∘14∘10∘7
-│     │  ├─ 3∘10, 1∘3∘5∘7 -&gt; 10∘1∘5∘7∘3
-│     │  │  ├─ 3∘10
-│     │  │  └─ 18, 1∘3∘5∘7∘18 -&gt; 1∘3∘5∘7
-│     │  │     ⋮
-│     │  │     
-│     │  └─ 7∘14, 1∘10∘12∘14 -&gt; 7∘1∘10∘12∘14
-│     │     ├─ 7∘14
-│     │     └─ 1∘8, 8∘10∘12∘14 -&gt; 1∘10∘12∘14
-│     │        ⋮
-│     │        
-│     └─ 3∘6∘7∘10∘13∘14, 6∘7∘5∘13∘14∘12 -&gt; 3∘10∘5∘12∘6∘7∘13∘14
-│        ├─ 2∘3∘6∘7, 10∘13∘14∘2 -&gt; 3∘6∘7∘10∘13∘14
-│        │  ├─ 19, 2∘3∘6∘7∘19 -&gt; 2∘3∘6∘7
-│        │  │  ⋮
-│        │  │  
-│        │  └─ 9∘10∘13∘14, 2∘9 -&gt; 10∘13∘14∘2
-│        │     ⋮
-│        │     
-│        └─ 11∘6∘7∘12∘5, 11∘12∘13∘14 -&gt; 6∘7∘5∘13∘14∘12
-│           ├─ 11∘5∘6∘7, 5∘12 -&gt; 11∘6∘7∘12∘5
-│           │  ⋮
-│           │  
-│           └─ 11∘12∘13∘14∘17, 17 -&gt; 11∘12∘13∘14
-│              ⋮
-│              
-└─ 10∘12∘13∘21
-), Array{Float64}[[1.0 0.0; 0.0 1.0;;; 0.0 1.0; 1.0 0.0;;;; 0.0 1.0; 1.0 0.0;;; 1.0 0.0; 0.0 1.0;;;;; 0.0 1.0; 1.0 0.0;;; 1.0 0.0; 0.0 1.0;;;; 1.0 0.0; 0.0 1.0;;; 0.0 1.0; 1.0 0.0], [1.0 0.0; 0.0 1.0;;; 0.0 1.0; 1.0 0.0;;;; 0.0 1.0; 1.0 0.0;;; 1.0 0.0; 0.0 1.0;;;;; 0.0 1.0; 1.0 0.0;;; 1.0 0.0; 0.0 1.0;;;; 1.0 0.0; 0.0 1.0;;; 0.0 1.0; 1.0 0.0], [1.0 0.0; 0.0 1.0;;; 0.0 1.0; 1.0 0.0;;;; 0.0 1.0; 1.0 0.0;;; 1.0 0.0; 0.0 1.0;;;;; 0.0 1.0; 1.0 0.0;;; 1.0 0.0; 0.0 1.0;;;; 1.0 0.0; 0.0 1.0;;; 0.0 1.0; 1.0 0.0], [1.0 0.0; 0.0 1.0;;; 0.0 1.0; 1.0 0.0;;;; 0.0 1.0; 1.0 0.0;;; 1.0 0.0; 0.0 1.0;;;;; 0.0 1.0; 1.0 0.0;;; 1.0 0.0; 0.0 1.0;;;; 1.0 0.0; 0.0 1.0;;; 0.0 1.0; 1.0 0.0], [1.0 0.0; 0.0 1.0;;; 0.0 1.0; 1.0 0.0;;;; 0.0 1.0; 1.0 0.0;;; 1.0 0.0; 0.0 1.0;;;;; 0.0 1.0; 1.0 0.0;;; 1.0 0.0; 0.0 1.0;;;; 1.0 0.0; 0.0 1.0;;; 0.0 1.0; 1.0 0.0], [1.0 0.0; 0.0 1.0;;; 0.0 1.0; 1.0 0.0;;;; 0.0 1.0; 1.0 0.0;;; 1.0 0.0; 0.0 1.0;;;;; 0.0 1.0; 1.0 0.0;;; 1.0 0.0; 0.0 1.0;;;; 1.0 0.0; 0.0 1.0;;; 0.0 1.0; 1.0 0.0], [0.8499999999999999 0.05; 0.05 0.05], [0.8499999999999999 0.05; 0.05 0.05], [0.8499999999999999 0.05; 0.05 0.05], [0.8499999999999999 0.05; 0.05 0.05]  …  [0.8499999999999999 0.05; 0.05 0.05], [0.8499999999999999 0.05; 0.05 0.05], [1.0 0.0; 0.0 1.0;;; 0.0 1.0; 1.0 0.0;;;; 0.0 1.0; 1.0 0.0;;; 1.0 0.0; 0.0 1.0], [1.0 0.0; 0.0 1.0;;; 0.0 1.0; 1.0 0.0;;;; 0.0 1.0; 1.0 0.0;;; 1.0 0.0; 0.0 1.0], [1.0, 0.0], [1.0, 0.0], [1.0, 0.0], [1.0, 0.0], [1.0, 0.0], [1.0, 0.0]], [15, 16, 17, 18, 19, 20], [1.0, 0.0], [0.0, 1.0])</code></pre><p>At this time we generate the tensor network<sup class="footnote-reference"><a id="citeref-Piveteau" href="#footnote-Piveteau">[Piveteau]</a></sup> for the code and the error model, as shown in the following figure. <img src="../images/tensornetwork.svg" alt/></p><p>The squares represent tensors, and the circles represent the indices of the tensors. All indices are of dimension 2. We use 7 indices to represent <span>$X$</span> errors on qubits, and 7 indices to represent <span>$Z$</span> errors on qubits. On each qubit, the distribution of this two types of errors is correlated. The green squares represent this correlation. All purple squares represent the parity tensor, which elements are 1 if the input parity is even, and 0 otherwise. <img src="../images/label.svg" alt/></p><p>The gray circles represent the syndrome and the brown circles represent the logical operators. The marginal maximum a posteriori (MMAP) decoding problem is to find the most probable logical sector, given the syndrome and marginalize out the error pattern on qubits.</p><p>The contraction order of the tensor network is optimized by the optimizer <code>decoder.optimizer</code> and the optimal contraction order is stored in <code>compiled_decoder.code</code>.</p><pre><code class="language-julia hljs">contraction_complexity(compiled_decoder.code,uniformsize(compiled_decoder.code, 2))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Time complexity: 2^10.531381460516313
+</code></pre><p>Now we can measure the syndrome:</p><pre><code class="language-julia hljs">syndrome = syndrome_extraction(error_pattern, tanner)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">CSSSyndrome(Mod2[0₂, 0₂, 0₂], Mod2[1₂, 0₂, 0₂])</code></pre><p>To use the decoder, we need to compile it first.</p><pre><code class="language-julia hljs">compiled_decoder = compile(decoder, tanner, error_model);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">TensorQEC.CompiledTNMMAP{OMEinsum.DynamicNestedEinsum{Int64}, Array{Float64}}(CSSTannerGraph(SimpleTannerGraph(7, 3, [[1], [2], [1, 2], [3], [1, 3], [2, 3], [1, 2, 3]], [[1, 3, 5, 7], [2, 3, 6, 7], [4, 5, 6, 7]], Mod2[1₂ 0₂ … 0₂ 1₂; 0₂ 1₂ … 1₂ 1₂; 0₂ 0₂ … 1₂ 1₂]), SimpleTannerGraph(7, 3, [[1], [2], [1, 2], [3], [1, 3], [2, 3], [1, 2, 3]], [[1, 3, 5, 7], [2, 3, 6, 7], [4, 5, 6, 7]], Mod2[1₂ 0₂ … 0₂ 1₂; 0₂ 1₂ … 1₂ 1₂; 0₂ 0₂ … 1₂ 1₂])), Mod2[0₂ 0₂ … 1₂ 0₂], Mod2[0₂ 0₂ … 1₂ 0₂], 3∘5∘6∘22, 21∘6∘5∘3 -&gt; 21∘22
+├─ 3∘5∘6∘22
+└─ 12∘13∘21∘3∘10, 6∘13∘10∘3∘5∘12 -&gt; 21∘6∘5∘3
+   ├─ 10∘12∘13∘21, 3∘10 -&gt; 12∘13∘21∘3∘10
+   │  ├─ 10∘12∘13∘21
+   │  └─ 3∘10
+   └─ 10∘14∘3∘7∘5∘12, 5∘12∘10∘3∘6∘7∘13∘14 -&gt; 6∘13∘10∘3∘5∘12
+      ├─ 1∘10∘12∘14, 12∘1∘3∘7∘5 -&gt; 10∘14∘3∘7∘5∘12
+      │  ├─ 1∘8, 8∘10∘12∘14 -&gt; 1∘10∘12∘14
+      │  │  ├─ 1∘8
+      │  │  └─ 15, 8∘10∘12∘14∘15 -&gt; 8∘10∘12∘14
+      │  │     ⋮
+      │  │     
+      │  └─ 5∘12, 1∘3∘5∘7 -&gt; 12∘1∘3∘7∘5
+      │     ├─ 5∘12
+      │     └─ 18, 1∘3∘5∘7∘18 -&gt; 1∘3∘5∘7
+      │        ⋮
+      │        
+      └─ 5∘6∘7∘12∘13∘14, 10∘14∘3∘6∘7∘13 -&gt; 5∘12∘10∘3∘6∘7∘13∘14
+         ├─ 11∘5∘6∘7, 11∘12∘13∘14 -&gt; 5∘6∘7∘12∘13∘14
+         │  ├─ 4∘11, 4∘5∘6∘7 -&gt; 11∘5∘6∘7
+         │  │  ⋮
+         │  │  
+         │  └─ 17, 11∘12∘13∘14∘17 -&gt; 11∘12∘13∘14
+         │     ⋮
+         │     
+         └─ 7∘9∘10∘13∘14, 3∘7∘9∘13∘6 -&gt; 10∘14∘3∘6∘7∘13
+            ├─ 7∘14, 9∘10∘13∘14 -&gt; 7∘9∘10∘13∘14
+            │  ⋮
+            │  
+            └─ 3∘6∘7∘9, 6∘13 -&gt; 3∘7∘9∘13∘6
+               ⋮
+               
+, Array{Float64}[[1.0 0.0; 0.0 1.0;;; 0.0 1.0; 1.0 0.0;;;; 0.0 1.0; 1.0 0.0;;; 1.0 0.0; 0.0 1.0;;;;; 0.0 1.0; 1.0 0.0;;; 1.0 0.0; 0.0 1.0;;;; 1.0 0.0; 0.0 1.0;;; 0.0 1.0; 1.0 0.0], [1.0 0.0; 0.0 1.0;;; 0.0 1.0; 1.0 0.0;;;; 0.0 1.0; 1.0 0.0;;; 1.0 0.0; 0.0 1.0;;;;; 0.0 1.0; 1.0 0.0;;; 1.0 0.0; 0.0 1.0;;;; 1.0 0.0; 0.0 1.0;;; 0.0 1.0; 1.0 0.0], [1.0 0.0; 0.0 1.0;;; 0.0 1.0; 1.0 0.0;;;; 0.0 1.0; 1.0 0.0;;; 1.0 0.0; 0.0 1.0;;;;; 0.0 1.0; 1.0 0.0;;; 1.0 0.0; 0.0 1.0;;;; 1.0 0.0; 0.0 1.0;;; 0.0 1.0; 1.0 0.0], [1.0 0.0; 0.0 1.0;;; 0.0 1.0; 1.0 0.0;;;; 0.0 1.0; 1.0 0.0;;; 1.0 0.0; 0.0 1.0;;;;; 0.0 1.0; 1.0 0.0;;; 1.0 0.0; 0.0 1.0;;;; 1.0 0.0; 0.0 1.0;;; 0.0 1.0; 1.0 0.0], [1.0 0.0; 0.0 1.0;;; 0.0 1.0; 1.0 0.0;;;; 0.0 1.0; 1.0 0.0;;; 1.0 0.0; 0.0 1.0;;;;; 0.0 1.0; 1.0 0.0;;; 1.0 0.0; 0.0 1.0;;;; 1.0 0.0; 0.0 1.0;;; 0.0 1.0; 1.0 0.0], [1.0 0.0; 0.0 1.0;;; 0.0 1.0; 1.0 0.0;;;; 0.0 1.0; 1.0 0.0;;; 1.0 0.0; 0.0 1.0;;;;; 0.0 1.0; 1.0 0.0;;; 1.0 0.0; 0.0 1.0;;;; 1.0 0.0; 0.0 1.0;;; 0.0 1.0; 1.0 0.0], [0.8499999999999999 0.05; 0.05 0.05], [0.8499999999999999 0.05; 0.05 0.05], [0.8499999999999999 0.05; 0.05 0.05], [0.8499999999999999 0.05; 0.05 0.05]  …  [0.8499999999999999 0.05; 0.05 0.05], [0.8499999999999999 0.05; 0.05 0.05], [1.0 0.0; 0.0 1.0;;; 0.0 1.0; 1.0 0.0;;;; 0.0 1.0; 1.0 0.0;;; 1.0 0.0; 0.0 1.0], [1.0 0.0; 0.0 1.0;;; 0.0 1.0; 1.0 0.0;;;; 0.0 1.0; 1.0 0.0;;; 1.0 0.0; 0.0 1.0], [1.0, 0.0], [1.0, 0.0], [1.0, 0.0], [1.0, 0.0], [1.0, 0.0], [1.0, 0.0]], [15, 16, 17, 18, 19, 20], [1.0, 0.0], [0.0, 1.0])</code></pre><p>At this time we generate the tensor network<sup class="footnote-reference"><a id="citeref-Piveteau" href="#footnote-Piveteau">[Piveteau]</a></sup> for the code and the error model, as shown in the following figure. <img src="../images/tensornetwork.svg" alt/></p><p>The squares represent tensors, and the circles represent the indices of the tensors. All indices are of dimension 2. We use 7 indices to represent <span>$X$</span> errors on qubits, and 7 indices to represent <span>$Z$</span> errors on qubits. On each qubit, the distribution of this two types of errors is correlated. The green squares represent this correlation. All purple squares represent the parity tensor, which elements are 1 if the input parity is even, and 0 otherwise. <img src="../images/label.svg" alt/></p><p>The gray circles represent the syndrome and the brown circles represent the logical operators. The marginal maximum a posteriori (MMAP) decoding problem is to find the most probable logical sector, given the syndrome and marginalize out the error pattern on qubits.</p><p>The contraction order of the tensor network is optimized by the optimizer <code>decoder.optimizer</code> and the optimal contraction order is stored in <code>compiled_decoder.code</code>.</p><pre><code class="language-julia hljs">contraction_complexity(compiled_decoder.code,uniformsize(compiled_decoder.code, 2))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Time complexity: 2^10.523561956057012
 Space complexity: 2^8.0
-Read-write complexity: 2^10.854868383260238</code></pre><p>Now we can decode the syndrome. The decoding process is to update the syndrome into the tensor network, and then contract the tensor network to get the marginal probability. According to the maximum marginal probability, we can get the most probable logical sector.</p><pre><code class="language-julia hljs">result = decode(compiled_decoder, syndrome)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Success
+Read-write complexity: 2^10.867278739709661</code></pre><p>Now we can decode the syndrome. The decoding process is to update the syndrome into the tensor network, and then contract the tensor network to get the marginal probability. According to the maximum marginal probability, we can get the most probable logical sector.</p><pre><code class="language-julia hljs">result = decode(compiled_decoder, syndrome)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Success
 IXIXIIX
 
 </code></pre><p>Also, we can use the <code>decode</code> function to decode the syndrome directly.</p><pre><code class="language-julia hljs">result = decode(compiled_decoder, syndrome)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Success
@@ -58,4 +58,4 @@ check_logical_error(result.error_qubits, error_pattern, lx, lz)</code></pre><pre
 decode(compiled_decoder, syndrome)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Success
 XIIIIII
 
-</code></pre><section class="footnotes is-size-7"><ul><li class="footnote" id="footnote-Piveteau"><a class="tag is-link" href="#citeref-Piveteau">Piveteau</a>Piveteau, C.; Chubb, C. T.; Renes, J. M. Tensor Network Decoding Beyond 2D. PRX Quantum 2024, 5 (4), 040303. https://doi.org/10.1103/PRXQuantum.5.040303.</li></ul></section></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../generated/ipdecoder/">« Mixed-Integer Programming Decoder</a><a class="docs-footer-nextpage" href="../performancetips/">Performance Tips »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.14.1 on <span class="colophon-date" title="Friday 15 August 2025 11:43">Friday 15 August 2025</span>. Using Julia version 1.11.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+</code></pre><section class="footnotes is-size-7"><ul><li class="footnote" id="footnote-Piveteau"><a class="tag is-link" href="#citeref-Piveteau">Piveteau</a>Piveteau, C.; Chubb, C. T.; Renes, J. M. Tensor Network Decoding Beyond 2D. PRX Quantum 2024, 5 (4), 040303. https://doi.org/10.1103/PRXQuantum.5.040303.</li></ul></section></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../generated/ipdecoder/">« Mixed-Integer Programming Decoder</a><a class="docs-footer-nextpage" href="../performancetips/">Performance Tips »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.14.1 on <span class="colophon-date" title="Saturday 16 August 2025 15:34">Saturday 16 August 2025</span>. Using Julia version 1.11.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
