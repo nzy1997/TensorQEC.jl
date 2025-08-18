@@ -1,7 +1,7 @@
 name = "TensorQEC"
 uuid = "0500ac79-7fb5-4262-aaea-37bb1845d1ef"
 authors = ["Zhongyi Ni"]
-version = "2.0.0"
+version = "2.1.1"
 
 [deps]
 BitBasis = "50ba71b6-fa0f-514d-ae9a-0916efc90dcf"
@@ -34,7 +34,7 @@ Graphs = "1"
 JuMP = "1.24.0"
 LinearAlgebra = "1"
 LuxurySparse = "0.8"
-OMEinsum = "0.8.2"
+OMEinsum = "0.9"
 Optimisers = "0.4"
 PrettyTables = "2.3"
 QECCore = "0.1"
