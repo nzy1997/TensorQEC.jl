@@ -15,6 +15,7 @@ using Yao.YaoBlocks.LuxurySparse: PermMatrixCSC
 using PrettyTables
 using Optimisers
 using BitBasis
+using YaoToEinsum
 # using Random
 
 using Graphs
@@ -94,6 +95,7 @@ include("clifford/paulistring.jl")
 include("clifford/cliffordgroup.jl")
 include("clifford/paulibasis.jl")
 
+include("nonclifford/tensornetwork.jl")
 include("codes/codes.jl")
 include("codes/ldpc.jl")
 
@@ -101,7 +103,6 @@ include("codes/encoder.jl")
 include("decoding/error_model.jl")
 include("decoding/interfaces.jl")
 
-include("nonclifford/tensornetwork.jl")
 include("decoding/inferenceswithencoder.jl")
 include("decoding/measurement.jl")
 include("decoding/truthtable.jl")

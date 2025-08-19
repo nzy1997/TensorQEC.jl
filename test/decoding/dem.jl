@@ -87,17 +87,22 @@ end
     # distance=3,
     # before_round_data_depolarization=0.04,
     # before_measure_flip_probability=0.01)
+    function check_dem(dem1, dem2)
+        tag = true
+        tag = tag && dem1.detector_list == dem2.detector_list
+        tag = tag && dem1.logical_list == dem2.logical_list
+
+        for (ep,detectors) in zip(dem1.error_rates, dem1.flipped_detectors)
+            pos = findall(x->x==detectors, dem2.flipped_detectors)
+            tag = tag && length(pos) == 1
+            tag = tag && isapprox(ep, dem2.error_rates[pos[1]], atol=1e-10)
+        end
+        return tag
+    end
     qc = parse_stim_file(joinpath(@__DIR__, "test_circuits", "noisy_circuit.stim"), 10);
     dem1 = TensorQEC.detector_error_model(qc)
     dem2 = TensorQEC.parse_dem_file(joinpath(@__DIR__, "test_circuits", "dem.dem"))
     # println(dem1)
     # println(dem2)
-    @test dem1.detector_list == dem2.detector_list
-    @test dem1.logical_list == dem2.logical_list
-
-    for (ep,detectors) in zip(dem1.error_rates, dem1.flipped_detectors)
-        pos = findall(x->x==detectors, dem2.flipped_detectors)
-        @test length(pos) == 1
-        @test ep ≈ dem2.error_rates[pos[1]] atol=1e-10
-    end
+    @test check_dem(dem1, dem2)
 end

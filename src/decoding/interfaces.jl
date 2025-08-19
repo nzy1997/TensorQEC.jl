@@ -38,7 +38,7 @@ end
 get_problem(tanner::CSSTannerGraph,pvec::IndependentDepolarizingError) = IndependentDepolarizingDecodingProblem(tanner,pvec)
 
 """
-    GeneralDecodingProblem(tanner::SimpleTannerGraph, ptn::TensorNetwork)
+    GeneralDecodingProblem(tanner::SimpleTannerGraph, ptn::SimpleTensorNetwork)
 
 A general decoding problem.
 Fields:
@@ -47,7 +47,7 @@ Fields:
 """
 struct GeneralDecodingProblem <: AbstractDecodingProblem
     tanner::SimpleTannerGraph
-    ptn::TensorNetwork # probability distributions
+    ptn::SimpleTensorNetwork # probability distributions
 end
 
 """
@@ -143,7 +143,7 @@ function decode(cd::CompiledGeneralDecoder, syndrome::CSSSyndrome)
 end
 
 function compile(decoder::AbstractGeneralDecoder, cdp::ClassicalDecodingProblem)
-    gdp = GeneralDecodingProblem(cdp.tanner, TensorNetwork(DynamicEinCode([[i] for i in 1:cdp.tanner.nq],Int[]),[[1-p, p] for p in cdp.pvec.p]))
+    gdp = GeneralDecodingProblem(cdp.tanner, SimpleTensorNetwork(DynamicEinCode([[i] for i in 1:cdp.tanner.nq],Int[]),[[1-p, p] for p in cdp.pvec.p]))
     return compile(decoder, gdp)
 end
 

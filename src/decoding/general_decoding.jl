@@ -23,10 +23,10 @@ Reduce a CSS Tanner graph to a general decoding problem.
 """
 function reduce2general(tanner::CSSTannerGraph, pvec::IndependentDepolarizingError)
     num_qubits = nq(tanner)
-    tn = TensorNetwork(DynamicEinCode([[i,i+num_qubits] for i in 1:num_qubits],Int[]),[single_qubit_tensor(pvec.px[j],pvec.py[j],pvec.pz[j]) for j in 1:num_qubits])
+    tn = SimpleTensorNetwork(DynamicEinCode([[i,i+num_qubits] for i in 1:num_qubits],Int[]),[single_qubit_tensor(pvec.px[j],pvec.py[j],pvec.pz[j]) for j in 1:num_qubits])
     return reduce2general(tanner, tn)
 end
-function reduce2general(tanner::CSSTannerGraph,tn::TensorNetwork)
+function reduce2general(tanner::CSSTannerGraph,tn::SimpleTensorNetwork)
     num_qubits = nq(tanner)
     return GeneralDecodingProblem(SimpleTannerGraph(2*num_qubits, [[x.+ num_qubits for x in tanner.stgx.s2q]..., tanner.stgz.s2q...]),tn), CSSToGeneralDecodingProblem(num_qubits)
 end
