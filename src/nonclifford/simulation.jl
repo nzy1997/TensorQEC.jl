@@ -135,7 +135,7 @@ function qc2enisum(qc::ChainBlock, srs::Vector{SymbolRecorder{D}}, qc_info::QCIn
     output_indices = [[srs[2*length(qc_info.data_qubits)+2*i-1].symbol  for i in 1:length(qc_info.data_qubits)]..., [srs[2*length(qc_info.data_qubits)+2*i].symbol  for i in 1:length(qc_info.data_qubits)]...]
     push!(jointcode.iy,input_indices...)
     push!(jointcode.iy,output_indices...)
-    return TensorNetwork(jointcode, ein_code.tensors), input_indices, output_indices
+    return SimpleTensorNetwork(jointcode, ein_code.tensors), input_indices, output_indices
 end
 
 """
@@ -173,7 +173,7 @@ function fidelity_tensornetwork(qc::ChainBlock,qc_info::QCInfo)
     tn, input_indices,output_indices = simulation_tensornetwork(qc,qc_info)
     jointcode = replace(tn.code, [input_indices[i]=> output_indices[i] for i in 1:length(input_indices)]...)
     empty!(jointcode.iy)
-    tn = TensorNetwork(jointcode, tn.tensors)
+    tn = SimpleTensorNetwork(jointcode, tn.tensors)
     tn.tensors[1] = tn.tensors[1]./(4^length(qc_info.data_qubits))
     return tn
 end

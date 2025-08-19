@@ -19,18 +19,18 @@ struct CompiledTNMAP{ET, FT} <: CompiledDecoder
 end
 
 """
-    stg2uaimodel(tanner::SimpleTannerGraph, ptn::TensorNetwork)
+    stg2uaimodel(tanner::SimpleTannerGraph, ptn::SimpleTensorNetwork)
 
 Convert a Tanner graph and a tensor network to a UAIModel.
 
 ### Arguments
 - `tanner::SimpleTannerGraph`: The Tanner graph.
-- `ptn::TensorNetwork`: The tensor network.
+- `ptn::SimpleTensorNetwork`: The tensor network.
 
 ### Returns
 - `uai::UAIModel`: The UAIModel.
 """
-function stg2uaimodel(tanner::SimpleTannerGraph, ptn::TensorNetwork)
+function stg2uaimodel(tanner::SimpleTannerGraph, ptn::SimpleTensorNetwork)
     nvars = tanner.nq + tanner.ns 
     cards = fill(2, nvars)
 
@@ -165,13 +165,17 @@ end
 function decode(ct::CompiledTNMMAP, syndrome::CSSSyndrome)
     update_syndrome!(ct.tensors, syndrome, ct.zero_tensor, ct.one_tensor)
     mar = ct.code(ct.tensors...)
-    ex,ez = _mixed_integer_programming_for_one_solution(ct.tanner, syndrome)
     _, pos = findmax(mar)
+    return DecodingResult(true, logical2onesolution(pos,ct,syndrome))
+end
+
+function logical2onesolution(pos::CartesianIndex,ct::CompiledTNMMAP,syndrome::CSSSyndrome)
+    ex,ez = _mixed_integer_programming_for_one_solution(ct.tanner, syndrome)
     for i in axes(ct.lx,1)
         (sum(ct.lz[i,:].* ex).x == (pos.I[i+size(ct.lx,1)] == 2)) || (ex += ct.lx[i,:])
         (sum(ct.lx[i,:].* ez).x == (pos.I[i] == 2)) || (ez += ct.lz[i,:])
     end
-    return DecodingResult(true, CSSErrorPattern(ex,ez))
+    return CSSErrorPattern(ex,ez)
 end
 
 struct CompiledDEMTNMMAP{CT, AT} <: CompiledDecoder
@@ -258,18 +262,24 @@ function decode(ct::CompiledDEMTNMMAP, syndrome::SimpleSyndrome)
     update_syndrome!(ct, syndrome)
     mar = ct.code(ct.tensors...)
     _, pos = findmax(mar)
+    return DecodingResult(true, logical2onesolution(pos,ct,syndrome))
+end
 
+function logical2onesolution(pos::Int,ct::CompiledDEMTNMMAP,syndrome::SimpleSyndrome)
     ep = _mixed_integer_programming_for_one_solution(ct.tanner.H, syndrome.s)
-    if pos isa CartesianIndex
-        for (i,l) in enumerate(ct.l2q)
-            if sum(x -> ep[x], l).x == (pos.I[i] == 1)
-                ep[l] .+= Mod2(1)
-            end
-        end
-    elseif pos isa Int
-        if sum(x -> ep[x], ct.l2q[1]).x == (pos == 1)
-            ep[ct.l2q[1]] .+= Mod2(1)
+    if sum(x -> ep[x], ct.l2q[1]).x == (pos == 1)
+        ep[ct.l2q[1]] .+= Mod2(1)
+    end
+    return ep
+end
+
+function logical2onesolution(pos::CartesianIndex,ct::CompiledDEMTNMMAP,syndrome::SimpleSyndrome)
+    ep = _mixed_integer_programming_for_one_solution(ct.tanner.H, syndrome.s)
+    for (i,l) in enumerate(ct.l2q)
+        if sum(x -> ep[x], l).x == (pos.I[i] == 1)
+            ep[l] .+= Mod2(1)
         end
     end
-    return DecodingResult(true, ep)
+    return ep
 end
+

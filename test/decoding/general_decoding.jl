@@ -35,7 +35,7 @@ end
     a[1,1,1,1] = 0.99
     a[1,1,2,2] = 0.01
     tensors= [[TensorQEC.single_qubit_tensor(0.05,0.03,0.01) for j in [1,2,3,5,6,8,9]]...,a]
-    tn = TensorNetwork(code,tensors)
+    tn = TensorQEC.SimpleTensorNetwork(code,tensors)
     gdp,rgdp = reduce2general(tanner,tn)
 
     res = extract_decoding(rgdp,decode(IPDecoder(),gdp,gs).error_qubits)

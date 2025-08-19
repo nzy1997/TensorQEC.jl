@@ -91,11 +91,7 @@ function probability_tn_channel(qc::ChainBlock, final_state::Vector{Complex{Floa
     qc_info = QCInfo(Int[],collect(1:number_qubits),number_qubits)
     qc2= simplify(qc2; rules=[to_basictypes, Optimise.eliminate_nested])
     qce,srs = ein_circ(qc2,qc_info)
-    # @show qce
     tn,_,_ = qc2enisum(qce,srs,qc_info)
-    @show qc_info
-    # return tn,getfield.(tc,:tensor_pos)
-    return tn
     optnet = optimize_code(tn, TreeSA(), OMEinsum.MergeVectors())
     return optnet,getfield.(tc,:tensor_pos)
 end
