@@ -1,7 +1,7 @@
 name = "TensorQEC"
 uuid = "0500ac79-7fb5-4262-aaea-37bb1845d1ef"
 authors = ["Zhongyi Ni"]
-version = "2.1.1"
+version = "2.2.0"
 
 [deps]
 BitBasis = "50ba71b6-fa0f-514d-ae9a-0916efc90dcf"
