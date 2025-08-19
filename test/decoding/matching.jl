@@ -7,8 +7,8 @@ using Random
     d = 3
     tanner = CSSTannerGraph(SurfaceCode(d, d)).stgx
     em = iid_error(0.05,d*d)
-    error_qubits =  random_error_qubits(em)
-    syn = syndrome_extraction(error_qubits,tanner)
+    error_pattern =  random_error_pattern(em)
+    syn = syndrome_extraction(error_pattern,tanner)
 
     fwg = TensorQEC.tanner2fwswg(tanner,[0.1,fill(0.2,d*d-1)...])
     @test fwg.error_path[1,5] == [2]
@@ -24,15 +24,15 @@ end
     d = 7
     tanner = CSSTannerGraph(SurfaceCode(d, d)).stgx
     em = iid_error(0.05,d*d)
-    error_qubits =  random_error_qubits(em)
-    syn = syndrome_extraction(error_qubits,tanner)
+    error_pattern =  random_error_pattern(em)
+    syn = syndrome_extraction(error_pattern,tanner)
     decoder = MatchingDecoder(IPMatchingSolver())
     ans = decode(decoder,tanner,syn)
-    @test syn == syndrome_extraction(ans.error_qubits,tanner)
+    @test syn == syndrome_extraction(ans.error_pattern,tanner)
 
     decoder = MatchingDecoder(TensorQEC.GreedyMatchingSolver())
     ans = decode(decoder,tanner,syn)
-    @test syn == syndrome_extraction(ans.error_qubits,tanner)
+    @test syn == syndrome_extraction(ans.error_pattern,tanner)
 end
 
 @testset "compile and decode" begin
@@ -43,9 +43,9 @@ end
 
     Random.seed!(123)
     em = iid_error(0.05,d*d)
-    ep = random_error_qubits(em)
+    ep = random_error_pattern(em)
     syn = syndrome_extraction(ep,tanner.stgz)
     
     res = decode(ct,syn)
-    @test syn == syndrome_extraction(res.error_qubits, tanner.stgz)
+    @test syn == syndrome_extraction(res.error_pattern, tanner.stgz)
 end

@@ -4,12 +4,12 @@ using Random
 
 @testset "IndependentFlipError" begin
     em = iid_error(0.1,10)
-    @test random_error_qubits(em) isa Vector{Mod2}
+    @test random_error_pattern(em) isa Vector{Mod2}
 end
 
 @testset "IndependentDepolarizingError" begin
     em = iid_error(0.05,0.06,0.1,100000)
-    ep = random_error_qubits(em)
+    ep = random_error_pattern(em)
     ex = ep.xerror
     ez = ep.zerror
     @test ex isa Vector{Mod2}

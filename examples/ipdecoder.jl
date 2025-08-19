@@ -6,9 +6,9 @@ tanner = CSSTannerGraph(SteaneCode());
 # And the parity-check matrix of $X$-stabilizers of the Steane code is
 tanner.stgx.H
 
-# The error vectors $\mathbf{x,y,z} \in \mathbb{F}^n_2$ are binary vectors. The $j$-th element of $\mathbf{x}$ is $1$ if the $j$-th qubit is flipped by an $X$-error, and $0$ otherwise. There is at most one error per qubit, i.e., $\mathbf{x}_j + \mathbf{y}_j + \mathbf{z}_j \leq 1$. [`random_error_qubits`](@ref) can be used to generate a random error pattern for a given number of qubits and an error model.
+# The error vectors $\mathbf{x,y,z} \in \mathbb{F}^n_2$ are binary vectors. The $j$-th element of $\mathbf{x}$ is $1$ if the $j$-th qubit is flipped by an $X$-error, and $0$ otherwise. There is at most one error per qubit, i.e., $\mathbf{x}_j + \mathbf{y}_j + \mathbf{z}_j \leq 1$. [`random_error_pattern`](@ref) can be used to generate a random error pattern for a given number of qubits and an error model.
 using Random; Random.seed!(110)
-error_pattern = random_error_qubits(iid_error(0.1,0.1,0.1,7))
+error_pattern = random_error_pattern(iid_error(0.1,0.1,0.1,7))
 # Here we decompose $Y$ errors into $X$ and $Z$ errors. The error pattern is $Y_4X_6 =iX_4X_6Z_4$.
 
 # The syndrome of $X$-stabilizers and $Z$-stabilizers are $H_x(\mathbf{y}+\mathbf{z}) = s_x \in \mathbb{F}^{m_x}_2$ and $H_z (\mathbf{x}+\mathbf{y}) = s_z \in \mathbb{F}^{m_z}_2$. We can use [`syndrome_extraction`](@ref) to extract the syndrome of a given error pattern.

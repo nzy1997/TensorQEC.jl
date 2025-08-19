@@ -25,7 +25,7 @@ Given a depolarizing error model, we can randomly generate an error pattern
 error_model = iid_error(0.05,0.05,0.05, 7)
 using Random
 Random.seed!(1)
-error_pattern = random_error_qubits(error_model)
+error_pattern = random_error_pattern(error_model)
 ```
 
 Now we can measure the syndrome:
@@ -66,13 +66,13 @@ result = decode(compiled_decoder, syndrome)
 ```
 To check the decoding result, we can first check whether we get a same syndrome as the input syndrome.
 ```@example tndecoder
-syndrome == syndrome_extraction(result.error_qubits, tanner)
+syndrome == syndrome_extraction(result.error_pattern, tanner)
 ```
 
 Then we can check whether there is a logical error. First we need to get the logical operators.
 ```@example tndecoder
 lx, lz = logical_operator(tanner)
-check_logical_error(result.error_qubits, error_pattern, lx, lz)
+check_logical_error(result.error_pattern, error_pattern, lx, lz)
 ```
 
 Here `false` means no logical error, and `true` means there is a logical error.

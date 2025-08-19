@@ -29,22 +29,22 @@ compiled_decoder = compile(decoder, problem);
 # Now we randomly generate an error configuration.
 using Random
 Random.seed!(123)
-error_qubits = random_error_qubits(problem.pvec)
+error_pattern = random_error_pattern(problem.pvec)
 
 # The corresponding syndrome is
-syndrome = syndrome_extraction(error_qubits, tanner)
+syndrome = syndrome_extraction(error_pattern, tanner)
 
 # We can use the compiled decoder to decode the syndrome with [`decode`](@ref). The decoding result is a [`DecodingResult`](@ref) object.
 res = decode(compiled_decoder, syndrome)
 
 # We can check the result by comparing the syndrome of the decoding result.
-syndrome == syndrome_extraction(res.error_qubits, tanner)
+syndrome == syndrome_extraction(res.error_pattern, tanner)
 
 # Also, to check wether there is a logical error, we can first generate the logical operators with [`logical_operator`](@ref).
 logicalx_operators,logicalz_operators = logical_operator(tanner)
 
 # Then we can check the syndrome of the logical operators with [`check_logical_error`](@ref).
-check_logical_error(error_qubits, res.error_qubits, logicalx_operators, logicalz_operators)
+check_logical_error(error_pattern, res.error_pattern, logicalx_operators, logicalz_operators)
 
 # Simply [`decode`](@ref) function can also be used to decode the syndrome. The compilation step is contained in the function.
 decode(decoder,problem,syndrome)

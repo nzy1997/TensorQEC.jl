@@ -4,8 +4,8 @@ using Random
 
 @testset "decode ClassicalDecodingProblem" begin
     tanner = CSSTannerGraph(SurfaceCode(3,3)).stgz
-    error_qubits = Mod2[0,0,0,1,0,0,0,0,0]
-    syn = syndrome_extraction(error_qubits, tanner)
+    error_pattern = Mod2[0,0,0,1,0,0,0,0,0]
+    syn = syndrome_extraction(error_pattern, tanner)
 
     for decoder in [IPDecoder(),BPDecoder(),BPDecoder(100,false),MatchingDecoder(TensorQEC.GreedyMatchingSolver()),TNMAP()]
         res = decode(decoder,tanner,syn)
@@ -17,7 +17,7 @@ end
     Random.seed!(123)
     tanner = CSSTannerGraph(SurfaceCode(3, 3))
     em = iid_error(0.05,0.06,0.1,9)
-    ep = random_error_qubits(em)
+    ep = random_error_pattern(em)
     syn = syndrome_extraction(ep,tanner)
 
     for decoder in [IPDecoder(),TNMAP()]

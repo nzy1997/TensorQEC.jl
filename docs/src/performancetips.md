@@ -17,10 +17,10 @@ results = multiprocess_run(collect(1:10)) do seed
     decoder = IPDecoder()
     tanner = CSSTannerGraph(SurfaceCode(d, d))
     em = DepolarizingError(0.05, 0.06, 0.1)
-    ep = random_error_qubits(d*d, em)
+    ep = random_error_pattern(d*d, em)
     syn = syndrome_extraction(ep,tanner)
     res = decode(decoder,tanner,syn)
-    return check_logical_error(ep.xerror, res.xerror_qubits, tanner.stgx.H) && check_logical_error(ep.zerror, res.zerror_qubits, tanner.stgz.H)
+    return check_logical_error(ep.xerror, res.xerror_pattern, tanner.stgx.H) && check_logical_error(ep.zerror, res.zerror_pattern, tanner.stgz.H)
 end
 
 println(results)

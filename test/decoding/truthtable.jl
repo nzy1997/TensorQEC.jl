@@ -27,12 +27,12 @@ end
     Random.seed!(123)
     tanner = CSSTannerGraph(SurfaceCode(3, 3))
     em = iid_error(0.05,0.06,0.1,9)
-    ep = random_error_qubits(em)
+    ep = random_error_pattern(em)
     syn = syndrome_extraction(ep,tanner)
     tb = make_table(tanner,4,TensorQEC.UniformError())
     ct = TensorQEC.CompiledTable(tb)
     res = decode(ct, syn)
-    @test syn == syndrome_extraction(res.error_qubits, tanner)
+    @test syn == syndrome_extraction(res.error_pattern, tanner)
 end
 
 @testset "lluint" begin
@@ -40,7 +40,7 @@ end
     Random.seed!(123)
     tanner = CSSTannerGraph(SurfaceCode(9, 9))
     em = iid_error(0.01,0.01,0.01,81)
-    ep = random_error_qubits(em)
+    ep = random_error_pattern(em)
     syn = syndrome_extraction(ep,tanner)
 
     tb = make_table(tanner,1,TensorQEC.UniformError())
@@ -51,7 +51,7 @@ end
     @test tb.num_st == tb2.num_st
     ct = TensorQEC.CompiledTable(tb2)
     res = decode(ct, syn)
-    @test syn == syndrome_extraction(res.error_qubits, tanner)
+    @test syn == syndrome_extraction(res.error_pattern, tanner)
     rm("test_table.txt")
 end
 
@@ -83,8 +83,8 @@ end
     problem = TensorQEC.IndependentDepolarizingDecodingProblem(tanner,iid_error(0.05,0.05,0.05,9))
     decoder = TableDecoder(3)
     compiled = compile(decoder, problem)
-    error_qubits = random_error_qubits(iid_error(0.05,0.05,0.05,9))
-    syn = syndrome_extraction(error_qubits, tanner)
+    error_pattern = random_error_pattern(iid_error(0.05,0.05,0.05,9))
+    syn = syndrome_extraction(error_pattern, tanner)
     res = decode(compiled, syn)
-    @test syn == syndrome_extraction(res.error_qubits, tanner)
+    @test syn == syndrome_extraction(res.error_pattern, tanner)
 end

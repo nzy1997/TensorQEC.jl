@@ -62,11 +62,11 @@ iid_error(px::T,py::T,pz::T,n::Int) where T <: Real = IndependentDepolarizingErr
 iid_error(p::T, tanner::CSSTannerGraph) where T <: Real = iid_error(p,p,p,nq(tanner))
 
 """
-    random_error_qubits(qubit_number::Int, em::AbstractErrorModel)
+    random_error_pattern(qubit_number::Int, em::AbstractErrorModel)
 
 Generate a random error pattern for a given number of qubits and an error model.
 """
-function random_error_qubits(em::IndependentFlipError)
+function random_error_pattern(em::IndependentFlipError)
     return Mod2.([rand() < em.p[i] for i in 1:length(em.p)])
 end
 
@@ -94,7 +94,7 @@ function Base.show(io::IO, cep::CSSErrorPattern)
     return
 end
 
-function random_error_qubits(em::IndependentDepolarizingError)
+function random_error_pattern(em::IndependentDepolarizingError)
     xerror =  Mod2[]
     zerror =  Mod2[]
     for i in 1:length(em.px)
