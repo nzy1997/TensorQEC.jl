@@ -145,20 +145,20 @@ function compile(decoder::TNMMAP, problem::IndependentDepolarizingDecodingProble
     return CompiledTNMMAP(tanner, lx, lz, code, tensors, syndrome_indices)
 end
 
-function update_syndrome!(tensors::Vector{AT}, syndrome::CSSSyndrome) where AT
+function update_syndrome!(ct::CompiledTNMMAP, syndrome::CSSSyndrome)
     num_sx = length(syndrome.sx)
     num_sz = length(syndrome.sz)
     for (i,s) in enumerate(syndrome.sx)
-        tensors[end-num_sx-num_sz+i] = s.x ? [0.0, 1.0] : [1.0, 0.0]
+        ct.tensors[end-num_sx-num_sz+i] = s.x ? [0.0, 1.0] : [1.0, 0.0]
     end
     for (i,s) in enumerate(syndrome.sz)
-        tensors[end-num_sz+i] = s.x ? [0.0, 1.0] : [1.0, 0.0]
+        ct.tensors[end-num_sz+i] = s.x ? [0.0, 1.0] : [1.0, 0.0]
     end
-    return tensors
+    return ct
 end
 
 function decode(ct::CompiledTNMMAP, syndrome::CSSSyndrome)
-    update_syndrome!(ct.tensors, syndrome)
+    update_syndrome!(ct, syndrome)
     mar = ct.code(ct.tensors...)
     _, pos = findmax(mar)
     return DecodingResult(true, error_pattern(pos,ct,syndrome))
