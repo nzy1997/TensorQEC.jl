@@ -4,19 +4,19 @@
 using TensorQEC
 iide = iid_error(0.05,0.05,0.05,7)
 
-# We can generate a random error pattern with [`random_error_qubits`](@ref).
+# We can generate a random error pattern with [`random_error_pattern`](@ref).
 for _ in 1:10
-    print(random_error_qubits(iide))
+    print(random_error_pattern(iide))
 end
 
 # This is the same for [`IndependentFlipError`](@ref).
-random_error_qubits(iid_error(0.3,7))
+random_error_pattern(iid_error(0.3,7))
 
 # ## Syndrome Extraction
 # First, we define a Tanner graph and a error pattern.
 tanner = CSSTannerGraph(SteaneCode())
 using Random;Random.seed!(123)
-error_qubits = random_error_qubits(iide)
+error_pattern = random_error_pattern(iide)
 
 # Then, we can extract the syndrome from the error pattern with [`syndrome_extraction`](@ref).
-syndrome = syndrome_extraction(error_qubits, tanner)
+syndrome = syndrome_extraction(error_pattern, tanner)

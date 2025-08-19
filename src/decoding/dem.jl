@@ -158,6 +158,6 @@ function dem2tanner(dem::DetectorErrorModel)
     return SimpleTannerGraph(nq, ns, q2s, s2q, H)
 end
 
-function random_error_qubits(dem::DetectorErrorModel)
-    return random_error_qubits(IndependentFlipError(dem.error_rates))
+function random_error_pattern(dem::DetectorErrorModel)
+    return random_error_pattern(IndependentFlipError(dem.error_rates))
 end

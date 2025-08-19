@@ -3,9 +3,9 @@ struct CSSToGeneralDecodingProblem <: AbstractReductionResult
 end
 
 single_qubit_tensor(px,py,pz) = [1-px-py-pz pz;px py]
-function extract_decoding(cgdp::CSSToGeneralDecodingProblem, error_qubits::Vector{Mod2})
+function extract_decoding(cgdp::CSSToGeneralDecodingProblem, error_pattern::Vector{Mod2})
     num_qubits = cgdp.qubit_num
-    return DecodingResult(true, CSSErrorPattern(error_qubits[1:num_qubits], error_qubits[(num_qubits+1):2*num_qubits]))
+    return DecodingResult(true, CSSErrorPattern(error_pattern[1:num_qubits], error_pattern[(num_qubits+1):2*num_qubits]))
 end
 
 # pvec=[px,py,pz], i represent x error, i+num_qubits represent z error

@@ -1,6 +1,6 @@
 struct BPResult
     success_tag::Bool
-    error_qubits::Vector{Mod2}
+    error_pattern::Vector{Mod2}
     error_perm::Vector{Int}
 end
 
@@ -45,7 +45,7 @@ end
 function decode(cb::CompiledBP,syndrome::SimpleSyndrome)
     bp_res = belief_propagation(cb,syndrome.s)
     if bp_res.success_tag || !(cb.osd)
-        return DecodingResult(bp_res.success_tag,bp_res.error_qubits)
+        return DecodingResult(bp_res.success_tag,bp_res.error_pattern)
     else
         return DecodingResult(true,osd(cb.tanner, bp_res.error_perm, syndrome.s))
     end

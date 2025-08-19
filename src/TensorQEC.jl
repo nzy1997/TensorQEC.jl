@@ -69,7 +69,7 @@ export osd, check_logical_error
 export Tableau, new_tableau, tableau_simulate
 
 # error model
-export IndependentFlipError, IndependentDepolarizingError, random_error_qubits, SimpleSyndrome, CSSSyndrome, iid_error, CSSErrorPattern
+export IndependentFlipError, IndependentDepolarizingError, random_error_pattern, SimpleSyndrome, CSSSyndrome, iid_error, CSSErrorPattern
 @const_gate CCZ::ComplexF64 = diagm([1, 1, 1, 1, 1, 1, 1, -1])
 
 # decoder

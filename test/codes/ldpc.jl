@@ -35,13 +35,13 @@ end
     sts = [[1, 2,3,4],[2,3,4,5]]
     nq = 5
     tanner = SimpleTannerGraph(nq, sts)
-    error_qubits = Mod2[1,0,1,1,0]
-    @test syndrome_extraction(error_qubits, tanner).s == Mod2[1,0]
+    error_pattern = Mod2[1,0,1,1,0]
+    @test syndrome_extraction(error_pattern, tanner).s == Mod2[1,0]
 
     Random.seed!(123)
     tanner = CSSTannerGraph(SurfaceCode(3, 3))
     em = iid_error(0.05, 0.06, 0.1, 9)
-    ep = random_error_qubits(em)
+    ep = random_error_pattern(em)
     syn = syndrome_extraction(ep,tanner)
     @test syn.sx == Mod2[1,0,0,0]
     @test syn.sz == Mod2[0,1,0,0]

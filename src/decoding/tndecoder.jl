@@ -72,11 +72,11 @@ A tensor network based marginal maximum a posteriori (MMAP) decoder, which finds
 
 ### Keyword Arguments
 - `optimizer::CodeOptimizer = TreeSA()`: The optimizer to use for optimizing the tensor network contraction order.
-- `factorize::Bool = false`: Whether to factorize the tensors to rank-3 tensors.
+- `factorize::Bool = true`: Whether to factorize the tensors to rank-3 tensors.
 """
 Base.@kwdef struct TNMMAP <: AbstractGeneralDecoder
     optimizer::CodeOptimizer = TreeSA()  # contraction order optimizer
-    factorize::Bool = false # whether to factorize the tensors to rank-3 tensors
+    factorize::Bool = true # whether to factorize the tensors to rank-3 tensors
 end
 
 Base.show(io::IO, ::MIME"text/plain", p::TNMMAP) = show(io, p)
@@ -89,8 +89,6 @@ struct CompiledTNMMAP{CT, AT} <: CompiledDecoder
     code::CT
     tensors::Vector{AT}
     syndrome_indices::Vector{Int}
-    zero_tensor::AT
-    one_tensor::AT
 end
 
 # nvars is the number of variables in the tensor network. 
@@ -135,41 +133,38 @@ function compile(decoder::TNMMAP, problem::IndependentDepolarizingDecodingProble
     syndrome_indices = collect(2*qubit_num+1:2*qubit_num+ns(tanner))
     iy = collect(2 * qubit_num + ns(tanner) +1:nvars)
    
-    zero_tensor = [1.0, 0.0]
-    one_tensor = [0.0, 1.0]
-
     for v in syndrome_indices
         push!(ixs, [v])
-        push!(tensors, zero_tensor)
+        push!(tensors, [1.0, 0.0])
     end
     code = DynamicEinCode(ixs,iy)
     size_dict = uniformsize(code, 2)
     if !isa(decoder.optimizer, NoOptimizer)
         code = optimize_code(code, size_dict, decoder.optimizer)
     end
-    return CompiledTNMMAP(tanner, lx, lz, code, tensors, syndrome_indices, zero_tensor, one_tensor)
+    return CompiledTNMMAP(tanner, lx, lz, code, tensors, syndrome_indices)
 end
 
-function update_syndrome!(tensors::Vector{AT}, syndrome::CSSSyndrome, zero_tensor::AT,one_tensor::AT) where AT
+function update_syndrome!(tensors::Vector{AT}, syndrome::CSSSyndrome) where AT
     num_sx = length(syndrome.sx)
     num_sz = length(syndrome.sz)
     for (i,s) in enumerate(syndrome.sx)
-        tensors[end-num_sx-num_sz+i] = s.x ? one_tensor : zero_tensor
+        tensors[end-num_sx-num_sz+i] = s.x ? [0.0, 1.0] : [1.0, 0.0]
     end
     for (i,s) in enumerate(syndrome.sz)
-        tensors[end-num_sz+i] = s.x ? one_tensor : zero_tensor
+        tensors[end-num_sz+i] = s.x ? [0.0, 1.0] : [1.0, 0.0]
     end
     return tensors
 end
 
 function decode(ct::CompiledTNMMAP, syndrome::CSSSyndrome)
-    update_syndrome!(ct.tensors, syndrome, ct.zero_tensor, ct.one_tensor)
+    update_syndrome!(ct.tensors, syndrome)
     mar = ct.code(ct.tensors...)
     _, pos = findmax(mar)
-    return DecodingResult(true, logical2onesolution(pos,ct,syndrome))
+    return DecodingResult(true, error_pattern(pos,ct,syndrome))
 end
 
-function logical2onesolution(pos::CartesianIndex,ct::CompiledTNMMAP,syndrome::CSSSyndrome)
+function error_pattern(pos::CartesianIndex,ct::CompiledTNMMAP,syndrome::CSSSyndrome)
     ex,ez = _mixed_integer_programming_for_one_solution(ct.tanner, syndrome)
     for i in axes(ct.lx,1)
         (sum(ct.lz[i,:].* ex).x == (pos.I[i+size(ct.lx,1)] == 2)) || (ex += ct.lx[i,:])
@@ -184,8 +179,6 @@ struct CompiledDEMTNMMAP{CT, AT} <: CompiledDecoder
     code::CT
     tensors::Vector{AT}
     syndrome_indices::Vector{Int}
-    zero_tensor::AT
-    one_tensor::AT
 end
 
 # nvars is the number of variables in the tensor network. 
@@ -213,27 +206,21 @@ function compile(decoder::TNMMAP, dem::DetectorErrorModel)
 
     syndrome_indices = collect(nq(tanner)+1:nq(tanner)+ns(tanner))
     
-    zero_tensor = [1.0, 0.0]
-    one_tensor = [0.0, 1.0]
-    
     for v in syndrome_indices
         push!(ixs, [v])
-        push!(tensors, zero_tensor)
+        push!(tensors, [1.0, 0.0])
     end
     code = DynamicEinCode(ixs,iy)
     size_dict = uniformsize(code, 2)
     if !isa(decoder.optimizer, NoOptimizer)
         code = optimize_code(code, size_dict, decoder.optimizer)
     end
-    return CompiledDEMTNMMAP(tanner, l2q, code, tensors, syndrome_indices, zero_tensor, one_tensor)
+    return CompiledDEMTNMMAP(tanner, l2q, code, tensors, syndrome_indices)
 end
 
 function push_check_node!(ixs::Vector{Vector{Int64}}, tensors::Vector{Array{Float64}}, c::Vector{Int64}, check_node_index::Int, nvars::Int,factorize::Bool)
     c_length = length(c)
     if !factorize || (c_length == 2)
-        if c_length > 20
-            error("The number of qubits in the check node is too large, please set factorize to true to factorize the tensors to rank-3 tensors.")
-        end
         push!(ixs, [c...,check_node_index])
         push!(tensors, parity_check_matrix(c_length))
     else
@@ -253,7 +240,7 @@ end
 function update_syndrome!(ct::CompiledDEMTNMMAP, syndrome::SimpleSyndrome)
     ns = length(syndrome.s)
     for (i,s) in enumerate(syndrome.s)
-        ct.tensors[end-ns+i] = s.x ? ct.one_tensor : ct.zero_tensor
+        ct.tensors[end-ns+i] = s.x ? [0.0, 1.0] : [1.0, 0.0]
     end
     return ct
 end
@@ -262,10 +249,10 @@ function decode(ct::CompiledDEMTNMMAP, syndrome::SimpleSyndrome)
     update_syndrome!(ct, syndrome)
     mar = ct.code(ct.tensors...)
     _, pos = findmax(mar)
-    return DecodingResult(true, logical2onesolution(pos,ct,syndrome))
+    return DecodingResult(true, error_pattern(pos,ct,syndrome))
 end
 
-function logical2onesolution(pos::Int,ct::CompiledDEMTNMMAP,syndrome::SimpleSyndrome)
+function error_pattern(pos::Int,ct::CompiledDEMTNMMAP,syndrome::SimpleSyndrome)
     ep = _mixed_integer_programming_for_one_solution(ct.tanner.H, syndrome.s)
     if sum(x -> ep[x], ct.l2q[1]).x == (pos == 1)
         ep[ct.l2q[1]] .+= Mod2(1)
@@ -273,7 +260,7 @@ function logical2onesolution(pos::Int,ct::CompiledDEMTNMMAP,syndrome::SimpleSynd
     return ep
 end
 
-function logical2onesolution(pos::CartesianIndex,ct::CompiledDEMTNMMAP,syndrome::SimpleSyndrome)
+function error_pattern(pos::CartesianIndex,ct::CompiledDEMTNMMAP,syndrome::SimpleSyndrome)
     ep = _mixed_integer_programming_for_one_solution(ct.tanner.H, syndrome.s)
     for (i,l) in enumerate(ct.l2q)
         if sum(x -> ep[x], l).x == (pos.I[i] == 1)
@@ -283,3 +270,10 @@ function logical2onesolution(pos::CartesianIndex,ct::CompiledDEMTNMMAP,syndrome:
     return ep
 end
 
+function OMEinsum.contraction_complexity(ct::CompiledDEMTNMMAP)
+    return contraction_complexity(ct.code, OMEinsum.get_size_dict(getixsv(ct.code), ct.tensors))
+end
+
+function OMEinsum.contraction_complexity(ct::CompiledTNMMAP)
+    return contraction_complexity(ct.code, OMEinsum.get_size_dict(getixsv(ct.code), ct.tensors))
+end

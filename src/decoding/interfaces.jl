@@ -105,23 +105,17 @@ function decode(decoder::AbstractDecoder, problem::AbstractDecodingProblem, synd
 end
 
 """
-    DecodingResult(success_tag::Bool, error_qubits::ET)
+    DecodingResult(success_tag::Bool, error_pattern::ET)
 
 The result of decoding.
 
 ### Fields:
 - `success_tag::Bool`: whether the decoding is successful.
-- `error_qubits::ET`: the error qubits.
+- `error_pattern::ET`: the error pattern.
 """
 struct DecodingResult{ET}
     success_tag::Bool
-    error_qubits::ET
-end
-
-Base.show(io::IO, ::MIME"text/plain", cdr::DecodingResult) = show(io, cdr)
-function Base.show(io::IO, cdr::DecodingResult)
-    println(io, cdr.success_tag ? "Success" : "Failure")
-    println(io, "$(cdr.error_qubits)")
+    error_pattern::ET
 end
 
 abstract type AbstractReductionResult end
@@ -139,7 +133,7 @@ function compile(decoder::AbstractGeneralDecoder, iddp::IndependentDepolarizingD
 end
 
 function decode(cd::CompiledGeneralDecoder, syndrome::CSSSyndrome)
-    return extract_decoding(cd.reduction, decode(cd.cd, SimpleSyndrome([syndrome.sx...,syndrome.sz...])).error_qubits)
+    return extract_decoding(cd.reduction, decode(cd.cd, SimpleSyndrome([syndrome.sx...,syndrome.sz...])).error_pattern)
 end
 
 function compile(decoder::AbstractGeneralDecoder, cdp::ClassicalDecodingProblem)
@@ -163,5 +157,5 @@ end
 function decode(cb::CompiledClassicalDecoder,syndrome::CSSSyndrome)
     bp_resx = decode(cb.ccz,SimpleSyndrome(syndrome.sz))
     bp_resz = decode(cb.ccx,SimpleSyndrome(syndrome.sx))
-    return DecodingResult(bp_resx.success_tag && bp_resz.success_tag, CSSErrorPattern(bp_resx.error_qubits,bp_resz.error_qubits))
+    return DecodingResult(bp_resx.success_tag && bp_resz.success_tag, CSSErrorPattern(bp_resx.error_pattern,bp_resz.error_pattern))
 end
