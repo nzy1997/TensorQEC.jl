@@ -74,3 +74,54 @@ end
     qc = parse_stim_file(joinpath(@__DIR__, "test_circuits", "r=12,d=12,p=0.001,noise=si1000,c=bivariate_bicycle_X,nkd=[[144,12,12]],q=288,iscolored=True,A_poly=x^3+y+y^2,B_poly=y^3+x+x^2.stim"), 288);
     @test qc isa ChainBlock
 end
+
+@testset "dump_stim_file" begin
+    qc,_ = encode_stabilizers(stabilizers(SurfaceCode(3,3)))
+    TensorQEC.dump_stim_file(qc, joinpath(@__DIR__, "surface_code_3_3.stim"))
+    qc2 = parse_stim_file(joinpath(@__DIR__, "surface_code_3_3.stim"), 9)
+    @test qc == qc2
+    rm(joinpath(@__DIR__, "surface_code_3_3.stim"))
+end
+
+@testset "parse_stim_string" begin
+    circuit_str = """
+        CNOT 0 1 2 3 4 5 # A CNOT gate
+        CNOT 2 1 4 3 6 5
+        MR 1 3 5
+
+        DETECTOR rec[-3]
+        DETECTOR rec[-2]
+        DETECTOR rec[-1]
+
+        REPEAT 2 {
+            CNOT 0 1 2 3 4 5 # A CNOT gate
+            CNOT 2 1 4 3 6 5
+            MR 1 3 5
+
+            DETECTOR rec[-3] rec[-6]
+            DETECTOR rec[-2] rec[-5]
+            DETECTOR rec[-1] rec[-4]
+            REPEAT 2 
+            {
+            X 0 1 2 3 4 5 6
+            }
+        }
+
+        M(0.1) 0 2 4 6
+
+        DETECTOR rec[-3] rec[-4] rec[-7]
+        DETECTOR rec[-2] rec[-3] rec[-6]
+        DETECTOR rec[-1] rec[-2] rec[-5]
+
+        OBSERVABLE_INCLUDE(0) rec[-1]
+    """
+
+    qc = TensorQEC.parse_stim_string(circuit_str, 7)
+    # vizcircuit(qc)
+    @test qc isa ChainBlock
+    TensorQEC.dump_stim_file(qc, joinpath(@__DIR__, "test_stim_file.stim"))
+    qc2 = parse_stim_file(joinpath(@__DIR__, "test_stim_file.stim"), 7)
+    # @test qc == qc2
+    @test isfile(joinpath(@__DIR__, "test_stim_file.stim"))
+    rm(joinpath(@__DIR__, "test_stim_file.stim"))
+end

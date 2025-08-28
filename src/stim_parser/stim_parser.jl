@@ -373,3 +373,65 @@ function parse_dem_string(content::String)
     largest_logical = maximum(broadcast(x -> isempty(x) ? 0 : maximum(x), flipped_logicals))
     return DetectorErrorModel(error_rates, flipped_detectors .∪ flipped_logicals, collect(1:largest_detector), collect(largest_detector+1:largest_logical))
 end
+
+# Warning: This function is not fully tested.
+function dump_stim_file(qc::ChainBlock, filename::String)
+    qc= simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
+    measure_list = Int[]
+    open(filename, "w") do io
+        for gate in qc
+            # For each gate in the ChainBlock, write its STIM representation to the file.
+            # This is a minimal implementation for common gates; extend as needed.
+            if gate isa PutBlock
+                # Single-qubit gate
+                @assert length(gate.locs) == 1
+                loc = gate.locs[1]
+                g = gate.content
+                if g isa ConstGate.HGate
+                    println(io, "H ", loc-1)
+                elseif g isa ConstGate.XGate
+                    println(io, "X ", loc-1)
+                elseif g isa ConstGate.YGate
+                    println(io, "Y ", loc-1)
+                elseif g isa ConstGate.ZGate
+                    println(io, "Z ", loc-1)
+                elseif g isa NumberedMeasure
+                    println(io, "M ", loc-1)
+                    push!(measure_list, g.num)
+                elseif g isa DetectorBlock
+                    if g.detector_type == 0
+                        print(io, "DETECTOR ")
+                        for m in g.vm
+                            print(io, "rec[", findfirst(==(m.num), measure_list)-length(measure_list)-1, "] ")
+                        end
+                        println(io)
+                    elseif g.detector_type == 1
+                        print(io, "OBSERVABLE_INCLUDE(0) ")
+                        for m in g.vm
+                            print(io, "rec[", findfirst(==(m.num), measure_list)-length(measure_list)-1, "] ")
+                        end
+                        println(io)
+                    end
+                else
+                    error("Unsupported gate: $(typeof(g))")
+                end
+            elseif gate isa ControlBlock
+                # Two-qubit controlled gates (assume CNOT for now)
+                ctrl = gate.ctrl_locs[1] - 1
+                tgt = gate.locs[1] - 1
+                if gate.content isa ConstGate.XGate
+                    println(io, "CX $ctrl $tgt")
+                else
+                    error("Unsupported controlled gate: $(typeof(gate))")
+                end
+            elseif gate isa MeasureBlock
+                # Measurement
+                for loc in gate.locations
+                    println(io, "M ", loc-1)
+                end
+            else
+                error("Unsupported block: $(typeof(gate))")
+            end
+        end
+    end
+end
