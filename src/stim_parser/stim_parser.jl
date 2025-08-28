@@ -287,14 +287,14 @@ function apply_gate!(qc, qubit_number::Int, instruction_name::String, qubit_indi
     elseif instruction_name == "R"
         # Reset operations
         for qubit in qubit_indices
-            m = Measure(qubit_number; locs = qubit+1,resetto=bit"0")
-            push!(qc, m)
+            m = Measure(1;resetto=bit"0")
+            push!(qc, put(qubit_number, qubit+1 => m))
         end
     elseif instruction_name == "RX"
         # Reset operations
         for qubit in qubit_indices
-            m = Measure(qubit_number; locs = qubit+1,resetto=bit"0")
-            push!(qc, m)
+            m = Measure(1;resetto=bit"0")
+            push!(qc, put(qubit_number, qubit+1 => m))
             push!(qc,put(qubit_number, qubit+1 => H))
         end
     elseif instruction_name == "TICK"
