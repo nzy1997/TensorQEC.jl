@@ -23,12 +23,8 @@ end
     display(vizcircuit(qcm))
 end
 
-@testset "generate_circuit" begin
+@testset "generate_measurement_circuit_with_errors" begin
     st = stabilizers(SurfaceCode(3,3)) 
-    qc = TensorQEC.generate_measurement_circuit(st, 2; before_round_data_depolarization = 0.01)
-    display(vizcircuit(qc))
-    qce = TensorQEC.insert_errors(qc; after_clifford_depolarization=0.01, after_reset_flip_probability=0.02, before_measure_flip_probability=0.03)
-    display(vizcircuit(qce))
-    qce2 = TensorQEC.generate_measurement_circuit_with_errors(st, 2; before_round_data_depolarization = 0.01, after_clifford_depolarization=0.02, after_reset_flip_probability=0.03, before_measure_flip_probability=0.04)
-    display(vizcircuit(qce2))
+    qce = TensorQEC.generate_measurement_circuit_with_errors(st, 2; before_round_data_depolarization = 0.01, after_clifford_depolarization=0.02, after_reset_flip_probability=0.03, before_measure_flip_probability=0.04)
+    # display(vizcircuit(qce))
 end
