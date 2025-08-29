@@ -1,5 +1,6 @@
 using Test
 using TensorQEC
+using TensorQEC.Yao
 
 @testset "detector error model" begin
     circuit_str = """
