@@ -1,5 +1,6 @@
 using Test
 using TensorQEC
+using TensorQEC.Yao
 
 @testset "detector error model" begin
     circuit_str = """
@@ -105,4 +106,29 @@ end
     # println(dem1)
     # println(dem2)
     @test check_dem(dem1, dem2)
+end
+
+@testset "insert errors" begin
+    circuit_str ="""
+    H 0 1
+
+    CX 0 1
+
+    M 0
+    MR 1
+    DETECTOR rec[-1] rec[-2]
+
+    R 1
+
+    CX 1 0
+
+    M 0 1
+    DETECTOR rec[-1] rec[-2]
+    
+    C_XYZ 1
+    """
+    qc = TensorQEC.parse_stim_string(circuit_str,2)
+    # vizcircuit(qc)
+    qce = TensorQEC.insert_errors(qc;after_clifford_depolarization=0.01,after_reset_flip_probability=0.02,before_measure_flip_probability=0.03)
+    vizcircuit(qce)
 end

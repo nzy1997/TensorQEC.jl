@@ -161,3 +161,46 @@ end
 function random_error_pattern(dem::DetectorErrorModel)
     return random_error_pattern(IndependentFlipError(dem.error_rates))
 end
+
+function insert_errors(qc::ChainBlock;after_clifford_depolarization=0.0,after_reset_flip_probability=0.0,before_measure_flip_probability=0.0)
+	qc = simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
+	num_qubits = nqubits(qc)
+	qce = chain(num_qubits)
+	for gate in qc
+		gate = toput(gate)
+        @assert gate isa PutBlock "only support PutBlock for now. Get $(typeof(gate))"
+        if !iszero(before_measure_flip_probability) && (gate.content isa NumberedMeasure)
+            for loc in gate.locs
+                push!(qce, put(num_qubits, loc => quantum_channel(BitFlipError(before_measure_flip_probability))))
+            end
+        end
+		push!(qce, gate)
+        
+        if !iszero(after_clifford_depolarization) && (gate.content isa ConstantGate || gate.content isa GeneralMatrixBlock)
+            loc_num = length(gate.locs)
+            push!(qce, put(num_qubits,(gate.locs...,) => DepolarizingChannel(loc_num, after_clifford_depolarization)))
+        end
+
+
+        if !iszero(after_reset_flip_probability)
+            apply_tag = false
+            if gate.content isa MeasureAndReset
+                apply_tag = true
+            elseif gate.content isa Measure
+                if gate.content.postprocess isa ResetTo
+                    apply_tag = true
+                end
+            elseif gate.content isa NumberedMeasure
+                if gate.content.m.postprocess isa ResetTo
+                    apply_tag = true
+                end
+            end
+            if apply_tag
+                for loc in gate.locs
+                    push!(qce, put(num_qubits, loc => quantum_channel(BitFlipError(after_reset_flip_probability))))
+                end
+            end
+        end
+	end
+	return qce
+end

@@ -52,7 +52,7 @@ export stabilizers, ToricCode, SurfaceCode, ShorCode, SteaneCode, Code832, Code4
 export CSSBimatrix, syndrome_transform, encode_stabilizers, place_qubits
 
 # measurement
-export measure_circuit_fault_tol, measure_circuit_steane, measure_circuit
+export measure_circuit_fault_tol, measure_circuit_steane, measurement_circuit
 
 # tablemake
 export make_table, save_table, load_table, correction_circuit, TruthTable, correction_dict

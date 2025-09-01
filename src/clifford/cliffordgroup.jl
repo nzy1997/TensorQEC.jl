@@ -192,7 +192,7 @@ function compile_clifford_circuit(qc::ChainBlock)
     gatedict = Dict{UInt64, Int}()
     for _gate in qc
         gate = toput(_gate)
-        if gate isa Measure || gate.content isa NumberedMeasure || gate.content isa MixedUnitaryChannel || gate.content isa DepolarizingChannel
+        if gate isa Measure || gate.content isa NumberedMeasure || gate.content isa MixedUnitaryChannel || gate.content isa DepolarizingChannel || gate.content isa MeasureAndReset
             push!(sequence, (0, 0, 0))
             continue
         end
