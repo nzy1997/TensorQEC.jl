@@ -376,7 +376,7 @@ end
 
 # Warning: This function is not fully tested.
 function dump_stim_file(qc::ChainBlock, filename::String)
-    qc= simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
+    qc= YaoBlocks.Optimise.simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
     measure_list = Int[]
     open(filename, "w") do io
         for gate in qc

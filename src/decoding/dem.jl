@@ -20,7 +20,7 @@ function Base.show(io::IO, dem::DetectorErrorModel)
 end
 
 function detector_error_model(qc::ChainBlock)
-    qc = simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
+    qc = YaoBlocks.Optimise.simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
     cqc = compile_clifford_circuit(qc)
     @assert length(cqc.sequence) == length(qc)
     num_qubits = nqubits(qc)
@@ -163,7 +163,7 @@ function random_error_pattern(dem::DetectorErrorModel)
 end
 
 function insert_errors(qc::ChainBlock;after_clifford_depolarization=0.0,after_reset_flip_probability=0.0,before_measure_flip_probability=0.0)
-	qc = simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
+	qc = YaoBlocks.Optimise.simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
 	num_qubits = nqubits(qc)
 	qce = chain(num_qubits)
 	for gate in qc

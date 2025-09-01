@@ -74,7 +74,7 @@ function probability_tn_channel(qc::ChainBlock, final_state::Vector{Complex{Floa
     qc = copy(qc)
     number_qubits = nqubits(qc)
     push!(qc,put(number_qubits,(1:number_qubits)=>matblock(final_state*final_state')))
-    qc= simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
+    qc= YaoBlocks.Optimise.simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
 
     qc2 = chain(number_qubits)
     channel_count = 0
@@ -89,7 +89,7 @@ function probability_tn_channel(qc::ChainBlock, final_state::Vector{Complex{Floa
         end
     end
     qc_info = QCInfo(Int[],collect(1:number_qubits),number_qubits)
-    qc2= simplify(qc2; rules=[to_basictypes, Optimise.eliminate_nested])
+    qc2= YaoBlocks.Optimise.simplify(qc2; rules=[to_basictypes, Optimise.eliminate_nested])
     qce,srs = ein_circ(qc2,qc_info)
     tn,_,_ = qc2enisum(qce,srs,qc_info)
     optnet = optimize_code(tn, TreeSA(), OMEinsum.MergeVectors())

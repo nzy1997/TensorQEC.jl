@@ -188,7 +188,7 @@ function compile_clifford_circuit(qc::ChainBlock)
     two_qubit_gates = typeof(CliffordGate(ConstGate.CNOT))[]
     two_qubit_locs = Tuple{Int, Int}[]
 
-    qc = simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
+    qc = YaoBlocks.Optimise.simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
     gatedict = Dict{UInt64, Int}()
     for _gate in qc
         gate = toput(_gate)
