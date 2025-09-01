@@ -110,7 +110,7 @@ function ein_circ(qc::ChainBlock, input_qubits::Vector{Int}, output_qubits::Vect
     push!(qc_f,qc)
     
     [push!(qc_f, put(2*num_qubits, output_qubits[i] => srs[2*i-1+2*length(input_qubits)]), put(2*num_qubits, num_qubits+output_qubits[i] => srs[2*i+2*length(input_qubits)])) for i in 1:length(output_qubits)]
-    return simplify(qc_f; rules=[to_basictypes, Optimise.eliminate_nested]),srs
+    return YaoBlocks.Optimise.simplify(qc_f; rules=[to_basictypes, Optimise.eliminate_nested]),srs
 end
 
 function ein_circ(qc::ChainBlock, input_qubits::Vector{Int}, output_qubits::Vector{Int})
@@ -153,7 +153,7 @@ Generate the tensor network representation of the quantum circuit with the given
 - `output_indices`: The output indices of the tensor network.
 """
 function simulation_tensornetwork(qc::ChainBlock,qc_info::QCInfo)
-    qc= simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
+    qc= YaoBlocks.Optimise.simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
     qce,srs = ein_circ(qc,qc_info)
     return qc2enisum(qce,srs,qc_info) 
 end
@@ -231,7 +231,7 @@ Generate the error quantum circuit for the given error rate.
 - `eqc`: The error quantum circuit.
 """
 function error_quantum_circuit(qc::ChainBlock, error_rate::T ) where {T <: Real}
-    qc= simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
+    qc= YaoBlocks.Optimise.simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
     nq = nqubits(qc)
     eqc = chain(nq)
     for _gate in qc

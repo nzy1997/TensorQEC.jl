@@ -23,7 +23,7 @@ function tableau_simulate(tab::Tableau{N}, operation::Pair{NTuple{M,Int}, <:Clif
 end
 
 function tableau_simulate(tab::Tableau{N}, qc::ChainBlock) where N
-    qc = simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
+    qc = YaoBlocks.Optimise.simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
     gatedict=Dict{UInt64, CliffordGate}()
     for _gate in qc
         gate = toput(_gate)
