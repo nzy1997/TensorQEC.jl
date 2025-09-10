@@ -52,19 +52,19 @@ function YaoPlots.draw!(c::YaoPlots.CircuitGrid, p::SymbolRecorder, address, con
     YaoPlots._draw!(c, [(getindex.(Ref(address), (1,)), c.gatestyles.g, "$(p.symbol)")])
 end
 
-function YaoToEinsum.add_gate!(eb::YaoToEinsum.EinBuilder{T}, b::PutBlock{D,C,SymbolRecorder{D}}) where {T,D,C}
+function YaoToEinsum.eat_gate!(eb::YaoToEinsum.EinBuilder{VectorMode, T}, b::PutBlock{D,C,SymbolRecorder{D}}) where {T,D,C}
     lj = eb.slots[b.locs[1]]
     b.content.symbol = lj
     return eb
 end
 
-function YaoToEinsum.add_gate!(eb::YaoToEinsum.EinBuilder{T}, b::PutBlock{D,C,IdentityRecorder{D}}) where {T,D,C}
+function YaoToEinsum.eat_gate!(eb::YaoToEinsum.EinBuilder{VectorMode, T}, b::PutBlock{D,C,IdentityRecorder{D}}) where {T,D,C}
     b.content.symbol = length(eb.tensors)+1
     m = T[[1 0]; [0 1]]
     k = 1 
     locs = [b.locs[1]] 
     nlabels = [YaoToEinsum.newlabel!(eb) for _=1:k]
-    YaoToEinsum.add_tensor!(eb, reshape(Matrix{T}(m), fill(2, 2k)...), [nlabels..., eb.slots[locs]...])
+    YaoToEinsum.push_normal_tensor!(eb, reshape(Matrix{T}(m), fill(2, 2k)...), [nlabels..., eb.slots[locs]...])
     eb.slots[locs] .= nlabels
     return eb
 end
@@ -110,7 +110,7 @@ function ein_circ(qc::ChainBlock, input_qubits::Vector{Int}, output_qubits::Vect
     push!(qc_f,qc)
     
     [push!(qc_f, put(2*num_qubits, output_qubits[i] => srs[2*i-1+2*length(input_qubits)]), put(2*num_qubits, num_qubits+output_qubits[i] => srs[2*i+2*length(input_qubits)])) for i in 1:length(output_qubits)]
-    return simplify(qc_f; rules=[to_basictypes, Optimise.eliminate_nested]),srs
+    return YaoBlocks.Optimise.simplify(qc_f; rules=[to_basictypes, Optimise.eliminate_nested]),srs
 end
 
 function ein_circ(qc::ChainBlock, input_qubits::Vector{Int}, output_qubits::Vector{Int})
@@ -135,7 +135,7 @@ function qc2enisum(qc::ChainBlock, srs::Vector{SymbolRecorder{D}}, qc_info::QCIn
     output_indices = [[srs[2*length(qc_info.data_qubits)+2*i-1].symbol  for i in 1:length(qc_info.data_qubits)]..., [srs[2*length(qc_info.data_qubits)+2*i].symbol  for i in 1:length(qc_info.data_qubits)]...]
     push!(jointcode.iy,input_indices...)
     push!(jointcode.iy,output_indices...)
-    return TensorNetwork(jointcode, ein_code.tensors), input_indices, output_indices
+    return SimpleTensorNetwork(jointcode, ein_code.tensors), input_indices, output_indices
 end
 
 """
@@ -153,7 +153,7 @@ Generate the tensor network representation of the quantum circuit with the given
 - `output_indices`: The output indices of the tensor network.
 """
 function simulation_tensornetwork(qc::ChainBlock,qc_info::QCInfo)
-    qc= simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
+    qc= YaoBlocks.Optimise.simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
     qce,srs = ein_circ(qc,qc_info)
     return qc2enisum(qce,srs,qc_info) 
 end
@@ -173,7 +173,7 @@ function fidelity_tensornetwork(qc::ChainBlock,qc_info::QCInfo)
     tn, input_indices,output_indices = simulation_tensornetwork(qc,qc_info)
     jointcode = replace(tn.code, [input_indices[i]=> output_indices[i] for i in 1:length(input_indices)]...)
     empty!(jointcode.iy)
-    tn = TensorNetwork(jointcode, tn.tensors)
+    tn = SimpleTensorNetwork(jointcode, tn.tensors)
     tn.tensors[1] = tn.tensors[1]./(4^length(qc_info.data_qubits))
     return tn
 end
@@ -231,7 +231,7 @@ Generate the error quantum circuit for the given error rate.
 - `eqc`: The error quantum circuit.
 """
 function error_quantum_circuit(qc::ChainBlock, error_rate::T ) where {T <: Real}
-    qc= simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
+    qc= YaoBlocks.Optimise.simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
     nq = nqubits(qc)
     eqc = chain(nq)
     for _gate in qc

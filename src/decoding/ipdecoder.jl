@@ -121,17 +121,17 @@ function flattengdp(gdp::GeneralDecodingProblem)
 end
 
 
-function extract_decoding(gdp2fdp::GeneralDecodingProblemToFlatDecodingProblem, error_qubits::Vector{Mod2})
+function extract_decoding(gdp2fdp::GeneralDecodingProblemToFlatDecodingProblem, error_pattern::Vector{Mod2})
     num_qubits = gdp2fdp.qubit_num
-    ans_error_qubits = error_qubits[1:num_qubits]
+    ans_error_pattern = error_pattern[1:num_qubits]
 
-    for i in num_qubits+1:length(error_qubits)
-        if error_qubits[i].x == 1
-            ans_error_qubits[gdp2fdp.dict[i]] = fill(Mod2(1),length(gdp2fdp.dict[i]))
+    for i in num_qubits+1:length(error_pattern)
+        if error_pattern[i].x == 1
+            ans_error_pattern[gdp2fdp.dict[i]] = fill(Mod2(1),length(gdp2fdp.dict[i]))
         end
     end
 
-    return DecodingResult(true,ans_error_qubits)
+    return DecodingResult(true,ans_error_pattern)
 end
 
 function _setmod2(vec::Vector{Int})

@@ -15,6 +15,7 @@ using Yao.YaoBlocks.LuxurySparse: PermMatrixCSC
 using PrettyTables
 using Optimisers
 using BitBasis
+using YaoToEinsum
 using Random
 
 using Graphs
@@ -51,7 +52,7 @@ export stabilizers, ToricCode, SurfaceCode, ShorCode, SteaneCode, Code832, Code4
 export CSSBimatrix, syndrome_transform, encode_stabilizers, place_qubits
 
 # measurement
-export measure_circuit_fault_tol, measure_circuit_steane, measure_circuit
+export measure_circuit_fault_tol, measure_circuit_steane, measurement_circuit
 
 # tablemake
 export make_table, save_table, load_table, correction_circuit, TruthTable, correction_dict
@@ -68,7 +69,7 @@ export osd, check_logical_error
 export Tableau, new_tableau, tableau_simulate
 
 # error model
-export IndependentFlipError, IndependentDepolarizingError, random_error_qubits, SimpleSyndrome, CSSSyndrome, iid_error, CSSErrorPattern
+export IndependentFlipError, IndependentDepolarizingError, random_error_pattern, SimpleSyndrome, CSSSyndrome, iid_error, CSSErrorPattern
 @const_gate CCZ::ComplexF64 = diagm([1, 1, 1, 1, 1, 1, 1, -1])
 
 # decoder
@@ -94,6 +95,7 @@ include("clifford/paulistring.jl")
 include("clifford/cliffordgroup.jl")
 include("clifford/paulibasis.jl")
 
+include("nonclifford/tensornetwork.jl")
 include("codes/codes.jl")
 include("codes/ldpc.jl")
 
@@ -101,7 +103,6 @@ include("codes/encoder.jl")
 include("decoding/error_model.jl")
 include("decoding/interfaces.jl")
 
-include("nonclifford/tensornetwork.jl")
 include("decoding/inferenceswithencoder.jl")
 include("decoding/measurement.jl")
 include("decoding/truthtable.jl")
@@ -116,12 +117,14 @@ include("codes/gaussian_elimination.jl")
 include("nonclifford/correction.jl")
 
 # decoders
+include("decoding/dem.jl")
 include("decoding/general_decoding.jl")
 include("decoding/bposd.jl")
 include("decoding/tndecoder.jl")
 include("decoding/ipdecoder.jl")
 include("decoding/matching.jl")
 include("decoding/mcmc.jl")
+
 
 # deprecate
 include("deprecate.jl")

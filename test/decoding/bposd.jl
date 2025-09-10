@@ -6,11 +6,11 @@ using Random
     sts = [[1, 2,3,4],[2,3,5,7],[3,4,5,6]]
     nq = 7
     tanner = SimpleTannerGraph(nq, sts)
-    error_qubits = Mod2[1,0,0,0,0,0,0]
-    syn = syndrome_extraction(error_qubits, tanner)
+    error_pattern = Mod2[1,0,0,0,0,0,0]
+    syn = syndrome_extraction(error_pattern, tanner)
     ct = compile(BPDecoder(),tanner)
     bpres = decode(ct,syn)
-    @test bpres.error_qubits == error_qubits
+    @test bpres.error_pattern == error_pattern
 end
 
 @testset "check_linear_indepent" begin
@@ -29,8 +29,8 @@ end
     nq = 7
     tanner = SimpleTannerGraph(nq, sts)
 
-    error_qubits = Mod2[0,0,0,1,0,0,0]
-    syd = syndrome_extraction(error_qubits, tanner)
+    error_pattern = Mod2[0,0,0,1,0,0,0]
+    syd = syndrome_extraction(error_pattern, tanner)
     order = [1, 2, 3, 4, 5, 6, 7]
     osd_error = osd(tanner, order,syd.s)
 
@@ -42,14 +42,14 @@ end
     d = 3
     tanner = CSSTannerGraph(SurfaceCode(d, d))
     em = iid_error(0.05,d*d)
-    ep = random_error_qubits(em)
+    ep = random_error_pattern(em)
     syn = syndrome_extraction(ep,tanner.stgz)
 
     res = decode(BPDecoder(100,false),tanner.stgz,syn)
-    @test !res.success_tag || (syn == syndrome_extraction(res.error_qubits, tanner.stgz))
+    @test !res.success_tag || (syn == syndrome_extraction(res.error_pattern, tanner.stgz))
 
     res = decode(BPDecoder(),tanner.stgz,syn)
-    @test (syn == syndrome_extraction(res.error_qubits, tanner.stgz))
+    @test (syn == syndrome_extraction(res.error_pattern, tanner.stgz))
 end
 
 @testset "compile and decode" begin
@@ -57,16 +57,16 @@ end
     d = 3
     tanner = CSSTannerGraph(SurfaceCode(d, d))
     em = iid_error(0.05,d*d)
-    ep = random_error_qubits(em)
+    ep = random_error_pattern(em)
     syn = syndrome_extraction(ep,tanner.stgz)
 
     ct = compile(BPDecoder(100,false),tanner.stgz)
     res = decode(ct,syn)
-    @test !res.success_tag || (syn == syndrome_extraction(res.error_qubits, tanner.stgz))
+    @test !res.success_tag || (syn == syndrome_extraction(res.error_pattern, tanner.stgz))
 
     ct = compile(BPDecoder(),tanner.stgz)
     res = decode(ct,syn)
-    @test (syn == syndrome_extraction(res.error_qubits, tanner.stgz))
+    @test (syn == syndrome_extraction(res.error_pattern, tanner.stgz))
 end
 
 @testset "CSS compile and decode" begin
@@ -74,14 +74,14 @@ end
     d = 21
     tanner = CSSTannerGraph(SurfaceCode(d, d))
     em = iid_error(0.05,0.05,0.05,d*d)
-    ep = random_error_qubits(em)
+    ep = random_error_pattern(em)
     syn = syndrome_extraction(ep,tanner)
 
     ct = compile(BPDecoder(100,false),tanner)
     res = decode(ct,syn)
-    @test !res.success_tag || (syn == syndrome_extraction(res.error_qubits, tanner))
+    @test !res.success_tag || (syn == syndrome_extraction(res.error_pattern, tanner))
 
     ct = compile(BPDecoder(),tanner)
     res = decode(ct,syn)
-    @test (syn == syndrome_extraction(res.error_qubits, tanner))
+    @test (syn == syndrome_extraction(res.error_pattern, tanner))
 end

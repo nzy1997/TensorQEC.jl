@@ -39,7 +39,7 @@ function measure_circuit_fault_tol(sts::Vector{PauliString{N}}) where N
 end
 
 
-function measure_circuit!(qc::ChainBlock, st::PauliString{N}, pos::Int) where N
+function measurement_circuit!(qc::ChainBlock, st::PauliString{N}, pos::Int) where N
 	non_one_positions = findall(x -> x != Pauli(0), st.operators)
 	num_qubits = qc.n
 	push!(qc, put(num_qubits, pos => H))
@@ -50,11 +50,11 @@ function measure_circuit!(qc::ChainBlock, st::PauliString{N}, pos::Int) where N
 	return qc
 end
 
-function measure_circuit(sts::Vector{PauliString{N}}) where N
+function measurement_circuit(sts::Vector{PauliString{N}}) where N
 	num_qubits = length(sts) + N
 	qc = chain(num_qubits)
 	for i in 1:length(sts)
-		measure_circuit!(qc, sts[i], N+i)
+		measurement_circuit!(qc, sts[i], N+i)
 	end
 	return qc, collect(N+1:num_qubits)
 end
@@ -105,7 +105,7 @@ function _single_type!(qc::ChainBlock, qcen, copy_pos::AbstractVector{Int},st_po
 	else
 		copy_circuit_steane!(qc,1:N,copy_pos)
 	end
-	qcx, _= measure_circuit(sts)
+	qcx, _= measurement_circuit(sts)
 	push!(qc, subroutine(num_qubits, qcx, copy_pos ∪ st_pos))
 end
 
@@ -118,5 +118,95 @@ end
 function copy_circuit_steane!(qc::ChainBlock,  control_pos::AbstractVector{Int64}, target_pos::AbstractVector{Int64})
 	num_qubits = nqubits(qc)
 	[push!(qc, control(num_qubits, control_pos[i], target_pos[i] => X) ) for i in 1:length(control_pos)]
+	return qc
+end
+
+function generate_measurement_circuit_with_errors(sts::Vector{PauliString{N}}, round::Int;  before_round_data_depolarization = 0.0, after_clifford_depolarization = 0.0, after_reset_flip_probability = 0.0, before_measure_flip_probability = 0.0) where N
+	qc = generate_measurement_circuit(sts, round; before_round_data_depolarization)
+	qc = insert_errors(qc; after_clifford_depolarization, after_reset_flip_probability, before_measure_flip_probability)
+	return qc
+end
+
+function generate_measurement_circuit(sts::Vector{PauliString{N}}, round::Int;  before_round_data_depolarization = 0.0) where N
+	# Only for CSS code
+	tanner = CSSTannerGraph(sts)
+
+	num_qubits = length(sts) + N
+	qc = chain(num_qubits)
+	measure_list = Vector{NumberedMeasure}(undef, length(sts))
+	measure_count = 0
+	detector_count = 0
+	for n in 1:N
+		push!(qc, put(num_qubits, n => Measure(1;resetto=bit"0")))
+	end
+
+	if !iszero(before_round_data_depolarization)
+		for n in 1:N
+			push!(qc, put(num_qubits, n => DepolarizingChannel(1,before_round_data_depolarization)))
+		end
+	end
+
+	for i in 1:length(sts)
+		measurement_circuit!(qc, sts[i], N+i)
+		measure_count += 1
+		m = NumberedMeasure(Measure(1; resetto=bit"0"), measure_count)
+		push!(qc, put(num_qubits, N+i => m))
+		measure_list[i] = m
+		
+		# check if the stabilizer is a Z stabilizer
+		if  !any(x -> (x.id == 1) || (x.id == 2), sts[i].operators)
+			detector_count += 1
+			db = DetectorBlock{2}([measure_list[i]], detector_count, 0)
+			push!(qc, put(num_qubits, N+i => db))
+		end
+	end
+
+	for d in 1:round
+		if !iszero(before_round_data_depolarization)
+			for n in 1:N
+				push!(qc, put(num_qubits, n => DepolarizingChannel(1,before_round_data_depolarization)))
+			end
+		end
+
+		for n in 1:N
+			push!(qc, put(num_qubits, n => Measure(1;resetto=bit"0")))
+		end
+
+		for i in 1:length(sts)
+			measurement_circuit!(qc, sts[i], N+i)
+			measure_count += 1
+			m = NumberedMeasure(Measure(1; resetto=bit"0"), measure_count)
+			push!(qc, put(num_qubits, N+i => m))
+
+			detector_count += 1
+			db = DetectorBlock{2}([m, measure_list[i]], detector_count, 0)
+			push!(qc, put(num_qubits, N+i => db))
+
+			measure_list[i] = m
+		end
+	end
+	
+	qubit_measure_list = Vector{NumberedMeasure}(undef, N)
+	for n in 1:N
+		m = NumberedMeasure(Measure(1), measure_count+n)
+		push!(qc, put(num_qubits, n => m))
+		qubit_measure_list[n] = m
+	end
+
+	for i in 1:length(sts)
+		if  !any(x -> (x.id == 1) || (x.id == 2), sts[i].operators)
+			zpos = findall(x -> (x.id == 3), sts[i].operators)
+			detector_count += 1
+			db = DetectorBlock{2}([qubit_measure_list[zpos]..., measure_list[i]], detector_count, 0)
+			push!(qc, put(num_qubits, zpos[1] => db))
+		end
+	end
+
+	_, lzs = logical_operator(tanner)
+	for lz in eachrow(lzs)
+		detector_count += 1
+		db = DetectorBlock{2}(qubit_measure_list[findall(x -> x.x, lz)], detector_count, 1)
+		push!(qc, put(num_qubits, 1 => db))
+	end
 	return qc
 end

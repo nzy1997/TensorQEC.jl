@@ -46,7 +46,7 @@ end
     Random.seed!(1234)
     umat = rand_unitary(4)
     qc = chain(put(2, (1, 2) => matblock(umat)), put(2, (1, 2) => unitary_channel2))
-    optnet,p_pos = probability_tn_channel(qc, ComplexF64[1, 0, 0, 0])
+    optnet,p_pos = probability_tn_channel(qc, ComplexF64[1/2, -0.5im, -0.5im, -1/2])
 
     p3 = 0.01
     new_t = generate_new_tensor(optnet.tensors,p_pos,ComplexF64[0, 1, 0, 0],[[1 - 15 * p3, fill(p3, 15)...]])
@@ -73,7 +73,7 @@ end
         ComplexF64[1/2, -0.5im, 0.5im, 1/2], ComplexF64[1/2, -0.5im, -0.5im, -1/2]]
     td = TrainningData([probability_channel(qc, s) for s in state],state)
 
-    optnet,p_pos = probability_tn_channel(qc, ComplexF64[1, 0, 0, 0])
+    optnet,p_pos = probability_tn_channel(qc, ComplexF64[1/2, -0.5im, -0.5im, -1/2])
     model= [fill(0.01,15)]
     res = error_learning(model,td,optnet,p_pos;iter = 10000)
     @test isapprox(res[1] , p2;atol = 0.01)
@@ -96,7 +96,7 @@ end
         ComplexF64[1/2, -0.5im, 0.5im, 1/2], ComplexF64[1/2, -0.5im, -0.5im, -1/2]]
     td = TrainningData([probability_channel(qc, s) for s in state],state)
 
-    optnet,p_pos = probability_tn_channel(qc, ComplexF64[1, 0, 0, 0])
+    optnet,p_pos = probability_tn_channel(qc, ComplexF64[1/2, -0.5im, -0.5im, -1/2])
     model= [fill(0.01,3),fill(0.01,3)]
     res = error_learning(model,td,optnet,p_pos;iter = 10000)
     @test isapprox(res[1], p2;atol = 0.01)
@@ -109,7 +109,7 @@ end
     Random.seed!(1234)
     umat = rand_unitary(4)
     qc = chain(put(2, (1, 2) => matblock(umat)), put(2, (1, 2) => unitary_channel2))
-    optnet,p_pos = probability_tn_channel(qc, ComplexF64[1, 0, 0, 0])
+    optnet,p_pos = probability_tn_channel(qc, ComplexF64[1/2, -0.5im, -0.5im, -1/2])
     td = TrainningData([0.25],[ComplexF64[0, 1, 0, 0]])
 
     p = fill(0.01,15)

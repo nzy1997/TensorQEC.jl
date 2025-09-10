@@ -131,3 +131,72 @@ function Yao.expect(operator::PauliString, cl::CliffordNetwork{T}, rho::PauliStr
 	tn = generate_tensor_network(cl, ps, qs)
 	return probability(tn)*2^n
 end
+"""
+    SimpleTensorNetwork
+
+A (generalized) tensor network representation of a quantum circuit.
+
+### Fields
+- `code::AbstractEinsum`: The einsum code.
+- `tensors::Vector`: The tensors in the network.
+"""
+struct SimpleTensorNetwork
+    code::AbstractEinsum
+    tensors::Vector
+end
+function Base.show(io::IO, c::SimpleTensorNetwork)
+    print(io, "SimpleTensorNetwork")
+    print(io, "\n")
+    print(io, contraction_complexity(c))
+end
+function Base.show(io::IO, ::MIME"text/plain", c::SimpleTensorNetwork)
+    Base.show(io, c)
+end
+function Base.iterate(c::SimpleTensorNetwork, state=1)
+    if state > 2
+        return nothing
+    elseif state == 1
+        return (c.code, 2)
+    else
+        return (c.tensors, 3)
+    end
+end
+
+"""
+    contract(c::SimpleTensorNetwork)
+
+Contract the tensor network, and return the result tensor.
+"""
+function YaoToEinsum.contract(c::SimpleTensorNetwork)
+    return c.code(c.tensors...)
+end
+
+"""
+    optimize_code(c::SimpleTensorNetwork, optimizer=TreeSA(); slicer=nothing)
+
+Optimize the code of the tensor network.
+
+### Arguments
+- `c::SimpleTensorNetwork`: The tensor network.
+- `optimizer::Optimizer`: The optimizer to use, default is `OMEinsum.TreeSA()`.
+
+### Keyword Arguments
+- `slicer`: The slicer to use, default is `nothing`. It can be e.g. `OMEinsum.TreeSASlicer(score=OMEinsum.ScoreFunction(sc_target=30))`.
+
+For more, please check [OMEinsumContractionOrders documentation](https://tensorbfs.github.io/OMEinsumContractionOrders.jl/dev/).
+"""
+function OMEinsum.optimize_code(c::SimpleTensorNetwork, args...; kwargs...)
+    size_info = OMEinsum.get_size_dict(getixsv(c.code), c.tensors)
+    optcode = optimize_code(c.code, size_info, args...; kwargs...)
+    return SimpleTensorNetwork(optcode, c.tensors)
+end
+
+"""
+    contraction_complexity(c::SimpleTensorNetwork)
+
+Return the contraction complexity of the tensor network.
+"""
+function OMEinsum.contraction_complexity(c::SimpleTensorNetwork)
+    size_info = OMEinsum.get_size_dict(getixsv(c.code), c.tensors)
+    return contraction_complexity(c.code, size_info)
+end

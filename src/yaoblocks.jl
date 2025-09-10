@@ -9,9 +9,14 @@ end
 Yao.nqudits(nm::NumberedMeasure) = nqudits(nm.m)
 Yao.print_block(io::IO, m::NumberedMeasure) = print(io, "M[$(m.num)]")
 Yao.content(m::NumberedMeasure) = m.m
+YaoBlocks.Optimise.to_basictypes(m::NumberedMeasure) = m
+Yao.chsubblocks(c::NumberedMeasure, block) = NumberedMeasure(block..., c.num)
 
 function YaoPlots.draw!(c::YaoPlots.CircuitGrid, p::NumberedMeasure, address, controls)
     @assert length(controls) == 0
+    f_vec = copy(c.frontier)
+    f_vec[address[1]] += 1
+    YaoPlots._texttop!(YaoPlots.CircuitGrid(f_vec, c.w_depth, c.w_line,c.gatestyles), address[1], CircuitStyles.boxsize(c.gatestyles.g)..., 0.25, "rec[$(p.num)]")
     YaoPlots.draw!(c, p.m, address, controls)
 end
 Yao.apply!(reg::AbstractRegister, m::NumberedMeasure) = apply!(reg, m.m)
@@ -57,26 +62,17 @@ function YaoPlots.draw!(c::YaoPlots.CircuitGrid, p::ConditionBlock, address, con
     YaoPlots._draw!(c, [controls..., (getindex.(Ref(address), occupied_locs(p)),bts1[1], "$(bts1[2]) or $(bts2[2])")])
 end
 
-abstract type AbstractDetectorBlock{D} <: TrivialGate{D} end
-struct DetectorBlock{D} <: AbstractDetectorBlock{D}
+# abstract type AbstractDetectorBlock{D} <: TrivialGate{D} end
+struct DetectorBlock{D} <: TrivialGate{D}
     vm::Vector{NumberedMeasure}
+    num::Int
+    detector_type::Int # 0: detector, 1: logical
 end
 
-Yao.nqudits(sr::AbstractDetectorBlock) = 1
-Yao.print_block(io::IO, sr::DetectorBlock) = print(io, "DETECTOR($(length(sr.vm)))")
+Yao.nqudits(sr::DetectorBlock) = 1
+Yao.print_block(io::IO, sr::DetectorBlock) = iszero(sr.detector_type) ? print(io, "D[$(sr.num)]: rec$(getfield.(sr.vm, :num))") : print(io, "L[$(sr.num)]: rec$(getfield.(sr.vm, :num))")
 
 function YaoPlots.draw!(c::YaoPlots.CircuitGrid, p::DetectorBlock, address, controls)
     @assert length(controls) == 0
-    YaoPlots._draw!(c, [(getindex.(Ref(address), (1,)), c.gatestyles.g, "DETECTOR($(length(p.vm)))")])
-end
-
-struct LogicalDetectorBlock{D} <: AbstractDetectorBlock{D}
-    vm::Vector{NumberedMeasure}
-end
-
-Yao.print_block(io::IO, sr::LogicalDetectorBlock) = print(io, "LOGICAL($(length(sr.vm)))")
-
-function YaoPlots.draw!(c::YaoPlots.CircuitGrid, p::LogicalDetectorBlock, address, controls)
-    @assert length(controls) == 0
-    YaoPlots._draw!(c, [(getindex.(Ref(address), (1,)), c.gatestyles.g, "LOGICAL($(length(p.vm)))")])
+    YaoPlots._draw!(c, [(getindex.(Ref(address), (1,)), c.gatestyles.g, iszero(p.detector_type) ? "D[$(p.num)]: rec$(getfield.(p.vm, :num))" : "L[$(p.num)]: rec$(getfield.(p.vm, :num))")])
 end

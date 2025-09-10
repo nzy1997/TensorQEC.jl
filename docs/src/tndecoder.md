@@ -7,7 +7,7 @@ In this section, we introduce the tensor network decoder.
 [`TNMMAP`](@ref) is a tensor network based marginal maximum a posteriori (MMAP) decoder, which finds the most probable logical sector after marginalizing out the error pattern on qubits. We can generate a `TNMMAP` decoder by `TNMMAP()`.
 ```@example tndecoder
 using TensorQEC, TensorQEC.OMEinsum
-decoder = TNMMAP(TreeSA())
+decoder = TNMMAP(TreeSA(), true)
 ```
 Here `TreeSA()` is the default optimizer for optimizing the tensor network contraction order.
 
@@ -25,7 +25,7 @@ Given a depolarizing error model, we can randomly generate an error pattern
 error_model = iid_error(0.05,0.05,0.05, 7)
 using Random
 Random.seed!(1)
-error_pattern = random_error_qubits(error_model)
+error_pattern = random_error_pattern(error_model)
 ```
 
 Now we can measure the syndrome:
@@ -47,10 +47,10 @@ All purple squares represent the parity tensor, which elements are 1 if the inpu
 
 The gray circles represent the syndrome and the brown circles represent the logical operators. The marginal maximum a posteriori (MMAP) decoding problem is to find the most probable logical sector, given the syndrome and marginalize out the error pattern on qubits.
 
-The contraction order of the tensor network is optimized by the optimizer `decoder.optimizer` and the optimal contraction order is stored in `compiled_decoder.optcode`.
+The contraction order of the tensor network is optimized by the optimizer `decoder.optimizer` and the optimal contraction order is stored in `compiled_decoder.code`.
 
 ```@example tndecoder
-contraction_complexity(compiled_decoder.optcode,uniformsize(compiled_decoder.optcode, 2))
+contraction_complexity(compiled_decoder.code,uniformsize(compiled_decoder.code, 2))
 ```
 
 Now we can decode the syndrome. The decoding process is to update the syndrome into the tensor network, and then contract the tensor network to get the marginal probability. According to the maximum marginal probability, we can get the most probable logical sector.
@@ -66,13 +66,13 @@ result = decode(compiled_decoder, syndrome)
 ```
 To check the decoding result, we can first check whether we get a same syndrome as the input syndrome.
 ```@example tndecoder
-syndrome == syndrome_extraction(result.error_qubits, tanner)
+syndrome == syndrome_extraction(result.error_pattern, tanner)
 ```
 
 Then we can check whether there is a logical error. First we need to get the logical operators.
 ```@example tndecoder
 lx, lz = logical_operator(tanner)
-check_logical_error(result.error_qubits, error_pattern, lx, lz)
+check_logical_error(result.error_pattern, error_pattern, lx, lz)
 ```
 
 Here `false` means no logical error, and `true` means there is a logical error.

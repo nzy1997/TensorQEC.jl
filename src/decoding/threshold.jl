@@ -4,11 +4,11 @@ function multi_round_qec(tanner::CSSTannerGraph,decoder::AbstractDecoder,em::Abs
     logical_error = 0
     ct = compile(decoder, tanner)
     for i in 1:rounds
-        ep = random_error_qubits(em)
+        ep = random_error_pattern(em)
         synd = syndrome_extraction(ep, tanner)
         res = decode(ct, synd)
-        resx = check_logical_error(ep.xerror, res.error_qubits.xerror, tanner.stgx.H)
-        resz = check_logical_error(ep.zerror, res.error_qubits.zerror, tanner.stgz.H)
+        resx = check_logical_error(ep.xerror, res.error_pattern.xerror, tanner.stgx.H)
+        resz = check_logical_error(ep.zerror, res.error_pattern.zerror, tanner.stgz.H)
         resx || (logical_xerror += 1)
         resz || (logical_zerror += 1)
         (resx && resz) || (logical_error += 1)
@@ -23,10 +23,10 @@ function multi_round_qec(tanner::SimpleTannerGraph,decoder::AbstractDecoder,em::
     ct = compile(decoder, tanner)
 
     for i in 1:rounds
-        ex = random_error_qubits(em)
+        ex = random_error_pattern(em)
         sydz = syndrome_extraction(ex, tanner)
         res = decode(ct, sydz)
-        check_logical_error(ex, res.error_qubits, tanner_check.H) || (logical_xerror += 1)
+        check_logical_error(ex, res.error_pattern, tanner_check.H) || (logical_xerror += 1)
         @info "round $i, error model: $(em), logical error number: $logical_xerror"
     end
     return logical_xerror/rounds
