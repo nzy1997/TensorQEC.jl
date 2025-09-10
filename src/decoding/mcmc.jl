@@ -191,3 +191,55 @@ function sa_energy_hard(ops_config::Vector{Bool}, sap::SpinGlassSA, bit_config::
     end
     return -sa_energy(bit_config_copy, sap)
 end
+
+function ip_energy_min(syd::CSSSyndrome, tanner::CSSTannerGraph,prob::SpinGlassSA)
+    res = decode(IPDecoder(),tanner,syd)
+    return sa_energy_hard(fill(false, length(prob.ops)), prob, vcat(res.error_pattern.xerror,res.error_pattern.zerror))
+end
+
+function ip_energy_max(syd::CSSSyndrome, tanner::CSSTannerGraph, prob::SpinGlassSA)
+    ct = compile(IPDecoder(), tanner)
+    ci = ct.cd
+    syndrome = SimpleSyndrome([syd.sx...,syd.sz...])
+    res1 = extract_decoding(ci.reduction,_mixed_integer_programming_min(ci.decoder,get_fdp(ci.reduction), syndrome.s))
+    res2 = extract_decoding(ct.reduction, res1.error_pattern)
+
+
+    sa_energy_hard(fill(false, length(prob.ops)), prob, vcat(res2.error_pattern.xerror,res2.error_pattern.zerror))
+end
+
+
+
+function _mixed_integer_programming_min(decoder::IPDecoder, fdp::FlatDecodingProblem, syndrome::Vector{Mod2})
+    # @assert false
+    H = fdp.tanner.H
+    m,n = size(H)
+    model = Model(decoder.optimizer)
+    !decoder.verbose && set_silent(model)
+
+    @variable(model, 0 <= z[i = 1:n] <= 1, Int)
+    @variable(model, 0 <= k[i = 1:m], Int)
+    
+    for i in 1:m
+        @constraint(model, sum(z[j] for j in 1:n if H[i,j].x) == 2 * k[i] + (syndrome[i].x ? 1 : 0))
+    end
+
+    obj = 0.0
+    for (i,code) in enumerate(fdp.code)
+        tensor = fdp.pvec[i]
+        zsum = sum([z[i] for i in code])
+        @constraint(model, zsum <= 1)
+        for j in 1:length(tensor)
+            if tensor[j] == 0.0
+                @constraint(model, z[code[j]] == 0)
+            else
+                obj += log(tensor[j]) * z[code[j]]
+            end
+        end
+        obj += log(1-sum(tensor)) * (1-zsum)
+    end
+    @objective(model, Min, obj)
+    optimize!(model)
+    @assert is_solved_and_feasible(model) "The problem is infeasible!"
+    return Mod2.(value.(z) .> 0.5)
+end
