@@ -188,11 +188,25 @@ function compile_clifford_circuit(qc::ChainBlock)
     two_qubit_gates = typeof(CliffordGate(ConstGate.CNOT))[]
     two_qubit_locs = Tuple{Int, Int}[]
 
+    loss_qubits = Int[]
+
     qc = YaoBlocks.Optimise.simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
     gatedict = Dict{UInt64, Int}()
     for _gate in qc
         gate = toput(_gate)
+        if gate.locs ∩ loss_qubits != []
+            push!(sequence, (0, 0, 0))
+            continue
+        end
         if gate isa Measure || gate.content isa NumberedMeasure || gate.content isa MixedUnitaryChannel || gate.content isa DepolarizingChannel || gate.content isa MeasureAndReset
+            push!(sequence, (0, 0, 0))
+            continue
+        end
+
+        if gate.content isa AtomLossBlock
+            if rand() < gate.content.p
+                push!(loss_qubits, gate.locs[1])
+            end
             push!(sequence, (0, 0, 0))
             continue
         end
