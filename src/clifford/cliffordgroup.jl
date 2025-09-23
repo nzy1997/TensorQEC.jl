@@ -154,60 +154,66 @@ function (gate::CliffordGate)(pg::PauliGroupElement, pos::NTuple{M, Int}) where 
     return PauliGroupElement(_add_phase(pg.phase, elem.phase), elem.ps)
 end
 
+struct ErrorInstance
+    loc::Vector{Int}
+    error_type::Vector{Symbol}
+end
+
+struct CliffordSimulateResult{N}
+    pg::PauliGroupElement{N}
+    error_pattern::Dict{Int, ErrorInstance}
+end
+
 """
     CliffordSimulateResult{N}
 
 The result of simulating a Pauli string by a Clifford circuit.
 
 ### Fields
-- `output::PauliGroupElement{N}`: A mapped Pauli group element as the output.
+- `pg::PauliGroupElement{N}`: A mapped Pauli group element as the output.
 - `circuit::ChainBlock`: The circuit (simplified, with linear structure).
 - `history::Vector{PauliGroupElement{N}}`: The history of Pauli group elements, its length is `length(circuit)+1`.
 """
-struct CliffordSimulateResult{N}
-    output::PauliGroupElement{N}
+struct CliffordSimulateResultWithHistory{N}
+    pg::PauliGroupElement{N}
+    error_pattern::Dict{Int, ErrorInstance}
     circuit::ChainBlock
     history::Vector{PauliGroupElement{N}}
-    function CliffordSimulateResult(output::PauliGroupElement{N}, circuit::ChainBlock, history::Vector{PauliGroupElement{N}}) where N
-        new{N}(output, circuit, history)
+    function CliffordSimulateResult(output::PauliGroupElement{N},error_pattern::Dict{Int, ErrorInstance}, circuit::ChainBlock, history::Vector{PauliGroupElement{N}}) where N
+        new{N}(output, error_pattern, circuit, history)
     end
 end
 
 struct CompiledCliffordCircuit{M1, M2}
-    sequence::Vector{Tuple{Int, Int, Int}}  # (howmany qubits, gate-idx, locs-idx) If qubit number is 0, then this is a trivial gate or a error gate,skip this gate when applying.
+    sequence::Vector{Tuple{Symbol, Int, Int}}  
+    # (operation, gate-idx, locs-idx)
+    # operation: :single_qubit, :two_qubit, :atom_loss, :trivial
     single_qubit_gates::Vector{CliffordGate{M1}}
     single_qubit_locs::Vector{Tuple{Int}}
     two_qubit_gates::Vector{CliffordGate{M2}}
     two_qubit_locs::Vector{Tuple{Int, Int}}
+    atom_loss_rate::Vector{Float64}
 end
 
 function compile_clifford_circuit(qc::ChainBlock)
-    sequence = Tuple{Int, Int, Int}[]
+    sequence = Tuple{Symbol, Int, Int}[]
     single_qubit_gates = typeof(CliffordGate(X))[]
     single_qubit_locs = Tuple{Int}[]
     two_qubit_gates = typeof(CliffordGate(ConstGate.CNOT))[]
     two_qubit_locs = Tuple{Int, Int}[]
-
-    loss_qubits = Int[]
-
+    atom_loss_rate = Float64[]
     qc = YaoBlocks.Optimise.simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
     gatedict = Dict{UInt64, Int}()
     for _gate in qc
         gate = toput(_gate)
-        if gate.locs ∩ loss_qubits != []
-            push!(sequence, (0, 0, 0))
-            continue
-        end
         if gate isa Measure || gate.content isa NumberedMeasure || gate.content isa MixedUnitaryChannel || gate.content isa DepolarizingChannel || gate.content isa MeasureAndReset
-            push!(sequence, (0, 0, 0))
+            push!(sequence, (:trivial, 0, 0))
             continue
         end
 
         if gate.content isa AtomLossBlock
-            if rand() < gate.content.p
-                push!(loss_qubits, gate.locs[1])
-            end
-            push!(sequence, (0, 0, 0))
+            push!(atom_loss_rate, gate.content.p)
+            push!(sequence, (:atom_loss, length(atom_loss_rate), gate.locs[1]))
             continue
         end
 
@@ -227,30 +233,41 @@ function compile_clifford_circuit(qc::ChainBlock)
         end
         if nqubits(gate.content) == 1
             push!(single_qubit_locs, gate.locs)
-            push!(sequence, (1, cgate_idx, length(single_qubit_locs)))
+            push!(sequence, (:single_qubit, cgate_idx, length(single_qubit_locs)))
         else
             push!(two_qubit_locs, gate.locs)
-            push!(sequence, (2, cgate_idx, length(two_qubit_locs)))
+            push!(sequence, (:two_qubit, cgate_idx, length(two_qubit_locs)))
         end
     end
-    return CompiledCliffordCircuit(sequence, single_qubit_gates, single_qubit_locs, two_qubit_gates, two_qubit_locs)
+    return CompiledCliffordCircuit(sequence, single_qubit_gates, single_qubit_locs, two_qubit_gates, two_qubit_locs, atom_loss_rate)
 end
 
 (cl::CompiledCliffordCircuit)(ps::PauliString) = cl(PauliGroupElement(0, ps))
 function (cl::CompiledCliffordCircuit)(pg::PauliGroupElement)
+    loss_qubits = Int[]
     for i in 1:length(cl.sequence)
-        pg = _step(cl, pg, i)
+        pg = _step(cl, pg, i, loss_qubits)
     end
+    @show loss_qubits
     return pg
 end
-function _step(cl::CompiledCliffordCircuit, pg::PauliGroupElement{N}, i::Int) where {N}
-    howmany, gate_idx, locs_idx = cl.sequence[i]
-    if howmany == 0
+function _step(cl::CompiledCliffordCircuit, pg::PauliGroupElement{N}, i::Int, loss_qubits::Vector{Int}) where {N}
+    operation, gate_idx, locs_idx = cl.sequence[i]
+    if operation == :trivial
         return pg
-    elseif howmany == 1
+    elseif operation == :single_qubit
         return cl.single_qubit_gates[gate_idx](pg, cl.single_qubit_locs[locs_idx])
-    else
+    elseif operation == :two_qubit
         return cl.two_qubit_gates[gate_idx](pg, cl.two_qubit_locs[locs_idx])
+    elseif operation == :atom_loss
+        if rand() < cl.atom_loss_rate[gate_idx]
+            push!(loss_qubits, locs_idx)
+            return pg
+        else
+            return cl.single_qubit_gates[gate_idx](pg, cl.single_qubit_locs[locs_idx])
+        end
+    else
+        error("Invalid operation: $operation")
     end
 end
 
@@ -272,7 +289,7 @@ function clifford_simulate(pg::PauliGroupElement{N}, qc::ChainBlock) where {N}
     cl = compile_clifford_circuit(qc)
     push!(history, pg)
     for i in 1:length(cl.sequence)
-        pg = _step(cl, pg, i)
+        pg = _step(cl, pg, i, loss_qubits)
         push!(history, pg)
     end
     # TODO: remove the quantum circuit from the result

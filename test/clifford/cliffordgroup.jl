@@ -113,3 +113,17 @@ end
     TensorQEC.annotate_circuit_pics(res)
 end
 
+@testset "clifford_simulate with AtomLossBlock" begin
+    i, x, y, z = Pauli(0), Pauli(1), Pauli(2), Pauli(3)
+    qc = chain(put(5, 1 => H), put(5, 3 => TensorQEC.AtomLossBlock{2}(1.0)), control(5, 1, 2 => Z), control(5, 3, 4 => X), put(5, 2 => H), control(5, 5, 3 => X), put(5, 1 => X))
+    ps = PauliString((z, y, i, y, x))
+
+    cl = TensorQEC.compile_clifford_circuit(qc)
+    cl(ps)
+    res = clifford_simulate(ps, qc)
+    pg2 = res.output
+
+    qc_r = chain(put(5, 1 => H), control(5, 1, 2 => Z), put(5, 2 => H), put(5, 1 => X))
+    ps_r = PauliString((z, y, i, y, x))
+    @test mat(qc_r) * mat(ps_r) * mat(qc_r)' ≈ mat(pg2)
+end
