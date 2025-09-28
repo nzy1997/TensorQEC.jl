@@ -96,7 +96,7 @@ end
     ps = PauliString((z, y, i, y, x))
 
     res = clifford_simulate(ps, qc)
-    pg2 = res.output
+    pg2 = res.pg
     @test mat(qc) * mat(ps) * mat(qc)' ≈ mat(pg2)
 end
 
@@ -106,11 +106,11 @@ end
     qcen, data_qubits, code = encode_stabilizers(st)
     qcm, st_pos = measure_circuit_steane(data_qubits[1], st)
     ps0 = PauliString(27, 6 => y)
-    res = clifford_simulate(ps0, qcm)
-    TensorQEC.annotate_history(res)
-    @test getfield.(res.output.ps.operators, :id) .+ 1 == (1, 1, 1, 1, 1, 3, 1, 1, 1, 1, 1, 1, 4, 1, 1, 2, 2, 1, 1, 1, 1, 1, 2, 1, 1, 2, 2)
+    res = clifford_simulate(ps0, qcm;with_history=true)
+    TensorQEC.annotate_history(res, qcm)
+    @test getfield.(res.pg.ps.operators, :id) .+ 1 == (1, 1, 1, 1, 1, 3, 1, 1, 1, 1, 1, 1, 4, 1, 1, 2, 2, 1, 1, 1, 1, 1, 2, 1, 1, 2, 2)
 
-    TensorQEC.annotate_circuit_pics(res)
+    TensorQEC.annotate_circuit_pics(res, qcm)
 end
 
 @testset "clifford_simulate with AtomLossBlock" begin
@@ -119,9 +119,9 @@ end
     ps = PauliString((z, y, i, y, x))
 
     cl = TensorQEC.compile_clifford_circuit(qc)
-    cl(ps)
-    res = clifford_simulate(ps, qc)
-    pg2 = res.output
+    pg2 = cl(ps)
+    # res = clifford_simulate(ps, qc)
+    # pg2 = res.output
 
     qc_r = chain(put(5, 1 => H), control(5, 1, 2 => Z), put(5, 2 => H), put(5, 1 => X))
     ps_r = PauliString((z, y, i, y, x))

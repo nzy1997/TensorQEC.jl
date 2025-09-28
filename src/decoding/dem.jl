@@ -85,6 +85,7 @@ function forward_analysis(ps::PauliString, cqc::CompiledCliffordCircuit, i::Int,
     pg = PauliGroupElement(0, ps)
     flipped_measure = Int[]
     flipped_detectors = Int[]
+    loss_qubits = Int[]
     for j in i+1:length(qc)
         if qc[j] isa Measure
             if qc[j].postprocess isa ResetTo
@@ -124,7 +125,7 @@ function forward_analysis(ps::PauliString, cqc::CompiledCliffordCircuit, i::Int,
                 push!(flipped_detectors, qc[j].content.num)
             end
         else
-            pg = _step(cqc, pg, j)
+            pg = first(_step!(cqc, pg, j, loss_qubits))
         end
     end
     return flipped_detectors

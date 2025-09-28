@@ -159,31 +159,6 @@ struct ErrorInstance
     error_type::Vector{Symbol}
 end
 
-struct CliffordSimulateResult{N}
-    pg::PauliGroupElement{N}
-    error_pattern::Dict{Int, ErrorInstance}
-end
-
-"""
-    CliffordSimulateResult{N}
-
-The result of simulating a Pauli string by a Clifford circuit.
-
-### Fields
-- `pg::PauliGroupElement{N}`: A mapped Pauli group element as the output.
-- `circuit::ChainBlock`: The circuit (simplified, with linear structure).
-- `history::Vector{PauliGroupElement{N}}`: The history of Pauli group elements, its length is `length(circuit)+1`.
-"""
-struct CliffordSimulateResultWithHistory{N}
-    pg::PauliGroupElement{N}
-    error_pattern::Dict{Int, ErrorInstance}
-    circuit::ChainBlock
-    history::Vector{PauliGroupElement{N}}
-    function CliffordSimulateResult(output::PauliGroupElement{N},error_pattern::Dict{Int, ErrorInstance}, circuit::ChainBlock, history::Vector{PauliGroupElement{N}}) where N
-        new{N}(output, error_pattern, circuit, history)
-    end
-end
-
 struct CompiledCliffordCircuit{M1, M2}
     sequence::Vector{Tuple{Symbol, Int, Int}}  
     # (operation, gate-idx, locs-idx)
@@ -246,28 +221,54 @@ end
 function (cl::CompiledCliffordCircuit)(pg::PauliGroupElement)
     loss_qubits = Int[]
     for i in 1:length(cl.sequence)
-        pg = _step(cl, pg, i, loss_qubits)
+        pg = first(_step!(cl, pg, i, loss_qubits))
     end
-    @show loss_qubits
     return pg
 end
-function _step(cl::CompiledCliffordCircuit, pg::PauliGroupElement{N}, i::Int, loss_qubits::Vector{Int}) where {N}
+function _step!(cl::CompiledCliffordCircuit, pg::PauliGroupElement{N}, i::Int, loss_qubits::Vector{Int}) where {N}
     operation, gate_idx, locs_idx = cl.sequence[i]
     if operation == :trivial
-        return pg
-    elseif operation == :single_qubit
-        return cl.single_qubit_gates[gate_idx](pg, cl.single_qubit_locs[locs_idx])
-    elseif operation == :two_qubit
-        return cl.two_qubit_gates[gate_idx](pg, cl.two_qubit_locs[locs_idx])
+        return pg, nothing
+    elseif operation == :single_qubit 
+        if (cl.single_qubit_locs[locs_idx][1] ∉ loss_qubits)
+            return cl.single_qubit_gates[gate_idx](pg, cl.single_qubit_locs[locs_idx]), nothing
+        else
+            return pg, nothing
+        end
+    elseif operation == :two_qubit 
+        if (cl.two_qubit_locs[locs_idx][1] ∉ loss_qubits) && (cl.two_qubit_locs[locs_idx][2] ∉ loss_qubits)
+            return cl.two_qubit_gates[gate_idx](pg, cl.two_qubit_locs[locs_idx]), nothing
+        else
+            return pg, nothing
+        end
     elseif operation == :atom_loss
         if rand() < cl.atom_loss_rate[gate_idx]
             push!(loss_qubits, locs_idx)
-            return pg
+            return pg, ErrorInstance([locs_idx], [:atom_loss])
         else
-            return cl.single_qubit_gates[gate_idx](pg, cl.single_qubit_locs[locs_idx])
+            return cl.single_qubit_gates[gate_idx](pg, cl.single_qubit_locs[locs_idx]), nothing
         end
     else
         error("Invalid operation: $operation")
+    end
+end
+
+"""
+    CliffordSimulateResult{N}
+
+The result of simulating a Pauli string by a Clifford circuit.
+
+### Fields
+- `pg::PauliGroupElement{N}`: A mapped Pauli group element as the output.
+- `error_pattern::Dict{Int, ErrorInstance}`: The error pattern. The key is the index of the operation, the value is the error instance.
+- `history::Vector{PauliGroupElement{N}}`: The history of Pauli group elements, its length is `length(circuit)+1`.
+"""
+struct CliffordSimulateResult{N}
+    pg::PauliGroupElement{N}
+    error_pattern::Dict{Int, ErrorInstance}
+    history::Vector{PauliGroupElement{N}}
+    function CliffordSimulateResult(output::PauliGroupElement{N},error_pattern::Dict{Int, ErrorInstance}, history::Vector{PauliGroupElement{N}}) where N
+        new{N}(output, error_pattern, history)
     end
 end
 
@@ -283,17 +284,23 @@ Perform Clifford simulation with a Pauli string `paulistring` as the input.
 ### Returns
 - `result`: A [`CliffordSimulateResult`](@ref) records the output Pauli string, the phase factor, the simplified circuit, and the history of Pauli strings.
 """
-clifford_simulate(ps::PauliString{N}, qc::ChainBlock) where {N} = clifford_simulate(PauliGroupElement(0, ps), qc)
-function clifford_simulate(pg::PauliGroupElement{N}, qc::ChainBlock) where {N}
-    history = PauliGroupElement{N}[]
+clifford_simulate(ps::PauliString{N}, qc::ChainBlock;with_history=false) where {N} = clifford_simulate(PauliGroupElement(0, ps), qc;with_history)
+function clifford_simulate(pg::PauliGroupElement{N}, qc::ChainBlock; with_history=false) where {N}
     cl = compile_clifford_circuit(qc)
+    loss_qubits = Int[]
+    history = PauliGroupElement{N}[]
     push!(history, pg)
+    error_pattern = Dict{Int, ErrorInstance}()
     for i in 1:length(cl.sequence)
-        pg = _step(cl, pg, i, loss_qubits)
-        push!(history, pg)
+        pg,error_instance = _step!(cl, pg, i, loss_qubits)
+        if error_instance !== nothing
+            push!(error_pattern, i => error_instance)
+        end
+        if with_history
+            push!(history, pg)
+        end
     end
-    # TODO: remove the quantum circuit from the result
-    return CliffordSimulateResult(pg, qc, history)
+    return CliffordSimulateResult(pg, error_pattern, history)
 end
 
 function paulistring_annotate(ps::PauliString{N};color = "red") where N
@@ -319,17 +326,17 @@ Annotate the history of Pauli strings in the result of `clifford_simulate`.
 ### Returns
 - `draw`: The visualization of the history.
 """
-function annotate_history(res::CliffordSimulateResult{N}) where N
-    qcf,_= generate_annotate_circuit(res)
+function annotate_history(res::CliffordSimulateResult{N},qc::ChainBlock) where N
+    qcf,_= generate_annotate_circuit(res,qc)
     return annotate_circuit(qcf)
 end
 
-function generate_annotate_circuit(res::CliffordSimulateResult{N};color = "red") where N
+function generate_annotate_circuit(res::CliffordSimulateResult{N},qc::ChainBlock;color = "red") where N
     qcf = chain(N)
     pos = [1]
     push!(qcf, paulistring_annotate(res.history[1].ps;color))
-    for i in 1:length(res.circuit)
-        block = res.circuit[i]
+    for i in 1:length(qc)
+        block = qc[i]
         push!(qcf, block)
         if !isempty(occupied_locs(block) ∩ findall(x -> x != Pauli(0), res.history[i+1].ps))
             push!(qcf, paulistring_annotate(res.history[i+1].ps;color))
@@ -355,8 +362,8 @@ end
 
 replace_block_color(qc::PutBlock,color::String) = put(qc.n,qc.locs=> line_annotation(qc.content.name; color))
 
-function annotate_circuit_pics(res::CliffordSimulateResult{N};foldername=nothing) where N
-    qcf,pos = generate_annotate_circuit(res;color = "transparent")
+function annotate_circuit_pics(res::CliffordSimulateResult{N},qc::ChainBlock;foldername=nothing) where N
+    qcf,pos = generate_annotate_circuit(res,qc;color = "transparent")
     filename = nothing
     (foldername === nothing) || (filename = "$foldername/0.png")
     annotate_circuit(qcf;filename)

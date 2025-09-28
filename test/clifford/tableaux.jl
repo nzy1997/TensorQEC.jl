@@ -27,5 +27,5 @@ end
 	ps = PauliString((z, y, i, y, x))
 	res = clifford_simulate(ps, qc)
 	res2 = tableau_simulate(ps, qc)
-	@test res.output == res2
+	@test res.pg == res2
 end
