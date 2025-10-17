@@ -17,8 +17,8 @@ function code_distance(H::Matrix{Int}; verbose = false,ipsolver = SCIP.Optimizer
     return  objective_value(model)
 end
 
-function code_distance(H::AbstractMatrix; verbose = false)
-    return code_distance(Matrix{Int}(H); verbose = verbose)
+function code_distance(H::AbstractMatrix; verbose = false,ipsolver = SCIP.Optimizer)
+    return code_distance(Matrix{Int}(H); verbose = verbose,ipsolver = ipsolver)
 end
 
 function row_echelon_form(H::Matrix{Bool})
@@ -136,10 +136,10 @@ Input:
 Output:
 - `d`: the distance of the code.
 """
-function code_distance(tanner::CSSTannerGraph)
+function code_distance(tanner::CSSTannerGraph; kwargs...)
     lx,lz = logical_operator(tanner)
-    dx = code_distance(Int.(tanner.stgz.H), Int.(lz))
-    dz = code_distance(Int.(tanner.stgx.H), Int.(lx))
+    dx = code_distance(Int.(tanner.stgz.H), Int.(lz); kwargs...)
+    dz = code_distance(Int.(tanner.stgx.H), Int.(lx); kwargs...)
     return min(dx,dz)
 end
 
