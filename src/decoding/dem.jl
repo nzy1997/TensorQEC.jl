@@ -205,3 +205,29 @@ function insert_errors(qc::ChainBlock;after_clifford_depolarization=0.0,after_re
 	end
 	return qce
 end
+
+function insert_atom_loss_errors(qc::ChainBlock, p_single_qubit_gate::Float64, p_two_qubit_gate::Float64)
+	qc = YaoBlocks.Optimise.simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
+	num_qubits = nqubits(qc)
+	qce = chain(num_qubits)
+	for gate in qc
+		gate = toput(gate)
+        @assert gate isa PutBlock "only support PutBlock for now. Get $(typeof(gate))"
+        push!(qce, gate)
+        if gate.content isa NumberedMeasure
+            continue
+        end
+        if gate.content isa MixedUnitaryChannel || gate.content isa DepolarizingChannel || gate.content isa Measure || gate.content isa DetectorBlock
+            continue
+        end
+        if length(gate.locs) == 1
+            push!(qce, put(num_qubits, gate.locs[1] => AtomLossBlock{2}(p_single_qubit_gate)))
+        elseif length(gate.locs) == 2
+            push!(qce, put(num_qubits, gate.locs[1] => AtomLossBlock{2}(p_two_qubit_gate)))
+            push!(qce, put(num_qubits, gate.locs[2] => AtomLossBlock{2}(p_two_qubit_gate)))
+        else
+            error("Only support single-qubit and two-qubit gates for now. Get $(typeof(gate))")
+        end
+    end
+    return qce
+end
