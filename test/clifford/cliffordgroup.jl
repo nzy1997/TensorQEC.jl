@@ -128,6 +128,18 @@ end
     @test mat(qc_r) * mat(ps_r) * mat(qc_r)' ≈ mat(pg2)
 end
 
+@testset "clifford_simulate with AtomLossBlock2" begin
+    i, x, y, z = Pauli(0), Pauli(1), Pauli(2), Pauli(3)
+    qc = chain(put(5, 1 => H), put(5, 1 => TensorQEC.AtomLossBlock{2}(0.5)), control(5, 1, 2 => Z), control(5, 3, 4 => X), put(5, 2 => H), control(5, 5, 3 => X), put(5, 1 => X))
+    ps = PauliString((z, y, i, y, x))
+
+    cl = TensorQEC.compile_clifford_circuit(qc)
+    for i in 1:100
+        cl(ps)
+    end
+end
+
+
 @testset "clifford_simulate with DepolarizingChannel" begin
     i, x, y, z = Pauli(0), Pauli(1), Pauli(2), Pauli(3)
     qc = chain(put(5, 1 => H), control(5, 1, 2 => Z), control(5, 3, 4 => X), put(5, 2 => H), control(5, 5, 3 => X), put(5, 1 => X))
