@@ -127,3 +127,14 @@ end
     ps_r = PauliString((z, y, i, y, x))
     @test mat(qc_r) * mat(ps_r) * mat(qc_r)' ≈ mat(pg2)
 end
+
+@testset "clifford_simulate with DepolarizingChannel" begin
+    i, x, y, z = Pauli(0), Pauli(1), Pauli(2), Pauli(3)
+    qc = chain(put(5, 1 => H), control(5, 1, 2 => Z), control(5, 3, 4 => X), put(5, 2 => H), control(5, 5, 3 => X), put(5, 1 => X))
+    qce = TensorQEC.insert_errors(qc; after_clifford_depolarization=0.03)
+    # vizcircuit(qce)
+    ps = PauliString((z, y, i, y, x))
+    for i in 1:1000
+        cl(ps)
+    end
+end

@@ -162,12 +162,21 @@ end
 struct CompiledCliffordCircuit{M1, M2}
     sequence::Vector{Tuple{Symbol, Int, Int}}  
     # (operation, gate-idx, locs-idx)
-    # operation: :single_qubit, :two_qubit, :atom_loss, :trivial
+    # operation| gate-idx | locs-idx |
+    # :single_qubit | gate-idx | locs-idx |
+    # :two_qubit | gate-idx | locs-idx |
+    # :atom_loss | loss_rate_idx | loc |
+    # :depolarization1 | depolarization_rate_idx | loc |
+    # :depolarization2 | depolarization_rate_idx | locs-idx |
+    # :trivial | 0 | 0 |
     single_qubit_gates::Vector{CliffordGate{M1}}
     single_qubit_locs::Vector{Tuple{Int}}
     two_qubit_gates::Vector{CliffordGate{M2}}
     two_qubit_locs::Vector{Tuple{Int, Int}}
     atom_loss_rate::Vector{Float64}
+    depolarization_rate::Vector{Float64}
+    depolarization2_locs::Vector{Tuple{Int, Int}}
+    depolarization_gates::Vector{CliffordGate{M1}}
 end
 
 function compile_clifford_circuit(qc::ChainBlock)
@@ -177,15 +186,30 @@ function compile_clifford_circuit(qc::ChainBlock)
     two_qubit_gates = typeof(CliffordGate(ConstGate.CNOT))[]
     two_qubit_locs = Tuple{Int, Int}[]
     atom_loss_rate = Float64[]
+    depolarization_rate = Float64[]
+    depolarization2_locs = Tuple{Int, Int}[]
+    depolarization_gates = [CliffordGate(X), CliffordGate(Y), CliffordGate(Z)]
     qc = YaoBlocks.Optimise.simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
     gatedict = Dict{UInt64, Int}()
     for _gate in qc
         gate = toput(_gate)
-        if gate isa Measure || gate.content isa NumberedMeasure || gate.content isa MixedUnitaryChannel || gate.content isa DepolarizingChannel || gate.content isa MeasureAndReset
+        if gate isa Measure || gate.content isa NumberedMeasure || gate.content isa MixedUnitaryChannel || gate.content isa MeasureAndReset
             push!(sequence, (:trivial, 0, 0))
             continue
         end
-
+        if gate.content isa DepolarizingChannel
+            if length(gate.locs) == 1
+                push!(depolarization_rate, gate.content.p)
+                push!(sequence, (:depolarization1, length(depolarization_rate), gate.locs[1]))
+            elseif length(gate.locs) == 2
+                push!(depolarization_rate, gate.content.p)
+                push!(depolarization2_locs, gate.locs)
+                push!(sequence, (:depolarization2, length(depolarization_rate), length(depolarization2_locs)))
+            else
+                error("Only support single-qubit and two-qubit gates for now. Get $(typeof(gate))")
+            end
+            continue
+        end
         if gate.content isa AtomLossBlock
             push!(atom_loss_rate, gate.content.p)
             push!(sequence, (:atom_loss, length(atom_loss_rate), gate.locs[1]))
@@ -214,7 +238,7 @@ function compile_clifford_circuit(qc::ChainBlock)
             push!(sequence, (:two_qubit, cgate_idx, length(two_qubit_locs)))
         end
     end
-    return CompiledCliffordCircuit(sequence, single_qubit_gates, single_qubit_locs, two_qubit_gates, two_qubit_locs, atom_loss_rate)
+    return CompiledCliffordCircuit(sequence, single_qubit_gates, single_qubit_locs, two_qubit_gates, two_qubit_locs, atom_loss_rate, depolarization_rate, depolarization2_locs, depolarization_gates)
 end
 
 (cl::CompiledCliffordCircuit)(ps::PauliString) = cl(PauliGroupElement(0, ps))
@@ -246,7 +270,39 @@ function _step!(cl::CompiledCliffordCircuit, pg::PauliGroupElement{N}, i::Int, l
             push!(loss_qubits, locs_idx)
             return pg, ErrorInstance([locs_idx], [:atom_loss])
         else
-            return cl.single_qubit_gates[gate_idx](pg, cl.single_qubit_locs[locs_idx]), nothing
+            return pg, nothing
+        end
+    elseif operation == :depolarization1
+        randnum = rand()
+        if randnum < cl.depolarization_rate[gate_idx]
+            pg = cl.depolarization_gates[1](pg, (locs_idx,))
+            return pg, ErrorInstance([locs_idx], [:depolarization1_x])
+        elseif randnum < 2*cl.depolarization_rate[gate_idx]
+            pg = cl.depolarization_gates[2](pg, (locs_idx,))
+            return pg, ErrorInstance([locs_idx], [:depolarization1_y])
+        elseif randnum < 3*cl.depolarization_rate[gate_idx]
+            pg = cl.depolarization_gates[3](pg, (locs_idx,))
+            return pg, ErrorInstance([locs_idx], [:depolarization1_z])
+        else
+            return pg, nothing
+        end
+    elseif operation == :depolarization2
+        randnum = rand()
+        randidx =  Int(floor(randnum / cl.depolarization_rate[gate_idx]))       
+        if randidx >= 15
+            return pg, nothing 
+        else
+            randidx = 15 - randidx 
+            # @show randidx
+            pos1_gate = randidx%4
+            pos2_gate = randidx÷4
+            if pos1_gate > 0
+                pg = cl.depolarization_gates[pos1_gate](pg, (cl.depolarization2_locs[locs_idx][1],))
+            end
+            if pos2_gate > 0
+                pg = cl.depolarization_gates[pos2_gate](pg, (cl.depolarization2_locs[locs_idx][2],))
+            end
+            return pg, ErrorInstance(collect(cl.depolarization2_locs[locs_idx]), [:depolarization2])
         end
     else
         error("Invalid operation: $operation")
