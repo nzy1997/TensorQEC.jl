@@ -146,6 +146,7 @@ end
     qce = TensorQEC.insert_errors(qc; after_clifford_depolarization=0.03)
     # vizcircuit(qce)
     ps = PauliString((z, y, i, y, x))
+    cl = TensorQEC.compile_clifford_circuit(qce)
     for i in 1:1000
         cl(ps)
     end
