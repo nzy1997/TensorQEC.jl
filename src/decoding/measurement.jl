@@ -241,7 +241,7 @@ function make_measurement_circuit(mci::MeasurementCircuitInfo; with_measurement:
 		push!(qc, put(total_qubit_num, x_pos => H))
 	end
 	if with_measurement
-		push!(qc, put(total_qubit_num, mci.xstabilizer_pos ∪ mci.H_after_list => Measure(length(mci.xstabilizer_pos ∪ mci.H_after_list);resetto=bit"0")))
+		push!(qc, put(total_qubit_num, mci.zstabilizer_pos ∪ mci.H_after_list => Measure(length(mci.xstabilizer_pos ∪ mci.H_after_list);resetto=bit"0")))
 	end
 	return qc
 end
