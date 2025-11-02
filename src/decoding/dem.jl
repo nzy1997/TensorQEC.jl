@@ -85,6 +85,7 @@ function forward_analysis(ps::PauliString, cqc::CompiledCliffordCircuit, i::Int,
     pg = PauliGroupElement(0, ps)
     flipped_measure = Int[]
     flipped_detectors = Int[]
+    loss_qubits = Int[]
     for j in i+1:length(qc)
         if qc[j] isa Measure
             if qc[j].postprocess isa ResetTo
@@ -124,7 +125,7 @@ function forward_analysis(ps::PauliString, cqc::CompiledCliffordCircuit, i::Int,
                 push!(flipped_detectors, qc[j].content.num)
             end
         else
-            pg = _step(cqc, pg, j)
+            pg = first(_step!(cqc, pg, j, loss_qubits))
         end
     end
     return flipped_detectors
@@ -203,4 +204,30 @@ function insert_errors(qc::ChainBlock;after_clifford_depolarization=0.0,after_re
         end
 	end
 	return qce
+end
+
+function insert_atom_loss_errors(qc::ChainBlock, p_single_qubit_gate::Float64, p_two_qubit_gate::Float64)
+	qc = YaoBlocks.Optimise.simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
+	num_qubits = nqubits(qc)
+	qce = chain(num_qubits)
+	for gate in qc
+		gate = toput(gate)
+        @assert gate isa PutBlock "only support PutBlock for now. Get $(typeof(gate))"
+        push!(qce, gate)
+        if gate.content isa NumberedMeasure
+            continue
+        end
+        if gate.content isa MixedUnitaryChannel || gate.content isa DepolarizingChannel || gate.content isa Measure || gate.content isa DetectorBlock
+            continue
+        end
+        if length(gate.locs) == 1
+            push!(qce, put(num_qubits, gate.locs[1] => AtomLossBlock{2}(p_single_qubit_gate)))
+        elseif length(gate.locs) == 2
+            push!(qce, put(num_qubits, gate.locs[1] => AtomLossBlock{2}(p_two_qubit_gate)))
+            push!(qce, put(num_qubits, gate.locs[2] => AtomLossBlock{2}(p_two_qubit_gate)))
+        else
+            error("Only support single-qubit and two-qubit gates for now. Get $(typeof(gate))")
+        end
+    end
+    return qce
 end

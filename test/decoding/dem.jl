@@ -131,4 +131,7 @@ end
     # vizcircuit(qc)
     qce = TensorQEC.insert_errors(qc;after_clifford_depolarization=0.01,after_reset_flip_probability=0.02,before_measure_flip_probability=0.03)
     vizcircuit(qce)
+
+    qce2 = TensorQEC.insert_atom_loss_errors(qce, 0.04, 0.05)
+    vizcircuit(qce2)
 end

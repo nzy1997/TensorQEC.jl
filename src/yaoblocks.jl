@@ -76,3 +76,21 @@ function YaoPlots.draw!(c::YaoPlots.CircuitGrid, p::DetectorBlock, address, cont
     @assert length(controls) == 0
     YaoPlots._draw!(c, [(getindex.(Ref(address), (1,)), c.gatestyles.g, iszero(p.detector_type) ? "D[$(p.num)]: rec$(getfield.(p.vm, :num))" : "L[$(p.num)]: rec$(getfield.(p.vm, :num))")])
 end
+
+struct AtomLossBlock{D} <: YaoBlocks.AbstractQuantumChannel{D}
+    p::Float64
+end
+Yao.subblocks(a::AtomLossBlock) = ()
+Yao.nqudits(sr::AtomLossBlock) = 1
+Yao.print_block(io::IO, sr::AtomLossBlock) = print(io, "AtomLoss($(sr.p))")
+YaoBlocks.Optimise.to_basictypes(c::AtomLossBlock) = c
+function YaoPlots.draw!(c::YaoPlots.CircuitGrid, p::AtomLossBlock, address, controls)
+    @assert length(controls) == 0
+    CircuitStyles.gate_bgcolor[], temp = "pink", CircuitStyles.gate_bgcolor[]
+    YaoPlots._draw!(c, [(getindex.(Ref(address), (1,)), c.gatestyles.g, "AtomLoss($(p.p))")])
+    CircuitStyles.gate_bgcolor[] = temp
+end
+
+function Yao.unsafe_apply!(reg::AbstractRegister{B}, c::AtomLossBlock) where B
+    error("AtomLossBlock does not support apply!")
+end

@@ -135,11 +135,11 @@ Apply the circuit to Pauli string $Z_1Y_2I_3Y_4X_5$, we get $Y_1X_2Y_3Y_4Y_5$ wi
 
 ````@example clifford
 ps = P"ZYIYX"
-res = clifford_simulate(ps, qc)
-ps2 = res.output
+res = clifford_simulate(ps, qc;with_history=true)
+ps2 = res.pg
 ````
 
-where `res.output` is the Pauli string after the Clifford circuit and `res.phase` is the phase factor. It corresponds to the following quantum circuit.
+where `res.pg` is the Pauli group element after the Clifford circuit. It corresponds to the following quantum circuit.
 
 ````@example clifford
 clifford_simulation_circuit = chain(qc', yaoblock(ps), qc)
@@ -158,7 +158,7 @@ mat(clifford_simulation_circuit) ≈ mat(yaoblock(ps2))
 We can also visualize the history of Pauli strings by `TensorQEC.annotate_history`.
 
 ````@example clifford
-TensorQEC.annotate_history(res)
+TensorQEC.annotate_history(res, qc)
 ````
 
 [^Bravyi2022]: Bravyi, S., Latone, J.A., Maslov, D., 2022. 6-qubit optimal Clifford circuits. npj Quantum Inf 8, 1–12. https://doi.org/10.1038/s41534-022-00583-7

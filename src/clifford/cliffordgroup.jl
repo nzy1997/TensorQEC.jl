@@ -154,46 +154,65 @@ function (gate::CliffordGate)(pg::PauliGroupElement, pos::NTuple{M, Int}) where 
     return PauliGroupElement(_add_phase(pg.phase, elem.phase), elem.ps)
 end
 
-"""
-    CliffordSimulateResult{N}
-
-The result of simulating a Pauli string by a Clifford circuit.
-
-### Fields
-- `output::PauliGroupElement{N}`: A mapped Pauli group element as the output.
-- `circuit::ChainBlock`: The circuit (simplified, with linear structure).
-- `history::Vector{PauliGroupElement{N}}`: The history of Pauli group elements, its length is `length(circuit)+1`.
-"""
-struct CliffordSimulateResult{N}
-    output::PauliGroupElement{N}
-    circuit::ChainBlock
-    history::Vector{PauliGroupElement{N}}
-    function CliffordSimulateResult(output::PauliGroupElement{N}, circuit::ChainBlock, history::Vector{PauliGroupElement{N}}) where N
-        new{N}(output, circuit, history)
-    end
+struct ErrorInstance
+    loc::Vector{Int}
+    error_type::Vector{Symbol}
 end
 
 struct CompiledCliffordCircuit{M1, M2}
-    sequence::Vector{Tuple{Int, Int, Int}}  # (howmany qubits, gate-idx, locs-idx) If qubit number is 0, then this is a trivial gate or a error gate,skip this gate when applying.
+    sequence::Vector{Tuple{Symbol, Int, Int}}  
+    # (operation, gate-idx, locs-idx)
+    # operation| gate-idx | locs-idx |
+    # :single_qubit | gate-idx | locs-idx |
+    # :two_qubit | gate-idx | locs-idx |
+    # :atom_loss | loss_rate_idx | loc |
+    # :depolarization1 | depolarization_rate_idx | loc |
+    # :depolarization2 | depolarization_rate_idx | locs-idx |
+    # :trivial | 0 | 0 |
     single_qubit_gates::Vector{CliffordGate{M1}}
     single_qubit_locs::Vector{Tuple{Int}}
     two_qubit_gates::Vector{CliffordGate{M2}}
     two_qubit_locs::Vector{Tuple{Int, Int}}
+    atom_loss_rate::Vector{Float64}
+    depolarization_rate::Vector{Float64}
+    depolarization2_locs::Vector{Tuple{Int, Int}}
+    depolarization_gates::Vector{CliffordGate{M1}}
 end
 
 function compile_clifford_circuit(qc::ChainBlock)
-    sequence = Tuple{Int, Int, Int}[]
+    sequence = Tuple{Symbol, Int, Int}[]
     single_qubit_gates = typeof(CliffordGate(X))[]
     single_qubit_locs = Tuple{Int}[]
     two_qubit_gates = typeof(CliffordGate(ConstGate.CNOT))[]
     two_qubit_locs = Tuple{Int, Int}[]
-
+    atom_loss_rate = Float64[]
+    depolarization_rate = Float64[]
+    depolarization2_locs = Tuple{Int, Int}[]
+    depolarization_gates = [CliffordGate(X), CliffordGate(Y), CliffordGate(Z)]
     qc = YaoBlocks.Optimise.simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
     gatedict = Dict{UInt64, Int}()
     for _gate in qc
         gate = toput(_gate)
-        if gate isa Measure || gate.content isa NumberedMeasure || gate.content isa MixedUnitaryChannel || gate.content isa DepolarizingChannel || gate.content isa MeasureAndReset
-            push!(sequence, (0, 0, 0))
+        if gate isa Measure || gate.content isa NumberedMeasure || gate.content isa MixedUnitaryChannel || gate.content isa MeasureAndReset
+            push!(sequence, (:trivial, 0, 0))
+            continue
+        end
+        if gate.content isa DepolarizingChannel
+            if length(gate.locs) == 1
+                push!(depolarization_rate, gate.content.p)
+                push!(sequence, (:depolarization1, length(depolarization_rate), gate.locs[1]))
+            elseif length(gate.locs) == 2
+                push!(depolarization_rate, gate.content.p)
+                push!(depolarization2_locs, gate.locs)
+                push!(sequence, (:depolarization2, length(depolarization_rate), length(depolarization2_locs)))
+            else
+                error("Only support single-qubit and two-qubit gates for now. Get $(typeof(gate))")
+            end
+            continue
+        end
+        if gate.content isa AtomLossBlock
+            push!(atom_loss_rate, gate.content.p)
+            push!(sequence, (:atom_loss, length(atom_loss_rate), gate.locs[1]))
             continue
         end
 
@@ -213,30 +232,99 @@ function compile_clifford_circuit(qc::ChainBlock)
         end
         if nqubits(gate.content) == 1
             push!(single_qubit_locs, gate.locs)
-            push!(sequence, (1, cgate_idx, length(single_qubit_locs)))
+            push!(sequence, (:single_qubit, cgate_idx, length(single_qubit_locs)))
         else
             push!(two_qubit_locs, gate.locs)
-            push!(sequence, (2, cgate_idx, length(two_qubit_locs)))
+            push!(sequence, (:two_qubit, cgate_idx, length(two_qubit_locs)))
         end
     end
-    return CompiledCliffordCircuit(sequence, single_qubit_gates, single_qubit_locs, two_qubit_gates, two_qubit_locs)
+    return CompiledCliffordCircuit(sequence, single_qubit_gates, single_qubit_locs, two_qubit_gates, two_qubit_locs, atom_loss_rate, depolarization_rate, depolarization2_locs, depolarization_gates)
 end
 
 (cl::CompiledCliffordCircuit)(ps::PauliString) = cl(PauliGroupElement(0, ps))
 function (cl::CompiledCliffordCircuit)(pg::PauliGroupElement)
+    loss_qubits = Int[]
     for i in 1:length(cl.sequence)
-        pg = _step(cl, pg, i)
+        pg = first(_step!(cl, pg, i, loss_qubits))
     end
     return pg
 end
-function _step(cl::CompiledCliffordCircuit, pg::PauliGroupElement{N}, i::Int) where {N}
-    howmany, gate_idx, locs_idx = cl.sequence[i]
-    if howmany == 0
-        return pg
-    elseif howmany == 1
-        return cl.single_qubit_gates[gate_idx](pg, cl.single_qubit_locs[locs_idx])
+function _step!(cl::CompiledCliffordCircuit, pg::PauliGroupElement{N}, i::Int, loss_qubits::Vector{Int}) where {N}
+    operation, gate_idx, locs_idx = cl.sequence[i]
+    if operation == :trivial
+        return pg, nothing
+    elseif operation == :single_qubit 
+        if (cl.single_qubit_locs[locs_idx][1] ∉ loss_qubits)
+            return cl.single_qubit_gates[gate_idx](pg, cl.single_qubit_locs[locs_idx]), nothing
+        else
+            return pg, nothing
+        end
+    elseif operation == :two_qubit 
+        if (cl.two_qubit_locs[locs_idx][1] ∉ loss_qubits) && (cl.two_qubit_locs[locs_idx][2] ∉ loss_qubits)
+            return cl.two_qubit_gates[gate_idx](pg, cl.two_qubit_locs[locs_idx]), nothing
+        else
+            return pg, nothing
+        end
+    elseif operation == :atom_loss
+        if rand() < cl.atom_loss_rate[gate_idx]
+            push!(loss_qubits, locs_idx)
+            return pg, ErrorInstance([locs_idx], [:atom_loss])
+        else
+            return pg, nothing
+        end
+    elseif operation == :depolarization1
+        randnum = rand()
+        if randnum < cl.depolarization_rate[gate_idx]
+            pg = cl.depolarization_gates[1](pg, (locs_idx,))
+            return pg, ErrorInstance([locs_idx], [:depolarization1_x])
+        elseif randnum < 2*cl.depolarization_rate[gate_idx]
+            pg = cl.depolarization_gates[2](pg, (locs_idx,))
+            return pg, ErrorInstance([locs_idx], [:depolarization1_y])
+        elseif randnum < 3*cl.depolarization_rate[gate_idx]
+            pg = cl.depolarization_gates[3](pg, (locs_idx,))
+            return pg, ErrorInstance([locs_idx], [:depolarization1_z])
+        else
+            return pg, nothing
+        end
+    elseif operation == :depolarization2
+        randnum = rand()
+        randidx =  Int(floor(randnum / cl.depolarization_rate[gate_idx]))       
+        if randidx >= 15
+            return pg, nothing 
+        else
+            randidx = 15 - randidx 
+            # @show randidx
+            pos1_gate = randidx%4
+            pos2_gate = randidx÷4
+            if pos1_gate > 0
+                pg = cl.depolarization_gates[pos1_gate](pg, (cl.depolarization2_locs[locs_idx][1],))
+            end
+            if pos2_gate > 0
+                pg = cl.depolarization_gates[pos2_gate](pg, (cl.depolarization2_locs[locs_idx][2],))
+            end
+            return pg, ErrorInstance(collect(cl.depolarization2_locs[locs_idx]), [:depolarization2])
+        end
     else
-        return cl.two_qubit_gates[gate_idx](pg, cl.two_qubit_locs[locs_idx])
+        error("Invalid operation: $operation")
+    end
+end
+
+"""
+    CliffordSimulateResult{N}
+
+The result of simulating a Pauli string by a Clifford circuit.
+
+### Fields
+- `pg::PauliGroupElement{N}`: A mapped Pauli group element as the output.
+- `error_pattern::Dict{Int, ErrorInstance}`: The error pattern. The key is the index of the operation, the value is the error instance.
+- `history::Vector{PauliGroupElement{N}}`: The history of Pauli group elements, its length is `length(circuit)+1`.
+"""
+struct CliffordSimulateResult{N}
+    pg::PauliGroupElement{N}
+    error_pattern::Dict{Int, ErrorInstance}
+    history::Vector{PauliGroupElement{N}}
+    function CliffordSimulateResult(output::PauliGroupElement{N},error_pattern::Dict{Int, ErrorInstance}, history::Vector{PauliGroupElement{N}}) where N
+        new{N}(output, error_pattern, history)
     end
 end
 
@@ -252,17 +340,23 @@ Perform Clifford simulation with a Pauli string `paulistring` as the input.
 ### Returns
 - `result`: A [`CliffordSimulateResult`](@ref) records the output Pauli string, the phase factor, the simplified circuit, and the history of Pauli strings.
 """
-clifford_simulate(ps::PauliString{N}, qc::ChainBlock) where {N} = clifford_simulate(PauliGroupElement(0, ps), qc)
-function clifford_simulate(pg::PauliGroupElement{N}, qc::ChainBlock) where {N}
-    history = PauliGroupElement{N}[]
+clifford_simulate(ps::PauliString{N}, qc::ChainBlock;with_history=false) where {N} = clifford_simulate(PauliGroupElement(0, ps), qc;with_history)
+function clifford_simulate(pg::PauliGroupElement{N}, qc::ChainBlock; with_history=false) where {N}
     cl = compile_clifford_circuit(qc)
+    loss_qubits = Int[]
+    history = PauliGroupElement{N}[]
     push!(history, pg)
+    error_pattern = Dict{Int, ErrorInstance}()
     for i in 1:length(cl.sequence)
-        pg = _step(cl, pg, i)
-        push!(history, pg)
+        pg,error_instance = _step!(cl, pg, i, loss_qubits)
+        if error_instance !== nothing
+            push!(error_pattern, i => error_instance)
+        end
+        if with_history
+            push!(history, pg)
+        end
     end
-    # TODO: remove the quantum circuit from the result
-    return CliffordSimulateResult(pg, qc, history)
+    return CliffordSimulateResult(pg, error_pattern, history)
 end
 
 function paulistring_annotate(ps::PauliString{N};color = "red") where N
@@ -278,27 +372,27 @@ function paulistring_annotate(ps::PauliString{N},num_qubits::Int;color = "red") 
 end
 
 """
-    annotate_history(res::CliffordSimulateResult{N})
+    annotate_history(res::CliffordSimulateResult{N},qc::ChainBlock)
 
-Annotate the history of Pauli strings in the result of `clifford_simulate`.
+Annotate the history of Pauli strings in the result of `clifford_simulate` with the quantum circuit.
 
 ### Arguments
 - `res`: The result of `clifford_simulate`.
-
+- `qc`: The quantum circuit.
 ### Returns
 - `draw`: The visualization of the history.
 """
-function annotate_history(res::CliffordSimulateResult{N}) where N
-    qcf,_= generate_annotate_circuit(res)
+function annotate_history(res::CliffordSimulateResult{N},qc::ChainBlock) where N
+    qcf,_= generate_annotate_circuit(res,qc)
     return annotate_circuit(qcf)
 end
 
-function generate_annotate_circuit(res::CliffordSimulateResult{N};color = "red") where N
+function generate_annotate_circuit(res::CliffordSimulateResult{N},qc::ChainBlock;color = "red") where N
     qcf = chain(N)
     pos = [1]
     push!(qcf, paulistring_annotate(res.history[1].ps;color))
-    for i in 1:length(res.circuit)
-        block = res.circuit[i]
+    for i in 1:length(qc)
+        block = qc[i]
         push!(qcf, block)
         if !isempty(occupied_locs(block) ∩ findall(x -> x != Pauli(0), res.history[i+1].ps))
             push!(qcf, paulistring_annotate(res.history[i+1].ps;color))
@@ -324,8 +418,8 @@ end
 
 replace_block_color(qc::PutBlock,color::String) = put(qc.n,qc.locs=> line_annotation(qc.content.name; color))
 
-function annotate_circuit_pics(res::CliffordSimulateResult{N};foldername=nothing) where N
-    qcf,pos = generate_annotate_circuit(res;color = "transparent")
+function annotate_circuit_pics(res::CliffordSimulateResult{N},qc::ChainBlock;foldername=nothing) where N
+    qcf,pos = generate_annotate_circuit(res,qc;color = "transparent")
     filename = nothing
     (foldername === nothing) || (filename = "$foldername/0.png")
     annotate_circuit(qcf;filename)

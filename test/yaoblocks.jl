@@ -48,3 +48,18 @@ end
     @test qc isa ChainBlock
     vizcircuit(qc)
 end
+
+@testset "AtomLossBlock" begin
+    c = TensorQEC.AtomLossBlock{2}(0.1)
+    @show c
+
+    c2 = TensorQEC.AtomLossBlock{2}(0.2)
+    @show c2
+
+    qc = chain(1,c,c2)
+    @test qc isa ChainBlock
+    vizcircuit(qc)
+
+    reg = rand_state(1)
+    @test_throws ErrorException apply!(reg, c)
+end
