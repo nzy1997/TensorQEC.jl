@@ -210,3 +210,84 @@ function generate_measurement_circuit(sts::Vector{PauliString{N}}, round::Int;  
 	end
 	return qc
 end
+
+struct MeasurementCircuitInfo
+	qubit_pos::Vector{Int}
+	xstabilizer_pos::Vector{Int}
+	zstabilizer_pos::Vector{Int}
+	xmeasure_list::Vector{Dict{Int,Int}}
+	zmeasure_list::Vector{Dict{Int,Int}}
+end
+
+function make_measurement_circuit(mci::MeasurementCircuitInfo)
+	total_qubit_num = length(mci.qubit_pos) + length(mci.xstabilizer_pos) + length(mci.zstabilizer_pos)
+	qc = chain(total_qubit_num)
+	for x_pos in mci.xstabilizer_pos
+		push!(qc, put(total_qubit_num, x_pos => H))
+	end
+	for (x_dict,z_dict) in zip(mci.xmeasure_list,mci.zmeasure_list)
+		for (x_key,x_value) in x_dict
+			push!(qc, control(total_qubit_num, x_key, x_value => X))
+		end
+		for (z_key,z_value) in z_dict
+			push!(qc, control(total_qubit_num, z_value, z_key => X))
+		end
+	end
+	for x_pos in mci.xstabilizer_pos
+		push!(qc, put(total_qubit_num, x_pos => H))
+	end
+	return qc
+end
+
+function generate_measurement_circuit_info(c::SurfaceCode)
+	data_qubit_num = c.m*c.n
+	tanner = CSSTannerGraph(stabilizers(c))
+	xs2q = tanner.stgx.s2q
+	xstab_num = length(xs2q)
+	zs2q = tanner.stgz.s2q
+	zstab_num = length(zs2q)
+	qubit_pos = collect(1:data_qubit_num)
+	xstabilizer_pos = collect(data_qubit_num+1:data_qubit_num+xstab_num)
+	zstabilizer_pos = collect(data_qubit_num+xstab_num+1:data_qubit_num+xstab_num+zstab_num)
+
+	xmeasure_list = [Dict{Int,Int}() for _ in 1:4]
+	for (xidx,pos) in enumerate(xs2q)
+		if length(pos) == 4
+			pos_sorted = sort(pos)
+			xmeasure_list[1][xidx+data_qubit_num] = pos_sorted[1]
+			xmeasure_list[2][xidx+data_qubit_num] = pos_sorted[3]
+			xmeasure_list[3][xidx+data_qubit_num] = pos_sorted[2]
+			xmeasure_list[4][xidx+data_qubit_num] = pos_sorted[4]
+		elseif length(pos) == 2
+			pos_sorted = sort(pos)
+			if pos_sorted[1] % c.n == 0
+				xmeasure_list[1][xidx+data_qubit_num] = pos_sorted[1]
+				xmeasure_list[2][xidx+data_qubit_num] = pos_sorted[2]
+			else 
+				xmeasure_list[3][xidx+data_qubit_num] = pos_sorted[1]
+				xmeasure_list[4][xidx+data_qubit_num] = pos_sorted[2]
+			end
+		end
+	end
+	
+	zmeasure_list = [Dict{Int,Int}() for _ in 1:4]
+	for (zidx,pos) in enumerate(zs2q)
+		if length(pos) == 4
+			pos_sorted = sort(pos)
+			zmeasure_list[1][zidx+data_qubit_num+xstab_num] = pos_sorted[1]
+			zmeasure_list[2][zidx+data_qubit_num+xstab_num] = pos_sorted[2]
+			zmeasure_list[3][zidx+data_qubit_num+xstab_num] = pos_sorted[3]
+			zmeasure_list[4][zidx+data_qubit_num+xstab_num] = pos_sorted[4]
+		elseif length(pos) == 2
+			pos_sorted = sort(pos)
+			if pos_sorted[1] <= c.n
+				zmeasure_list[3][zidx+data_qubit_num+xstab_num] = pos_sorted[1]
+				zmeasure_list[4][zidx+data_qubit_num+xstab_num] = pos_sorted[2]
+			else
+				zmeasure_list[1][zidx+data_qubit_num+xstab_num] = pos_sorted[1]
+				zmeasure_list[2][zidx+data_qubit_num+xstab_num] = pos_sorted[2]
+			end
+		end
+	end
+	return MeasurementCircuitInfo(qubit_pos, xstabilizer_pos, zstabilizer_pos, xmeasure_list, zmeasure_list)
+end
