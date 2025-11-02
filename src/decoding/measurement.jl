@@ -217,12 +217,16 @@ struct MeasurementCircuitInfo
 	zstabilizer_pos::Vector{Int}
 	xmeasure_list::Vector{Dict{Int,Int}}
 	zmeasure_list::Vector{Dict{Int,Int}}
+	H_before_list::Vector{Int}
+	H_after_list::Vector{Int}
 end
 
-function make_measurement_circuit(mci::MeasurementCircuitInfo)
+MeasurementCircuitInfo(qubit_pos::Vector{Int}, xstabilizer_pos::Vector{Int}, zstabilizer_pos::Vector{Int}, xmeasure_list::Vector{Dict{Int,Int}}, zmeasure_list::Vector{Dict{Int,Int}}) = MeasurementCircuitInfo(qubit_pos, xstabilizer_pos, zstabilizer_pos, xmeasure_list, zmeasure_list, xstabilizer_pos, xstabilizer_pos)
+
+function make_measurement_circuit(mci::MeasurementCircuitInfo; with_measurement::Bool = false)
 	total_qubit_num = length(mci.qubit_pos) + length(mci.xstabilizer_pos) + length(mci.zstabilizer_pos)
 	qc = chain(total_qubit_num)
-	for x_pos in mci.xstabilizer_pos
+	for x_pos in mci.H_before_list
 		push!(qc, put(total_qubit_num, x_pos => H))
 	end
 	for (x_dict,z_dict) in zip(mci.xmeasure_list,mci.zmeasure_list)
@@ -233,13 +237,16 @@ function make_measurement_circuit(mci::MeasurementCircuitInfo)
 			push!(qc, control(total_qubit_num, z_value, z_key => X))
 		end
 	end
-	for x_pos in mci.xstabilizer_pos
+	for x_pos in mci.H_after_list
 		push!(qc, put(total_qubit_num, x_pos => H))
+	end
+	if with_measurement
+		push!(qc, put(total_qubit_num, mci.xstabilizer_pos ∪ mci.H_after_list => Measure(length(mci.xstabilizer_pos ∪ mci.H_after_list);resetto=bit"0")))
 	end
 	return qc
 end
 
-function generate_measurement_circuit_info(c::SurfaceCode)
+function generate_measurement_circuit_info(c::SurfaceCode; type::Int = 1,switch_data_qubit::Bool = false) # type = 1,2,3,4
 	data_qubit_num = c.m*c.n
 	tanner = CSSTannerGraph(stabilizers(c))
 	xs2q = tanner.stgx.s2q
@@ -249,45 +256,67 @@ function generate_measurement_circuit_info(c::SurfaceCode)
 	qubit_pos = collect(1:data_qubit_num)
 	xstabilizer_pos = collect(data_qubit_num+1:data_qubit_num+xstab_num)
 	zstabilizer_pos = collect(data_qubit_num+xstab_num+1:data_qubit_num+xstab_num+zstab_num)
-
-	xmeasure_list = [Dict{Int,Int}() for _ in 1:4]
+	H_after_list = copy(xstabilizer_pos)
+	if switch_data_qubit
+		xmeasure_list = [Dict{Int,Int}() for _ in 1:5]
+		zmeasure_list = [Dict{Int,Int}() for _ in 1:5]
+	else
+		xmeasure_list = [Dict{Int,Int}() for _ in 1:4]
+		zmeasure_list = [Dict{Int,Int}() for _ in 1:4]
+	end
+	typex_4 = [[1,3,2,4],[3,1,4,2],[2,4,1,3],[4,2,3,1]]
+	typex_2_pos = [[1,2,3,4],[1,2,3,4],[3,4,1,2],[3,4,1,2]]
+	typex_2 = [[1,2],[2,1],[1,2],[2,1]]
 	for (xidx,pos) in enumerate(xs2q)
 		if length(pos) == 4
 			pos_sorted = sort(pos)
-			xmeasure_list[1][xidx+data_qubit_num] = pos_sorted[1]
-			xmeasure_list[2][xidx+data_qubit_num] = pos_sorted[3]
-			xmeasure_list[3][xidx+data_qubit_num] = pos_sorted[2]
-			xmeasure_list[4][xidx+data_qubit_num] = pos_sorted[4]
+			xmeasure_list[1][xidx+data_qubit_num] = pos_sorted[typex_4[type][1]]
+			xmeasure_list[2][xidx+data_qubit_num] = pos_sorted[typex_4[type][2]]
+			xmeasure_list[3][xidx+data_qubit_num] = pos_sorted[typex_4[type][3]]
+			if switch_data_qubit
+				xmeasure_list[4][pos_sorted[typex_4[type][4]]] = xidx+data_qubit_num
+				xmeasure_list[5][xidx+data_qubit_num] = pos_sorted[typex_4[type][4]]
+				replace!(H_after_list, xidx+data_qubit_num => pos_sorted[typex_4[type][4]])
+			else
+				xmeasure_list[4][xidx+data_qubit_num] = pos_sorted[typex_4[type][4]]
+			end
 		elseif length(pos) == 2
 			pos_sorted = sort(pos)
 			if pos_sorted[1] % c.n == 0
-				xmeasure_list[1][xidx+data_qubit_num] = pos_sorted[1]
-				xmeasure_list[2][xidx+data_qubit_num] = pos_sorted[2]
+				xmeasure_list[typex_2_pos[type][1]][xidx+data_qubit_num] = pos_sorted[typex_2[type][1]]
+				xmeasure_list[typex_2_pos[type][2]][xidx+data_qubit_num] = pos_sorted[typex_2[type][2]]
 			else 
-				xmeasure_list[3][xidx+data_qubit_num] = pos_sorted[1]
-				xmeasure_list[4][xidx+data_qubit_num] = pos_sorted[2]
+				xmeasure_list[typex_2_pos[type][3]][xidx+data_qubit_num] = pos_sorted[typex_2[type][1]]
+				xmeasure_list[typex_2_pos[type][4]][xidx+data_qubit_num] = pos_sorted[typex_2[type][2]]
 			end
 		end
 	end
 	
-	zmeasure_list = [Dict{Int,Int}() for _ in 1:4]
+	typez_4 = [[1,2,3,4],[3,4,1,2],[2,1,4,3],[4,3,2,1]]
+	typez_2_pos = [[3,4,1,2],[1,2,3,4],[3,4,1,2],[1,2,3,4]]
+	typez_2 = [[1,2],[1,2],[2,1],[2,1]]
 	for (zidx,pos) in enumerate(zs2q)
 		if length(pos) == 4
 			pos_sorted = sort(pos)
-			zmeasure_list[1][zidx+data_qubit_num+xstab_num] = pos_sorted[1]
-			zmeasure_list[2][zidx+data_qubit_num+xstab_num] = pos_sorted[2]
-			zmeasure_list[3][zidx+data_qubit_num+xstab_num] = pos_sorted[3]
-			zmeasure_list[4][zidx+data_qubit_num+xstab_num] = pos_sorted[4]
+			zmeasure_list[typez_4[type][1]][zidx+data_qubit_num+xstab_num] = pos_sorted[typez_4[type][1]]
+			zmeasure_list[typez_4[type][2]][zidx+data_qubit_num+xstab_num] = pos_sorted[typez_4[type][2]]
+			zmeasure_list[typez_4[type][3]][zidx+data_qubit_num+xstab_num] = pos_sorted[typez_4[type][3]]
+			if switch_data_qubit
+				zmeasure_list[4][pos_sorted[typez_4[type][4]]] = zidx+data_qubit_num+xstab_num
+				zmeasure_list[5][zidx+data_qubit_num+xstab_num] = pos_sorted[typez_4[type][4]]
+			else
+				zmeasure_list[4][zidx+data_qubit_num+xstab_num] = pos_sorted[typez_4[type][4]]
+			end
 		elseif length(pos) == 2
 			pos_sorted = sort(pos)
 			if pos_sorted[1] <= c.n
-				zmeasure_list[3][zidx+data_qubit_num+xstab_num] = pos_sorted[1]
-				zmeasure_list[4][zidx+data_qubit_num+xstab_num] = pos_sorted[2]
+				zmeasure_list[typez_2_pos[type][1]][zidx+data_qubit_num+xstab_num] = pos_sorted[typez_2[type][1]]
+				zmeasure_list[typez_2_pos[type][2]][zidx+data_qubit_num+xstab_num] = pos_sorted[typez_2[type][2]]
 			else
-				zmeasure_list[1][zidx+data_qubit_num+xstab_num] = pos_sorted[1]
-				zmeasure_list[2][zidx+data_qubit_num+xstab_num] = pos_sorted[2]
+				zmeasure_list[typez_2_pos[type][3]][zidx+data_qubit_num+xstab_num] = pos_sorted[typez_2[type][1]]
+				zmeasure_list[typez_2_pos[type][4]][zidx+data_qubit_num+xstab_num] = pos_sorted[typez_2[type][2]]
 			end
 		end
 	end
-	return MeasurementCircuitInfo(qubit_pos, xstabilizer_pos, zstabilizer_pos, xmeasure_list, zmeasure_list)
+	return MeasurementCircuitInfo(qubit_pos, xstabilizer_pos, zstabilizer_pos, xmeasure_list, zmeasure_list, xstabilizer_pos, H_after_list)
 end

@@ -78,4 +78,7 @@ end
 
     zdict4 = Dict(14=>6, 15=>8, 16=>2)
     @test mci.zmeasure_list[4] == zdict4
+
+    @test mci.H_before_list == [10,11,12,13]
+    @test mci.H_after_list == [10,11,12,13]
 end
