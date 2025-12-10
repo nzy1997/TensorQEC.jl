@@ -217,16 +217,17 @@ struct MeasurementCircuitInfo
 	zstabilizer_pos::Vector{Int}
 	xmeasure_list::Vector{Dict{Int,Int}}
 	zmeasure_list::Vector{Dict{Int,Int}}
-	H_before_list::Vector{Int}
-	H_after_list::Vector{Int}
+	xstabilizer_output_pos::Vector{Int}
+	zstabilizer_output_pos::Vector{Int}
+	qubit_output_pos::Vector{Int}
 end
 
-MeasurementCircuitInfo(qubit_pos::Vector{Int}, xstabilizer_pos::Vector{Int}, zstabilizer_pos::Vector{Int}, xmeasure_list::Vector{Dict{Int,Int}}, zmeasure_list::Vector{Dict{Int,Int}}) = MeasurementCircuitInfo(qubit_pos, xstabilizer_pos, zstabilizer_pos, xmeasure_list, zmeasure_list, xstabilizer_pos, xstabilizer_pos)
+MeasurementCircuitInfo(qubit_pos::Vector{Int}, xstabilizer_pos::Vector{Int}, zstabilizer_pos::Vector{Int}, xmeasure_list::Vector{Dict{Int,Int}}, zmeasure_list::Vector{Dict{Int,Int}}) = MeasurementCircuitInfo(qubit_pos, xstabilizer_pos, zstabilizer_pos, xmeasure_list, zmeasure_list, xstabilizer_pos, zstabilizer_pos, qubit_pos)
 
 function make_measurement_circuit(mci::MeasurementCircuitInfo; with_measurement::Bool = false)
 	total_qubit_num = length(mci.qubit_pos) + length(mci.xstabilizer_pos) + length(mci.zstabilizer_pos)
 	qc = chain(total_qubit_num)
-	for x_pos in mci.H_before_list
+	for x_pos in mci.xstabilizer_pos
 		push!(qc, put(total_qubit_num, x_pos => H))
 	end
 	for (x_dict,z_dict) in zip(mci.xmeasure_list,mci.zmeasure_list)
@@ -237,11 +238,11 @@ function make_measurement_circuit(mci::MeasurementCircuitInfo; with_measurement:
 			push!(qc, control(total_qubit_num, z_value, z_key => X))
 		end
 	end
-	for x_pos in mci.H_after_list
+	for x_pos in mci.xstabilizer_output_pos
 		push!(qc, put(total_qubit_num, x_pos => H))
 	end
 	if with_measurement
-		push!(qc, put(total_qubit_num, mci.zstabilizer_pos ∪ mci.H_after_list => Measure(length(mci.xstabilizer_pos ∪ mci.H_after_list);resetto=bit"0")))
+		push!(qc, put(total_qubit_num, mci.xstabilizer_output_pos ∪ mci.zstabilizer_output_pos => Measure(length(mci.xstabilizer_output_pos ∪ mci.zstabilizer_output_pos);resetto=bit"0")))
 	end
 	return qc
 end
@@ -256,7 +257,9 @@ function generate_measurement_circuit_info(c::SurfaceCode; type::Int = 1,switch_
 	qubit_pos = collect(1:data_qubit_num)
 	xstabilizer_pos = collect(data_qubit_num+1:data_qubit_num+xstab_num)
 	zstabilizer_pos = collect(data_qubit_num+xstab_num+1:data_qubit_num+xstab_num+zstab_num)
-	H_after_list = copy(xstabilizer_pos)
+	xstabilizer_output_pos = copy(xstabilizer_pos)
+	zstabilizer_output_pos = copy(zstabilizer_pos)
+	qubit_output_pos = copy(qubit_pos)
 	if switch_data_qubit
 		xmeasure_list = [Dict{Int,Int}() for _ in 1:5]
 		zmeasure_list = [Dict{Int,Int}() for _ in 1:5]
@@ -276,7 +279,8 @@ function generate_measurement_circuit_info(c::SurfaceCode; type::Int = 1,switch_
 			if switch_data_qubit
 				xmeasure_list[4][pos_sorted[typex_4[type][4]]] = xidx+data_qubit_num
 				xmeasure_list[5][xidx+data_qubit_num] = pos_sorted[typex_4[type][4]]
-				replace!(H_after_list, xidx+data_qubit_num => pos_sorted[typex_4[type][4]])
+				replace!(xstabilizer_output_pos, xidx+data_qubit_num => pos_sorted[typex_4[type][4]])
+				replace!(qubit_output_pos, pos_sorted[typex_4[type][4]] => xidx+data_qubit_num)
 			else
 				xmeasure_list[4][xidx+data_qubit_num] = pos_sorted[typex_4[type][4]]
 			end
@@ -304,6 +308,8 @@ function generate_measurement_circuit_info(c::SurfaceCode; type::Int = 1,switch_
 			if switch_data_qubit
 				zmeasure_list[4][pos_sorted[typez_4[type][4]]] = zidx+data_qubit_num+xstab_num
 				zmeasure_list[5][zidx+data_qubit_num+xstab_num] = pos_sorted[typez_4[type][4]]
+				replace!(zstabilizer_output_pos, zidx+data_qubit_num+xstab_num => pos_sorted[typez_4[type][4]])
+				replace!(qubit_output_pos, pos_sorted[typez_4[type][4]] => zidx+data_qubit_num+xstab_num)
 			else
 				zmeasure_list[4][zidx+data_qubit_num+xstab_num] = pos_sorted[typez_4[type][4]]
 			end
@@ -318,5 +324,29 @@ function generate_measurement_circuit_info(c::SurfaceCode; type::Int = 1,switch_
 			end
 		end
 	end
-	return MeasurementCircuitInfo(qubit_pos, xstabilizer_pos, zstabilizer_pos, xmeasure_list, zmeasure_list, xstabilizer_pos, H_after_list)
+	return MeasurementCircuitInfo(qubit_pos, xstabilizer_pos, zstabilizer_pos, xmeasure_list, zmeasure_list, xstabilizer_output_pos, zstabilizer_output_pos, qubit_output_pos)
+end
+
+function permute_qubit_order(mci::MeasurementCircuitInfo, perm::Vector{Int})
+	@assert length(perm) == length(mci.qubit_pos) + length(mci.xstabilizer_pos) + length(mci.zstabilizer_pos)
+	new_qubit_pos = perm[mci.qubit_pos]
+	new_xstabilizer_pos = perm[mci.xstabilizer_pos]
+	new_zstabilizer_pos = perm[mci.zstabilizer_pos]
+
+	new_xmeasure_list = [Dict{Int,Int}() for _ in 1:length(mci.xmeasure_list)]
+	for (xdict,new_xdict) in zip(mci.xmeasure_list,new_xmeasure_list)
+		for (key,value) in xdict
+			new_xdict[perm[key]] = perm[value]
+		end
+	end
+	new_zmeasure_list = [Dict{Int,Int}() for _ in 1:length(mci.zmeasure_list)]
+	for (zdict,new_zdict) in zip(mci.zmeasure_list,new_zmeasure_list)
+		for (key,value) in zdict
+			new_zdict[perm[key]] = perm[value]
+		end
+	end
+	new_xstabilizer_output_pos = perm[mci.xstabilizer_output_pos]
+	new_zstabilizer_output_pos = perm[mci.zstabilizer_output_pos]
+	new_qubit_output_pos = perm[mci.qubit_output_pos]
+	return MeasurementCircuitInfo(new_qubit_pos, new_xstabilizer_pos, new_zstabilizer_pos, new_xmeasure_list, new_zmeasure_list, new_xstabilizer_output_pos, new_zstabilizer_output_pos, new_qubit_output_pos)
 end

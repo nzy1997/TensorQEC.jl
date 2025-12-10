@@ -47,6 +47,25 @@ end
     push!(qc2, control(6, 1, 6 => X))
     push!(qc2, put(6, 5 => H))
     @test qc == qc2
+
+    mci2 = TensorQEC.permute_qubit_order(mci, [2,3,4,5,6,1])
+    qc3 = TensorQEC.make_measurement_circuit(mci2)
+    # @test subroutine(6,qc3,[1,2,3,4,5,6]) == subroutine(6,qc,[2,3,4,5,6,1])
+    qc4 = chain(6)
+    push!(qc4, put(6, 6 => H))
+    push!(qc4, control(6, 6, 2 => X))
+    push!(qc4, control(6, 5, 1 => X))
+
+    push!(qc4, control(6, 6, 3 => X))
+    push!(qc4, control(6, 4, 1 => X))
+
+    push!(qc4, control(6, 6, 4 => X))
+    push!(qc4, control(6, 3, 1 => X))
+
+    push!(qc4, control(6, 6, 5 => X))
+    push!(qc4, control(6, 2, 1 => X))
+    push!(qc4, put(6, 6 => H))
+    @test qc3 == qc4
 end
 
 @testset "generate_measurement_circuit_info" begin
