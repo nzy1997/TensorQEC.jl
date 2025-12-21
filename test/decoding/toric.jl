@@ -12,7 +12,7 @@ using Random
     row_transformation = Mod2.(readdlm(joinpath(@__DIR__,"../codes","test_codes","color_code_3_row_transformation.txt"), Bool))
     column_transformation = Mod2.(readdlm(joinpath(@__DIR__,"../codes","test_codes","color_code_3_column_transformation.txt"), Bool))
 
-    ct = compile(TToricDecoder(IPDecoder(),row_transformation,column_transformation,1,2,9), tanner)
+    ct = compile(TToricDecoder(row_transformation,column_transformation,1,2,9), tanner)
 
     for _ in 1:100
     em = iid_error(0.05, 0.05, 0.05,tanner.stgx.nq)

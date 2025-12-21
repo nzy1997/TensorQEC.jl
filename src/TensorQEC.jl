@@ -25,6 +25,7 @@ using SCIP
 import Yao.YaoArrayRegister.StaticArrays: SizedVector
 import Yao.YaoArrayRegister.LuxurySparse
 import JSON
+using SparseBlossom
 
 # reexport some YaoAPI
 export mat
