@@ -436,3 +436,34 @@ function stabilizers(c::AbstractQECC)
 	end
 	return pauli_string
 end
+
+
+struct FileCode <: TensorQEC.CSSQuantumCode
+    filename::String
+    name::String
+end
+Base.show(io::IO, ::MIME"text/plain", p::FileCode) = show(io, p)
+Base.show(io::IO, p::FileCode) = print(io, "$(p.name)")
+
+function TensorQEC.stabilizers(code::FileCode; remove_linear_dependency::Bool = false)
+    if endswith(code.filename, ".json")
+        data = JSON.parsefile(code.filename)
+        H = Matrix{Bool}(reshape(Bool.(data["pcm"]), data["stabilizer_num"], data["qubit_num"]*2))
+    elseif endswith(code.filename, ".txt")
+        H = readdlm(code.filename, Bool)
+    else
+        error("Unsupported file extension: $(endswith(code.filename, ".json")) or $(endswith(code.filename, ".txt"))")
+    end
+    nq = size(H, 2) ÷ 2
+	pauli_string = PauliString{nq}[]
+
+	for i in axes(H, 1)
+		xs = findall(H[i,1:nq])
+		zs = findall(H[i,nq+1:end])
+		ys = xs ∩ zs
+		xs = setdiff(xs, ys)
+		zs = setdiff(zs, ys)
+		push!(pauli_string, PauliString(nq, xs => Pauli(1), ys => Pauli(2), zs => Pauli(3)))
+	end
+	return remove_linear_dependency ? TensorQEC.remove_linear_dependency(pauli_string) : pauli_string
+end

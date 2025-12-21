@@ -24,6 +24,7 @@ using JuMP
 using SCIP
 import Yao.YaoArrayRegister.StaticArrays: SizedVector
 import Yao.YaoArrayRegister.LuxurySparse
+import JSON
 
 # reexport some YaoAPI
 export mat
@@ -46,7 +47,7 @@ export clifford_network, CliffordNetwork, generate_tensor_network, circuit2tenso
 export syndrome_inference, measure_syndrome!, correction_pauli_string, generate_syndrome_dict, pauli_string_map_iter, inference, transformed_syndrome_dict
 
 # codes 
-export stabilizers, ToricCode, SurfaceCode, ShorCode, SteaneCode, Code832, Code422, Code1573, Code513, BivariateBicycleCode, Color488, Color666
+export stabilizers, ToricCode, SurfaceCode, ShorCode, SteaneCode, Code832, Code422, Code1573, Code513, BivariateBicycleCode, Color488, Color666, FileCode
 
 # encoder
 export CSSBimatrix, syndrome_transform, encode_stabilizers, place_qubits
@@ -73,7 +74,7 @@ export IndependentFlipError, IndependentDepolarizingError, random_error_pattern,
 @const_gate CCZ::ComplexF64 = diagm([1, 1, 1, 1, 1, 1, 1, -1])
 
 # decoder
-export BPDecoder, IPDecoder, MatchingDecoder, IPMatchingSolver, TNMAP, TNMMAP, TableDecoder
+export BPDecoder, IPDecoder, MatchingDecoder, IPMatchingSolver, TNMAP, TNMMAP, TableDecoder,TToricDecoder
 
 # decoding
 export decode, reduce2general, extract_decoding, DecodingResult, compile, IndependentDepolarizingDecodingProblem, ClassicalDecodingProblem, GeneralDecodingProblem
@@ -123,6 +124,7 @@ include("decoding/bposd.jl")
 include("decoding/tndecoder.jl")
 include("decoding/ipdecoder.jl")
 include("decoding/matching.jl")
+include("decoding/toric.jl")
 
 
 # deprecate

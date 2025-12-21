@@ -203,3 +203,10 @@ end
 	1  1  0  0  0  1  0  1;
 	0  0  1  1  1  0  1  0]
 end
+
+@testset "FileCode" begin
+	code = FileCode(joinpath(@__DIR__, "test_codes","color_code_3.json"), "test_code")
+	st = stabilizers(code)
+	@test length(st) == 50
+	@test code_distance(CSSTannerGraph(st)) == 6
+end
