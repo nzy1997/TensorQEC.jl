@@ -8,7 +8,6 @@ docs/src/assets/indigo.css
 docs/src/notebooks
 Manifest.toml
 .vscode/
-*.txt
 .DS_Store
 /extemp/
 /figures/
