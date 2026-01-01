@@ -1,8 +1,11 @@
 struct TToricDecoder <: AbstractGeneralDecoder 
     row_transformation::Matrix{Mod2}
     column_transformation::Matrix{Mod2}
-    product_num::Int
-    toric_num::Int
+    x_product_pos::Vector{Tuple{Int,Int}}
+    z_product_pos::Vector{Tuple{Int,Int}}
+    toric_qubit_pos::Vector{Vector{Int}}
+    toric_x_check_pos::Vector{Vector{Int}}
+    toric_z_check_pos::Vector{Vector{Int}}
     cg_size::Int
 end
 
@@ -70,10 +73,15 @@ end
 struct CompiledTTD <: CompiledDecoder
     ttd::TToricDecoder
     qubit_num::Int
-    matching_graphx::MatchingGraph
-    edge2qubitx::Matrix{Int}
-    matching_graphz::MatchingGraph
-    edge2qubitz::Matrix{Int}
+    x_product_pos::Vector{NTuple{2,Int}}
+    z_product_pos::Vector{NTuple{2,Int}}
+    toric_qubit_pos::Vector{Vector{Int}}
+    toric_x_check_rows::Vector{Vector{Int}}
+    toric_z_check_rows::Vector{Vector{Int}}
+    matching_graphx::Vector{MatchingGraph}
+    edge2qubitx::Vector{Matrix{Int}}
+    matching_graphz::Vector{MatchingGraph}
+    edge2qubitz::Vector{Matrix{Int}}
     row_packed::PackedMod2Matrix
     col_packed::PackedMod2Matrix
     s_buf::Vector{Mod2}
@@ -90,17 +98,57 @@ end
 function compile(decoder::TToricDecoder, iddp::IndependentDepolarizingDecodingProblem)
     qubit_num = iddp.tanner.stgx.nq
     syd_num = qubit_num ÷ 2
-    @assert syd_num == (decoder.toric_num + decoder.product_num )* decoder.cg_size "a"
-    # @show syd_num
-    # @show decoder.toric_num
-    # @show decoder.product_num
-    # @show decoder.cg_size
-    # @show qubit_num
-    # @show size(iddp.tanner.stgx.H)
+    @assert syd_num % decoder.cg_size == 0 "syndrome block size mismatch"
+    blocks_per_half = syd_num ÷ decoder.cg_size
+    check_block(pos::Int) = (1 <= pos <= 2 * blocks_per_half) ? pos : error("invalid check position: $pos")
+    x_qubit_block(pos::Int) = (isodd(pos) && (pos + 1) ÷ 2 <= blocks_per_half) ? (pos + 1) ÷ 2 : error("invalid x qubit position: $pos")
+    z_qubit_block(pos::Int) = (iseven(pos) && pos ÷ 2 <= blocks_per_half) ? pos ÷ 2 : error("invalid z qubit position: $pos")
+    expand_rows(pos::Vector{Int}) = begin
+        rows = Int[]
+        for p in pos
+            block = check_block(p)
+            append!(rows, (block - 1) * decoder.cg_size + 1:block * decoder.cg_size)
+        end
+        return rows
+    end
+    x_product_pos = Vector{NTuple{2,Int}}(undef, length(decoder.x_product_pos))
+    for (i, (check_pos, qubit_pos)) in enumerate(decoder.x_product_pos)
+        x_product_pos[i] = (check_block(check_pos), x_qubit_block(qubit_pos))
+    end
+    z_product_pos = Vector{NTuple{2,Int}}(undef, length(decoder.z_product_pos))
+    for (i, (check_pos, qubit_pos)) in enumerate(decoder.z_product_pos)
+        z_product_pos[i] = (check_block(check_pos), z_qubit_block(qubit_pos))
+    end
+    toric_num = length(decoder.toric_qubit_pos)
+    @assert toric_num == length(decoder.toric_x_check_pos) "toric_qubit_pos and toric_x_check_pos must have the same length"
+    @assert toric_num == length(decoder.toric_z_check_pos) "toric_qubit_pos and toric_z_check_pos must have the same length"
+    toric_qubit_pos = Vector{Vector{Int}}(undef, toric_num)
+    toric_x_check_rows = Vector{Vector{Int}}(undef, toric_num)
+    toric_z_check_rows = Vector{Vector{Int}}(undef, toric_num)
+    for i in 1:toric_num
+        toric_qubit_pos[i] = expand_rows(Int.(decoder.toric_qubit_pos[i]))
+        toric_x_check_rows[i] = expand_rows(Int.(decoder.toric_x_check_pos[i]))
+        toric_z_check_rows[i] = expand_rows(Int.(decoder.toric_z_check_pos[i]))
+    end
+    for pos in toric_qubit_pos
+        for q in pos
+            @assert 1 <= q <= qubit_num "invalid toric qubit position: $q"
+        end
+    end
     H = [iddp.tanner.stgx.H zeros(Mod2,syd_num,qubit_num); zeros(Mod2,syd_num,qubit_num) iddp.tanner.stgz.H];
     H2 = decoder.row_transformation* H*decoder.column_transformation
-    matching_graphx, edge2qubitx = parity_matrix2matching_graph(H2[decoder.product_num*decoder.cg_size+1:decoder.product_num*decoder.cg_size+decoder.cg_size,2*decoder.product_num*decoder.cg_size+1:2*decoder.product_num*decoder.cg_size+2*decoder.cg_size])
-    matching_graphz, edge2qubitz = parity_matrix2matching_graph(H2[syd_num+decoder.product_num*decoder.cg_size+1:syd_num+decoder.product_num*decoder.cg_size+decoder.cg_size,qubit_num+2*decoder.product_num*decoder.cg_size+1:2*decoder.product_num*decoder.cg_size+2*decoder.cg_size+qubit_num])
+    matching_graphx = Vector{MatchingGraph}(undef, toric_num)
+    edge2qubitx = Vector{Matrix{Int}}(undef, toric_num)
+    matching_graphz = Vector{MatchingGraph}(undef, toric_num)
+    edge2qubitz = Vector{Matrix{Int}}(undef, toric_num)
+    for i in 1:toric_num
+        x_rows = toric_x_check_rows[i]
+        x_cols = toric_qubit_pos[i]
+        matching_graphx[i], edge2qubitx[i] = parity_matrix2matching_graph(Matrix(@view H2[x_rows, x_cols]))
+        z_rows = toric_z_check_rows[i]
+        z_cols = [q + qubit_num for q in toric_qubit_pos[i]]
+        matching_graphz[i], edge2qubitz[i] = parity_matrix2matching_graph(Matrix(@view H2[z_rows, z_cols]))
+    end
     row_packed = pack_mod2_rows(decoder.row_transformation)
     col_packed = pack_mod2_rows(decoder.column_transformation)
     s_buf = Vector{Mod2}(undef, size(decoder.row_transformation, 2))
@@ -117,6 +165,11 @@ function compile(decoder::TToricDecoder, iddp::IndependentDepolarizingDecodingPr
     return CompiledTTD(
         decoder,
         qubit_num,
+        x_product_pos,
+        z_product_pos,
+        toric_qubit_pos,
+        toric_x_check_rows,
+        toric_z_check_rows,
         matching_graphx,
         edge2qubitx,
         matching_graphz,
@@ -138,7 +191,7 @@ end
 
 function decode(ci::CompiledTTD, syndrome::CSSSyndrome)
     num_qubits = ci.qubit_num
-    product_len = ci.ttd.cg_size * ci.ttd.product_num
+    cg_size = ci.ttd.cg_size
     s = ci.s_buf
     copyto!(s, 1, syndrome.sx, 1, length(syndrome.sx))
     copyto!(s, length(syndrome.sx) + 1, syndrome.sz, 1, length(syndrome.sz))
@@ -146,46 +199,43 @@ function decode(ci::CompiledTTD, syndrome::CSSSyndrome)
     pack_mod2_vec!(ci.s_bits_buf, s)
     mul_packed!(synd, ci.row_packed, ci.s_bits_buf)
     # @show synd
-    xstab_num = length(synd) ÷ 2
     ep = ci.ep_buf
     fill!(ep, zero(Mod2))
-    @inbounds for i in 1:product_len
-        ep[i + num_qubits] = synd[i]
-        ep[i + product_len] = synd[i + xstab_num]
+    @inbounds for (check_block, qubit_block) in ci.x_product_pos
+        row_start = (check_block - 1) * cg_size + 1
+        col_start = (qubit_block - 1) * 2 * cg_size + 1
+        for j in 1:cg_size
+            ep[num_qubits + col_start + j - 1] = synd[row_start + j - 1]
+        end
+    end
+    @inbounds for (check_block, qubit_block) in ci.z_product_pos
+        row_start = (check_block - 1) * cg_size + 1
+        col_start = (qubit_block - 1) * 2 * cg_size + 1
+        for j in 1:cg_size
+            ep[col_start + cg_size + j - 1] = synd[row_start + j - 1]
+        end
     end
     # @show ep
 
     xevents = ci.xevents_buf
     zevents = ci.zevents_buf
-    for i in 1:ci.ttd.toric_num
-        fill_events_mod2!(
-            xevents,
-            synd,
-            product_len + 1 + ci.ttd.cg_size * (i - 1),
-            ci.ttd.cg_size,
-        )
-        error_vecx = decode_to_edges(ci.matching_graphx, xevents)
+    for i in 1:length(ci.toric_qubit_pos)
+        fill_events_mod2_indices!(xevents, synd, ci.toric_x_check_rows[i])
+        error_vecx = decode_to_edges(ci.matching_graphx[i], xevents)
         @inbounds for j in 1:length(error_vecx) ÷ 2
+            col = ci.toric_qubit_pos[i][ci.edge2qubitx[i][error_vecx[2 * j - 1], error_vecx[2 * j]]]
             ep[
                 num_qubits +
-                2 * product_len +
-                2 * ci.ttd.cg_size * (i - 1) +
-                ci.edge2qubitx[error_vecx[2 * j - 1], error_vecx[2 * j]]
+                col
             ] = Mod2(1)
         end
 
-        fill_events_mod2!(
-            zevents,
-            synd,
-            xstab_num + product_len + 1 + ci.ttd.cg_size * (i - 1),
-            ci.ttd.cg_size,
-        )
-        error_vecz = decode_to_edges(ci.matching_graphz, zevents)
+        fill_events_mod2_indices!(zevents, synd, ci.toric_z_check_rows[i])
+        error_vecz = decode_to_edges(ci.matching_graphz[i], zevents)
         @inbounds for j in 1:length(error_vecz) ÷ 2
+            col = ci.toric_qubit_pos[i][ci.edge2qubitz[i][error_vecz[2 * j - 1], error_vecz[2 * j]]]
             ep[
-                2 * product_len +
-                2 * ci.ttd.cg_size * (i - 1) +
-                ci.edge2qubitz[error_vecz[2 * j - 1], error_vecz[2 * j]]
+                col
             ] = Mod2(1)
         end
         # ep[2*ci.ttd.cg_size*ci.ttd.product_num+1+2*ci.ttd.cg_size*(i-1):2*ci.ttd.cg_size*ci.ttd.product_num+2*ci.ttd.cg_size*i] .= res.error_pattern.xerror
@@ -207,7 +257,11 @@ function decode(ci::CompiledTTD, syndrome::CSSSyndrome)
 end
 
 function parity_matrix2matching_graph(H::Matrix{Mod2})
-    m = MatchingGraph(size(H, 2), 0)
+    n = max(size(H, 1), size(H, 2))
+    if isodd(n)
+        n += 1
+    end
+    m = MatchingGraph(n, 0)
     edge2qubit = zeros(Int, size(H, 1),size(H,1))
     for i in 1:size(H, 2)
         a,b = findall(v->v.x,H[:,i])
@@ -241,4 +295,92 @@ function fill_events_mod2!(buf::Vector{Int}, synd::AbstractVector{Mod2}, start::
     end
     resize!(buf, count)
     return buf
+end
+
+function fill_events_mod2_indices!(buf::Vector{Int}, synd::AbstractVector{Mod2}, indices::AbstractVector{Int})
+    if length(buf) < length(indices)
+        resize!(buf, length(indices))
+    end
+    count = 0
+    @inbounds for j in 1:length(indices)
+        if synd[indices[j]].x
+            count += 1
+            buf[count] = j
+        end
+    end
+    resize!(buf, count)
+    return buf
+end
+
+function _mod2_matrix_to_ints(mat::AbstractMatrix{Mod2})
+    rows, cols = size(mat)
+    out = Vector{Vector{Int}}(undef, rows)
+    @inbounds for i in 1:rows
+        row = Vector{Int}(undef, cols)
+        for j in 1:cols
+            row[j] = mat[i, j].x ? 1 : 0
+        end
+        out[i] = row
+    end
+    return out
+end
+
+function _mod2_matrix_from_json(arr, label::String)
+    rows = length(arr)
+    cols = rows == 0 ? 0 : length(arr[1])
+    mat = Matrix{Mod2}(undef, rows, cols)
+    @inbounds for i in 1:rows
+        row = arr[i]
+        @assert length(row) == cols "$label is ragged"
+        for j in 1:cols
+            mat[i, j] = Mod2(row[j] != 0)
+        end
+    end
+    return mat
+end
+
+function save_ttoric_decoder(filename::AbstractString, decoder::TToricDecoder)
+    data = Dict{String, Any}(
+        "format" => "TToricDecoder",
+        "cg_size" => decoder.cg_size,
+        "x_product_pos" => [[a, b] for (a, b) in decoder.x_product_pos],
+        "z_product_pos" => [[a, b] for (a, b) in decoder.z_product_pos],
+        "toric_qubit_pos" => [Int.(pos) for pos in decoder.toric_qubit_pos],
+        "toric_x_check_pos" => [Int.(pos) for pos in decoder.toric_x_check_pos],
+        "toric_z_check_pos" => [Int.(pos) for pos in decoder.toric_z_check_pos],
+        "row_transformation" => _mod2_matrix_to_ints(decoder.row_transformation),
+        "column_transformation" => _mod2_matrix_to_ints(decoder.column_transformation),
+    )
+    open(filename, "w") do io
+        JSON.print(io, data, 2)
+    end
+    return nothing
+end
+
+function load_ttoric_decoder(filename::AbstractString;switch_xz_part = false)
+    data = JSON.parsefile(filename)
+    format = get(data, "format", "TToricDecoder")
+    @assert format == "TToricDecoder" "unsupported format: $format"
+    row = _mod2_matrix_from_json(data["row_transformation"], "row_transformation")
+    col = _mod2_matrix_from_json(data["column_transformation"], "column_transformation")
+    x_product_pos = [(Int(pos[1]), Int(pos[2])) for pos in data["x_product_pos"]]
+    z_product_pos = [(Int(pos[1]), Int(pos[2])) for pos in data["z_product_pos"]]
+    toric_qubit_pos = [Int.(pos) for pos in data["toric_qubit_pos"]]
+    toric_x_check_pos = [Int.(pos) for pos in data["toric_x_check_pos"]]
+    toric_z_check_pos = [Int.(pos) for pos in data["toric_z_check_pos"]]
+    cg_size = Int(data["cg_size"])
+    if switch_xz_part
+        x_product_pos, z_product_pos = z_product_pos, x_product_pos
+        toric_x_check_pos, toric_z_check_pos = toric_z_check_pos, toric_x_check_pos
+    end
+    return TToricDecoder(
+        row,
+        col,
+        x_product_pos,
+        z_product_pos,
+        toric_qubit_pos,
+        toric_x_check_pos,
+        toric_z_check_pos,
+        cg_size,
+    )
 end

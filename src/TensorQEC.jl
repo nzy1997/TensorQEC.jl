@@ -75,7 +75,7 @@ export IndependentFlipError, IndependentDepolarizingError, random_error_pattern,
 @const_gate CCZ::ComplexF64 = diagm([1, 1, 1, 1, 1, 1, 1, -1])
 
 # decoder
-export BPDecoder, IPDecoder, MatchingDecoder, IPMatchingSolver, TNMAP, TNMMAP, TableDecoder,TToricDecoder
+export BPDecoder, IPDecoder, MatchingDecoder, IPMatchingSolver, TNMAP, TNMMAP, TableDecoder, TToricDecoder
 
 # decoding
 export decode, reduce2general, extract_decoding, DecodingResult, compile, IndependentDepolarizingDecodingProblem, ClassicalDecodingProblem, GeneralDecodingProblem
