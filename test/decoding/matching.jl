@@ -49,3 +49,17 @@ end
     res = decode(ct,syn)
     @test syn == syndrome_extraction(res.error_pattern, tanner.stgz)
 end
+
+@testset "SimpleMatchingDecoder toric code" begin
+    Random.seed!(321)
+    d = 3
+    sts = stabilizers(ToricCode(d, d);rm_linear_dependency = false)
+    tanner = CSSTannerGraph(sts)
+    em = iid_error(0.05, tanner)
+    ep = random_error_pattern(em)
+    syn = syndrome_extraction(ep, tanner)
+
+    decoder = SimpleMatchingDecoder()
+    res = decode(decoder, tanner, syn, em)
+    @test syn == syndrome_extraction(res.error_pattern, tanner)
+end

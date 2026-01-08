@@ -177,3 +177,42 @@ function decode(cm::CompiledMatching,syndrome::SimpleSyndrome)
     ev = solve_matching(mwb,cm.solver)
     return DecodingResult(true, extract_decoding(cm.fwg,ev,cm.qubit_num))
 end
+
+"""
+    SimpleMatchingDecoder <: AbstractClassicalDecoder
+
+A matching decoder that uses SparseBlossom on Tanner graphs with column weight 2.
+"""
+struct SimpleMatchingDecoder <: AbstractClassicalDecoder end
+
+struct CompiledSimpleMatching <: CompiledDecoder
+    matching_graph::MatchingGraph
+    edge2qubit::Matrix{Int}
+    qubit_num::Int
+    events_buf::Vector{Int}
+end
+
+function compile(::SimpleMatchingDecoder, prob::ClassicalDecodingProblem)
+    H = prob.tanner.H
+    for i in 1:size(H, 2)
+        @assert count(v -> v.x, H[:, i]) == 2 "SimpleMatchingDecoder requires column weight 2."
+    end
+    matching_graph, edge2qubit = parity_matrix2matching_graph(H)
+    events_buf = Int[]
+    sizehint!(events_buf, size(H, 1))
+    return CompiledSimpleMatching(matching_graph, edge2qubit, prob.tanner.nq, events_buf)
+end
+
+function decode(cm::CompiledSimpleMatching, syndrome::SimpleSyndrome)
+    ep = fill(Mod2(0), cm.qubit_num)
+    events = cm.events_buf
+    fill_events_mod2!(events, syndrome.s, 1, length(syndrome.s))
+    error_vec = decode_to_edges(cm.matching_graph, events)
+    @inbounds for j in 1:2:length(error_vec)
+        qubit = cm.edge2qubit[error_vec[j], error_vec[j + 1]]
+        if qubit != 0
+            ep[qubit] += Mod2(1)
+        end
+    end
+    return DecodingResult(true, ep)
+end
