@@ -418,6 +418,93 @@ function stabilizers(c::TriangularColorCode)
 	return pauli_string
 end
 
+# === QECCore Interface Implementation ===
+
+# Helper: convert PauliString stabilizers to a parity matrix (X|Z) format
+function _stabilizers_to_parity_matrix(sts::AbstractVector{<:PauliString{N}}) where N
+    pm = zeros(Bool, length(sts), 2*N)
+    for (i, st) in enumerate(sts)
+        for j in 1:N
+            p = st[j]
+            if p == Pauli(1)      # X
+                pm[i, j] = true
+            elseif p == Pauli(3)  # Z
+                pm[i, j+N] = true
+            elseif p == Pauli(2)  # Y
+                pm[i, j] = true
+                pm[i, j+N] = true
+            end
+        end
+    end
+    return pm
+end
+
+# Helper: extract X-only stabilizers' parity matrix
+function _x_parity_matrix(sts::AbstractVector{<:PauliString{N}}) where N
+    x_stabs = filter(s -> all(p -> p == Pauli(0) || p == Pauli(1), s), sts)
+    pm = zeros(Bool, length(x_stabs), N)
+    for (i, st) in enumerate(x_stabs)
+        for j in 1:N
+            pm[i, j] = (st[j] == Pauli(1))
+        end
+    end
+    return pm
+end
+
+# Helper: extract Z-only stabilizers' parity matrix
+function _z_parity_matrix(sts::AbstractVector{<:PauliString{N}}) where N
+    z_stabs = filter(s -> all(p -> p == Pauli(0) || p == Pauli(3), s), sts)
+    pm = zeros(Bool, length(z_stabs), N)
+    for (i, st) in enumerate(z_stabs)
+        for j in 1:N
+            pm[i, j] = (st[j] == Pauli(3))
+        end
+    end
+    return pm
+end
+
+# Define parity_matrix for each concrete TensorQEC code type
+# (These types have their own stabilizers() methods, so no recursion risk)
+QECCore.parity_matrix(c::SurfaceCode) = _stabilizers_to_parity_matrix(stabilizers(c))
+QECCore.parity_matrix(c::ShorCode) = _stabilizers_to_parity_matrix(stabilizers(c))
+QECCore.parity_matrix(c::SteaneCode) = _stabilizers_to_parity_matrix(stabilizers(c))
+QECCore.parity_matrix(c::Code832) = _stabilizers_to_parity_matrix(stabilizers(c))
+QECCore.parity_matrix(c::Code422) = _stabilizers_to_parity_matrix(stabilizers(c))
+QECCore.parity_matrix(c::Code1573) = _stabilizers_to_parity_matrix(stabilizers(c))
+QECCore.parity_matrix(c::Code513) = _stabilizers_to_parity_matrix(stabilizers(c))
+QECCore.parity_matrix(c::BivariateBicycleCode) = _stabilizers_to_parity_matrix(stabilizers(c))
+QECCore.parity_matrix(c::TriangularColorCode) = _stabilizers_to_parity_matrix(stabilizers(c))
+
+# code_k: number of logical qubits (not defined as a fallback in QECCore)
+QECCore.code_k(c::SurfaceCode) = code_n(c) - code_s(c)
+QECCore.code_k(c::ShorCode) = code_n(c) - code_s(c)
+QECCore.code_k(c::SteaneCode) = code_n(c) - code_s(c)
+QECCore.code_k(c::Code832) = code_n(c) - code_s(c)
+QECCore.code_k(c::Code422) = code_n(c) - code_s(c)
+QECCore.code_k(c::Code1573) = code_n(c) - code_s(c)
+QECCore.code_k(c::Code513) = code_n(c) - code_s(c)
+QECCore.code_k(c::BivariateBicycleCode) = code_n(c) - code_s(c)
+QECCore.code_k(c::TriangularColorCode) = code_n(c) - code_s(c)
+
+# parity_matrix_x and parity_matrix_z for CSS code types
+QECCore.parity_matrix_x(c::SurfaceCode) = _x_parity_matrix(stabilizers(c))
+QECCore.parity_matrix_x(c::ShorCode) = _x_parity_matrix(stabilizers(c))
+QECCore.parity_matrix_x(c::SteaneCode) = _x_parity_matrix(stabilizers(c))
+QECCore.parity_matrix_x(c::Code832) = _x_parity_matrix(stabilizers(c))
+QECCore.parity_matrix_x(c::Code422) = _x_parity_matrix(stabilizers(c))
+QECCore.parity_matrix_x(c::Code1573) = _x_parity_matrix(stabilizers(c))
+QECCore.parity_matrix_x(c::BivariateBicycleCode) = _x_parity_matrix(stabilizers(c))
+QECCore.parity_matrix_x(c::TriangularColorCode) = _x_parity_matrix(stabilizers(c))
+
+QECCore.parity_matrix_z(c::SurfaceCode) = _z_parity_matrix(stabilizers(c))
+QECCore.parity_matrix_z(c::ShorCode) = _z_parity_matrix(stabilizers(c))
+QECCore.parity_matrix_z(c::SteaneCode) = _z_parity_matrix(stabilizers(c))
+QECCore.parity_matrix_z(c::Code832) = _z_parity_matrix(stabilizers(c))
+QECCore.parity_matrix_z(c::Code422) = _z_parity_matrix(stabilizers(c))
+QECCore.parity_matrix_z(c::Code1573) = _z_parity_matrix(stabilizers(c))
+QECCore.parity_matrix_z(c::BivariateBicycleCode) = _z_parity_matrix(stabilizers(c))
+QECCore.parity_matrix_z(c::TriangularColorCode) = _z_parity_matrix(stabilizers(c))
+
 # codes from QECCore
 function stabilizers(c::AbstractQECC)
 	pm = parity_matrix(c)
