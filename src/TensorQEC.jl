@@ -80,46 +80,64 @@ export coherent_error_unitary, fidelity_tensornetwork, simulation_tensornetwork
 
 @const_gate CCZ::ComplexF64 = diagm([1, 1, 1, 1, 1, 1, 1, -1])
 
+# === Core: Mod2 Arithmetic ===
 include("codes/mod2.jl")
+
+# === Core: Pauli Algebra & Clifford ===
 include("clifford/paulistring.jl")
 include("clifford/cliffordgroup.jl")
 include("clifford/paulibasis.jl")
+include("clifford/tableaux.jl")
 
-include("nonclifford/tensornetwork.jl")
+# === Codes ===
 include("codes/codes.jl")
 include("codes/ldpc.jl")
-
 include("codes/encoder.jl")
-include("decoding/error_model.jl")
-include("decoding/interfaces.jl")
-
-include("decoding/inferenceswithencoder.jl")
-include("decoding/measurement.jl")
-include("decoding/truthtable.jl")
-include("nonclifford/simulation.jl")
-
-include("clifford/tableaux.jl")
-include("decoding/threshold.jl")
-include("codes/code_distance.jl")
-include("nonclifford/error_learning.jl")
-include("multiprocessing.jl")
 include("codes/gaussian_elimination.jl")
-include("nonclifford/correction.jl")
+include("codes/code_distance.jl")
 
-# decoders
+# === Tensor Network Core ===
+include("nonclifford/tensornetwork.jl")
+
+# === Error Models & Syndrome ===
+include("decoding/error_model.jl")
+
+# === Detector Error Model ===
 include("decoding/dem.jl")
+
+# === Decoding Framework ===
+include("decoding/interfaces.jl")
 include("decoding/general_decoding.jl")
+
+# === Decoders ===
 include("decoding/bposd.jl")
 include("decoding/tndecoder.jl")
 include("decoding/ipdecoder.jl")
 include("decoding/matching.jl")
+include("decoding/truthtable.jl")
 
+# === Measurement & Threshold ===
+include("decoding/measurement.jl")
+include("decoding/threshold.jl")
 
-# deprecate
-include("deprecate.jl")
+# === Tensor Network Simulation ===
+include("nonclifford/simulation.jl")
+include("nonclifford/error_learning.jl")
+include("nonclifford/correction.jl")
 
+# === Inference (legacy) ===
+include("decoding/inferenceswithencoder.jl")
+
+# === Yao Block Extensions ===
 include("yaoblocks.jl")
 
+# === STIM Parser ===
 include("stim_parser/stim_parser.jl")
+
+# === Multiprocessing ===
+include("multiprocessing.jl")
+
+# === Deprecations ===
+include("deprecate.jl")
 
 end
