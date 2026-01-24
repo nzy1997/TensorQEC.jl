@@ -71,7 +71,7 @@ end
         ComplexF64[1/2, 1/2, -1/2, -1/2], ComplexF64[1/2, -1/2, -1/2, 1/2],
         ComplexF64[1/2, 0.5im, 0.5im, -1/2], ComplexF64[1/2, 0.5im, -0.5im, 1/2],
         ComplexF64[1/2, -0.5im, 0.5im, 1/2], ComplexF64[1/2, -0.5im, -0.5im, -1/2]]
-    td = TrainningData([probability_channel(qc, s) for s in state],state)
+    td = TrainingData([probability_channel(qc, s) for s in state],state)
 
     optnet,p_pos = probability_tn_channel(qc, ComplexF64[1/2, -0.5im, -0.5im, -1/2])
     model= [fill(0.01,15)]
@@ -94,7 +94,7 @@ end
         ComplexF64[1/2, 1/2, -1/2, -1/2], ComplexF64[1/2, -1/2, -1/2, 1/2],
         ComplexF64[1/2, 0.5im, 0.5im, -1/2], ComplexF64[1/2, 0.5im, -0.5im, 1/2],
         ComplexF64[1/2, -0.5im, 0.5im, 1/2], ComplexF64[1/2, -0.5im, -0.5im, -1/2]]
-    td = TrainningData([probability_channel(qc, s) for s in state],state)
+    td = TrainingData([probability_channel(qc, s) for s in state],state)
 
     optnet,p_pos = probability_tn_channel(qc, ComplexF64[1/2, -0.5im, -0.5im, -1/2])
     model= [fill(0.01,3),fill(0.01,3)]
@@ -110,7 +110,7 @@ end
     umat = rand_unitary(4)
     qc = chain(put(2, (1, 2) => matblock(umat)), put(2, (1, 2) => unitary_channel2))
     optnet,p_pos = probability_tn_channel(qc, ComplexF64[1/2, -0.5im, -0.5im, -1/2])
-    td = TrainningData([0.25],[ComplexF64[0, 1, 0, 0]])
+    td = TrainingData([0.25],[ComplexF64[0, 1, 0, 0]])
 
     p = fill(0.01,15)
     Δ = 1e-6

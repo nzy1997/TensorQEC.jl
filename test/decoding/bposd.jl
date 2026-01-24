@@ -13,15 +13,15 @@ using Random
     @test bpres.error_pattern == error_pattern
 end
 
-@testset "check_linear_indepent" begin
+@testset "check_linear_independent" begin
     H = Transpose(Matrix(Bool[1 1 1 0; 0 1 1 1]'))
-    @test check_linear_indepent(H) == true
+    @test check_linear_independent(H) == true
     H = Transpose(Matrix(Bool[1 1 1 0; 0 1 1 0; 0 0 0 1; 1 0 0 0]'))
-    @test check_linear_indepent(H) == false
+    @test check_linear_independent(H) == false
     H = Transpose(Matrix(Mod2[1 1 1 0; 0 1 1 1]'))
-    @test check_linear_indepent(H) == true
+    @test check_linear_independent(H) == true
     H = Transpose(Matrix(Mod2[1 1 1 0; 0 1 1 0; 0 0 0 1; 1 0 0 0]'))
-    @test check_linear_indepent(H) == false
+    @test check_linear_independent(H) == false
 end
 
 @testset "osd" begin

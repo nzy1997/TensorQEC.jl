@@ -8,3 +8,8 @@ import Yao: apply!
 @deprecate to_perm_matrix(m::AbstractBlock) to_perm_matrix(pauli_repr(m))
 
 @deprecate perm_of_pauligroup(ps, operation::Pair) operation.second(ps, operation.first)
+
+# v0.3 typo fixes
+@deprecate check_linear_indepent(args...) check_linear_independent(args...)
+@deprecate qc2enisum(args...) qc2einsum(args...)
+const TrainningData = TrainingData

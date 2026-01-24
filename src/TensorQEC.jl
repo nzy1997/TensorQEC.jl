@@ -58,11 +58,11 @@ export measure_circuit_fault_tol, measure_circuit_steane, measurement_circuit
 export make_table, save_table, load_table, correction_circuit, TruthTable, correction_dict
 
 # simulation
-export ComplexConj, SymbolRecorder, IdentityRecorder, ein_circ, QCInfo, qc2enisum
+export ComplexConj, SymbolRecorder, IdentityRecorder, ein_circ, QCInfo, qc2einsum
 export coherent_error_unitary, error_quantum_circuit, toput, error_pairs, fidelity_tensornetwork, simulation_tensornetwork, error_quantum_circuit_pair_replace
 
 # ldpc
-export SimpleTannerGraph, syndrome_extraction, product_graph, CSSTannerGraph, dual_graph, get_graph, belief_propagation, random_ldpc, check_linear_indepent
+export SimpleTannerGraph, syndrome_extraction, product_graph, CSSTannerGraph, dual_graph, get_graph, belief_propagation, random_ldpc, check_linear_independent
 export osd, check_logical_error
 
 # tableaux
@@ -85,7 +85,7 @@ export multi_round_qec
 export code_distance, logical_operator
 
 # error_learning
-export TrainningData, error_learning
+export TrainingData, error_learning
 
 # stim parser
 export parse_stim_file

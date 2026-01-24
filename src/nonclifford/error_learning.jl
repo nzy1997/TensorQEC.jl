@@ -91,7 +91,7 @@ function probability_tn_channel(qc::ChainBlock, final_state::Vector{Complex{Floa
     qc_info = QCInfo(Int[],collect(1:number_qubits),number_qubits)
     qc2= YaoBlocks.Optimise.simplify(qc2; rules=[to_basictypes, Optimise.eliminate_nested])
     qce,srs = ein_circ(qc2,qc_info)
-    tn,_,_ = qc2enisum(qce,srs,qc_info)
+    tn,_,_ = qc2einsum(qce,srs,qc_info)
     optnet = optimize_code(tn, TreeSA(), OMEinsum.MergeVectors())
     return optnet,getfield.(tc,:tensor_pos)
 end
@@ -105,7 +105,7 @@ function channel2tensor(uc::MixedUnitaryChannel)
     return cat([reshape(mat(x),(fill(2,k)...,1)) for x in uc.operators]...;dims = k+1),cat([reshape(mat(x'),(fill(2,k)...,1)) for x in uc.operators]...;dims = k+1),ComplexF64.(uc.probs)
 end
 
-struct TrainningData
+struct TrainingData
     pvec::Vector{Float64}
     states::Vector{Vector{ComplexF64}}
 end
@@ -128,19 +128,19 @@ function get_grad(code::Union{SlicedEinsum, NestedEinsum}, p::Float64,tensors::V
     return [-p*1 ./ (real(p_app[])) .* (grad[x]) for x in p_pos]
 end
 
-function get_grad(code::Union{SlicedEinsum, NestedEinsum}, tensors::Vector{AbstractArray{ComplexF64}},p_pos::Vector{Int}, td::TrainningData,pvec::Vector{Vector{Float64}})
+function get_grad(code::Union{SlicedEinsum, NestedEinsum}, tensors::Vector{AbstractArray{ComplexF64}},p_pos::Vector{Int}, td::TrainingData,pvec::Vector{Vector{Float64}})
     pvec_input = [[1 - sum(x), x...] for x in pvec]
     temp = sum([get_grad(code,td.pvec[x],generate_new_tensor(tensors,p_pos,td.states[x],pvec_input),p_pos) for x in 1:length(td.pvec)])
     return [x[2:end] .- x[1] for x in temp]
 end
 
-function loss_function(code::SlicedEinsum,tensors::Vector{AbstractArray{ComplexF64}},p_pos::Vector{Int}, td::TrainningData,pvec::Vector{Vector{Float64}})
+function loss_function(code::SlicedEinsum,tensors::Vector{AbstractArray{ComplexF64}},p_pos::Vector{Int}, td::TrainingData,pvec::Vector{Vector{Float64}})
     pvec_input = [[1 - sum(x), x...] for x in pvec]
     # return sum([(real(code(generate_new_tensor(tensors,p_pos,td.states[x],pvec_input)...)[])-td.pvec[x])^2 for x in 1:length(td.pvec)])
     return sum([-td.pvec[x] * log(real(code(generate_new_tensor(tensors,p_pos,td.states[x],pvec_input)...)[])) for x in 1:length(td.pvec)])
 end
 
-function error_learning(model,td::TrainningData,optnet,p_pos::Vector{Int};iter=10)
+function error_learning(model,td::TrainingData,optnet,p_pos::Vector{Int};iter=10)
     model = copy(model)
     train_state = Optimisers.setup(Optimisers.Adam(), model)
     for i in 1:iter

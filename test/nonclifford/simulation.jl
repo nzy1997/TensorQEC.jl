@@ -52,14 +52,14 @@ end
     ein_code = yao2einsum(qcf;optimizer=nothing)
 end
 
-@testset "qc2enisum" begin
+@testset "qc2einsum" begin
     i, x, y, z = Pauli(0), Pauli(1), Pauli(2), Pauli(3)
     st = [PauliString((i,z,z)),PauliString((z,i,z))]
     qcen, data_qubits, code = encode_stabilizers(st)
     qc = chain(qcen, put(3, 1=>X),put(3,2=>X),put(3,3=>X), qcen', put(3, 3=>X))
     qc_info = QCInfo(data_qubits, 3)
     qcf, srs = ein_circ(qc, qc_info)
-    tn,input_inds,outpu_inds = qc2enisum(qcf, srs, qc_info)
+    tn,input_inds,outpu_inds = qc2einsum(qcf, srs, qc_info)
     optnet = optimize_code(tn, TreeSA(), OMEinsum.MergeVectors())
     matr = contract(optnet)
     @test size(matr) == (2,2,2,2)

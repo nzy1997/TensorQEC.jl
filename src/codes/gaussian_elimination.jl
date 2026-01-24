@@ -108,17 +108,17 @@ function Base.inv(H::Matrix{Mod2})
     return bm.Q
 end
 
-function _check_linear_indepent(H::Transpose{Bool, Matrix{Bool}})
+function _check_linear_independent(H::Transpose{Bool, Matrix{Bool}})
     bm = SimpleBimatrix(H, Transpose(Matrix{Mod2}(I, size(H,1), size(H,1))), collect(1:size(H,2)))
     gaussian_elimination!(bm, 1:size(bm.matrix,1), 0, 0)
     return bm, !all(iszero, view(bm.matrix, size(bm.matrix,1), :))
 end
 
-function check_linear_indepent(H::Transpose{Bool, Matrix{Bool}})
-    _ , res= _check_linear_indepent(H)
+function check_linear_independent(H::Transpose{Bool, Matrix{Bool}})
+    _ , res= _check_linear_independent(H)
     return res
 end
 
-function check_linear_indepent(H::Transpose{Mod2, Matrix{Mod2}})
-    return check_linear_indepent(Transpose([a.x for a in H.parent]))
+function check_linear_independent(H::Transpose{Mod2, Matrix{Mod2}})
+    return check_linear_independent(Transpose([a.x for a in H.parent]))
 end
