@@ -25,6 +25,7 @@ makedocs(;
     ),
     pages=[
         "Home" => "index.md",
+        "Getting Started" => "guide.md",
         "Topics" => [
             "Pauli Basis and Clifford group" => "clifford.md",
             "QEC Codes" => "generated/codes.md",
