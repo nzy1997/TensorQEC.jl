@@ -1,4 +1,5 @@
 using Test, TensorQEC, TensorQEC.Yao
+using TensorQEC: correction_circuit
 
 @testset "errorcorrect_circuit" begin
     t = ToricCode(3, 3)

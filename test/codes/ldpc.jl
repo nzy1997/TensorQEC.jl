@@ -3,6 +3,7 @@ using TensorQEC
 using TensorQEC.Graphs.Experimental: has_isomorph
 using Random
 using TensorQEC.LinearAlgebra
+using TensorQEC: dual_graph, get_graph
 
 @testset "SimpleTannerGraph" begin
     sts = [[1, 2,3,4],[2,3,4,5]]

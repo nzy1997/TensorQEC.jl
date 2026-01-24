@@ -1,5 +1,6 @@
 using Test, TensorQEC
 using QECCore: code_n
+using TensorQEC: IndependentDepolarizingDecodingProblem, ClassicalDecodingProblem
 
 @testset "DecodingProblem from code" begin
     @testset "CSS code with depolarizing error" begin

@@ -5,6 +5,7 @@ using TensorQEC.OMEinsum
 using TensorQEC.LinearAlgebra
 using Random
 using TensorQEC.Yao.YaoBlocks.Optimise
+using TensorQEC: SymbolRecorder, IdentityRecorder, ein_circ, error_quantum_circuit, toput, error_quantum_circuit_pair_replace
 
 @testset "ComplexConj" begin
     ccj = ComplexConj(ConstGate.X)

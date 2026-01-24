@@ -1,6 +1,7 @@
 using Test
 using TensorQEC
 using Random
+using TensorQEC: IPMatchingSolver
 
 @testset "tanner2fwswg" begin
     Random.seed!(123)

@@ -1,4 +1,5 @@
 using Test, TensorQEC, TensorQEC.Yao, TensorQEC.LinearAlgebra
+using TensorQEC: new_tableau
 
 @testset "new_tableau" begin
     i, x, y, z = Pauli(0), Pauli(1), Pauli(2), Pauli(3)

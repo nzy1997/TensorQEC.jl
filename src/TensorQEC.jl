@@ -25,70 +25,60 @@ using SCIP
 import Yao.YaoArrayRegister.StaticArrays: SizedVector
 import Yao.YaoArrayRegister.LuxurySparse
 
-# reexport some YaoAPI
+# === Yao Interop ===
 export mat
 
-# Mod
+# === Mod2 Arithmetic ===
 export Mod2
 
-# pauli basis
-export pauli_basis, pauli_decomposition, pauli_repr
-export Pauli, SumOfPaulis, @P_str, yaoblock
-export PauliString, PauliGroupElement, isanticommute
+# === Pauli Algebra ===
+export Pauli, PauliString, PauliGroupElement, @P_str
+export pauli_decomposition, pauli_basis, pauli_repr
+export isanticommute, yaoblock, SumOfPaulis
 
-# clifford group
+# === Clifford Simulation ===
 export CliffordGate, clifford_simulate, compile_clifford_circuit
+export Tableau, tableau_simulate
 
-# tensor network
-export clifford_network, CliffordNetwork, generate_tensor_network, circuit2tensornetworks
+# === Codes ===
+export SurfaceCode, ToricCode, ShorCode, SteaneCode, Code832, Code422, Code1573, Code513
+export BivariateBicycleCode, Color488, Color666
+export stabilizers, code_distance, logical_operator
 
-# inference
-export syndrome_inference, measure_syndrome!, correction_pauli_string, generate_syndrome_dict, pauli_string_map_iter, inference, transformed_syndrome_dict
+# === Encoding ===
+export encode_stabilizers, place_qubits
 
-# codes 
-export stabilizers, ToricCode, SurfaceCode, ShorCode, SteaneCode, Code832, Code422, Code1573, Code513, BivariateBicycleCode, Color488, Color666
+# === Measurement Circuits ===
+export measurement_circuit, measure_circuit_fault_tol
 
-# encoder
-export CSSBimatrix, syndrome_transform, encode_stabilizers, place_qubits
+# === Error Models & Syndrome ===
+export IndependentFlipError, IndependentDepolarizingError, iid_error
+export random_error_pattern, CSSErrorPattern
+export SimpleSyndrome, CSSSyndrome, syndrome_extraction
+export check_logical_error
 
-# measurement
-export measure_circuit_fault_tol, measure_circuit_steane, measurement_circuit
+# === Tanner Graphs ===
+export SimpleTannerGraph, CSSTannerGraph
+export product_graph, random_ldpc
 
-# tablemake
-export make_table, save_table, load_table, correction_circuit, TruthTable, correction_dict
+# === Decoding Pipeline ===
+export DecodingProblem, DecodingResult, decode, compile
+export BPDecoder, IPDecoder, MatchingDecoder, TableDecoder, TNMAP, TNMMAP
 
-# simulation
-export ComplexConj, SymbolRecorder, IdentityRecorder, ein_circ, QCInfo, qc2einsum
-export coherent_error_unitary, error_quantum_circuit, toput, error_pairs, fidelity_tensornetwork, simulation_tensornetwork, error_quantum_circuit_pair_replace
+# === Detector Error Model ===
+export DetectorErrorModel, detector_error_model
 
-# ldpc
-export SimpleTannerGraph, syndrome_extraction, product_graph, CSSTannerGraph, dual_graph, get_graph, belief_propagation, random_ldpc, check_linear_independent
-export osd, check_logical_error
-
-# tableaux
-export Tableau, new_tableau, tableau_simulate
-
-# error model
-export IndependentFlipError, IndependentDepolarizingError, random_error_pattern, SimpleSyndrome, CSSSyndrome, iid_error, CSSErrorPattern
-@const_gate CCZ::ComplexF64 = diagm([1, 1, 1, 1, 1, 1, 1, -1])
-
-# decoder
-export BPDecoder, IPDecoder, MatchingDecoder, IPMatchingSolver, TNMAP, TNMMAP, TableDecoder
-
-# decoding
-export decode, reduce2general, extract_decoding, DecodingResult, compile, DecodingProblem, IndependentDepolarizingDecodingProblem, ClassicalDecodingProblem, GeneralDecodingProblem
-
-# threshold
+# === Threshold ===
 export multi_round_qec
 
-# code distance
-export code_distance, logical_operator
-
-# error_learning
-export TrainingData, error_learning
-
-# stim parser
+# === STIM Interop ===
 export parse_stim_file
+
+# === Tensor Network Simulation (secondary API) ===
+export ComplexConj, qc2einsum, QCInfo
+export coherent_error_unitary, fidelity_tensornetwork, simulation_tensornetwork
+
+@const_gate CCZ::ComplexF64 = diagm([1, 1, 1, 1, 1, 1, 1, -1])
 
 include("codes/mod2.jl")
 include("clifford/paulistring.jl")

@@ -3,6 +3,7 @@ using TensorQEC
 using Random
 using TensorQEC.OMEinsum
 using TensorQEC.Yao
+using TensorQEC: reduce2general, extract_decoding
 
 @testset "gdp decoding" begin
     Random.seed!(123)

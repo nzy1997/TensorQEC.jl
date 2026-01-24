@@ -1,6 +1,6 @@
 using Test
 using TensorQEC
-using TensorQEC: qc_probability, TrainingChannel, probability_tn_channel, channel2mat, channel2tensor, probability_channel, get_grad,generate_new_tensor,loss_function, n_qubit_depolarizing_channel
+using TensorQEC: qc_probability, TrainingChannel, probability_tn_channel, channel2mat, channel2tensor, probability_channel, get_grad, generate_new_tensor, loss_function, n_qubit_depolarizing_channel, TrainingData, error_learning
 using TensorQEC.Yao
 using TensorQEC.OMEinsum
 using Random

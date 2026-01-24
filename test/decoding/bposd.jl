@@ -1,6 +1,7 @@
 using Test
 using TensorQEC
 using Random
+using TensorQEC: check_linear_independent, osd
 
 @testset "belief_propagation1" begin
     sts = [[1, 2,3,4],[2,3,5,7],[3,4,5,6]]
