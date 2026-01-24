@@ -76,7 +76,7 @@ export IndependentFlipError, IndependentDepolarizingError, random_error_pattern,
 export BPDecoder, IPDecoder, MatchingDecoder, IPMatchingSolver, TNMAP, TNMMAP, TableDecoder
 
 # decoding
-export decode, reduce2general, extract_decoding, DecodingResult, compile, IndependentDepolarizingDecodingProblem, ClassicalDecodingProblem, GeneralDecodingProblem
+export decode, reduce2general, extract_decoding, DecodingResult, compile, DecodingProblem, IndependentDepolarizingDecodingProblem, ClassicalDecodingProblem, GeneralDecodingProblem
 
 # threshold
 export multi_round_qec

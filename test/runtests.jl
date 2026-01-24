@@ -98,6 +98,10 @@ end
     include("decoding/interfaces.jl")
 end
 
+@testset "decoding pipeline" begin
+    include("decoding/decoding_pipeline.jl")
+end
+
 @testset "tndecoder" begin
     include("decoding/tndecoder.jl")
 end

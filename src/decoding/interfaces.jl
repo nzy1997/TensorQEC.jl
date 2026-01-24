@@ -38,6 +38,41 @@ end
 get_problem(tanner::CSSTannerGraph,pvec::IndependentDepolarizingError) = IndependentDepolarizingDecodingProblem(tanner,pvec)
 
 """
+    DecodingProblem(code::AbstractCSSCode, error_model::IndependentDepolarizingError)
+
+Construct a decoding problem from a quantum code and an error model.
+This is the recommended entry point for the decoding pipeline.
+
+# Example
+```julia
+code = SteaneCode()
+em = iid_error(0.01, 0.01, 0.01, code_n(code))
+problem = DecodingProblem(code, em)
+compiled = compile(BPDecoder(), problem)
+
+error = random_error_pattern(em)
+tanner = CSSTannerGraph(code)
+syndrome = syndrome_extraction(error, tanner)
+result = decode(compiled, syndrome)
+```
+"""
+function DecodingProblem(code::AbstractCSSCode, error_model::IndependentDepolarizingError)
+    tanner = CSSTannerGraph(code)
+    return IndependentDepolarizingDecodingProblem(tanner, error_model)
+end
+
+"""
+    DecodingProblem(code::AbstractCSSCode, error_model::IndependentFlipError)
+
+Construct a classical decoding problem from a quantum code and a flip error model.
+Uses the X-stabilizer Tanner graph for decoding.
+"""
+function DecodingProblem(code::AbstractCSSCode, error_model::IndependentFlipError)
+    tanner = CSSTannerGraph(code)
+    return ClassicalDecodingProblem(tanner.stgx, error_model)
+end
+
+"""
     GeneralDecodingProblem(tanner::SimpleTannerGraph, ptn::SimpleTensorNetwork)
 
 A general decoding problem.
