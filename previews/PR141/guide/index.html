@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Getting Started · TensorQEC.jl</title><meta name="title" content="Getting Started · TensorQEC.jl"/><meta property="og:title" content="Getting Started · TensorQEC.jl"/><meta property="twitter:title" content="Getting Started · TensorQEC.jl"/><meta name="description" content="Documentation for TensorQEC.jl."/><meta property="og:description" content="Documentation for TensorQEC.jl."/><meta property="twitter:description" content="Documentation for TensorQEC.jl."/><meta property="og:url" content="https://nzy1997.github.io/TensorQEC.jl/guide/"/><meta property="twitter:url" content="https://nzy1997.github.io/TensorQEC.jl/guide/"/><link rel="canonical" href="https://nzy1997.github.io/TensorQEC.jl/guide/"/><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../search_index.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">TensorQEC.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li class="is-active"><a class="tocitem" href>Getting Started</a><ul class="internal"><li><a class="tocitem" href="#1.-QEC-Simulation"><span>1. QEC Simulation</span></a></li><li><a class="tocitem" href="#2.-Code-Analysis"><span>2. Code Analysis</span></a></li><li><a class="tocitem" href="#3.-STIM-Interop"><span>3. STIM Interop</span></a></li></ul></li><li><span class="tocitem">Topics</span><ul><li><a class="tocitem" href="../clifford/">Pauli Basis and Clifford group</a></li><li><a class="tocitem" href="../generated/codes/">QEC Codes</a></li><li><a class="tocitem" href="../generated/inference/">Inference with Tensor Network</a></li><li><a class="tocitem" href="../generated/coherent/">Coherent Error Simulation</a></li><li><a class="tocitem" href="../generated/simulation/">Measurement-Free QEC</a></li><li><input class="collapse-toggle" id="menuitem-3-6" type="checkbox"/><label class="tocitem" for="menuitem-3-6"><span class="docs-label">Decoders</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../generated/error_model/">Error Model and Syndrome Extraction</a></li><li><a class="tocitem" href="../generated/decoder/">Decoder Interface</a></li><li><a class="tocitem" href="../generated/ipdecoder/">Mixed-Integer Programming Decoder</a></li><li><a class="tocitem" href="../tndecoder/">Tensor Network Decoder</a></li></ul></li><li><a class="tocitem" href="../performancetips/">Performance Tips</a></li></ul></li><li><a class="tocitem" href="../man/">Manual</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Getting Started</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Getting Started</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/nzy1997/TensorQEC.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/nzy1997/TensorQEC.jl/blob/main/docs/src/guide.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Getting-Started"><a class="docs-heading-anchor" href="#Getting-Started">Getting Started</a><a id="Getting-Started-1"></a><a class="docs-heading-anchor-permalink" href="#Getting-Started" title="Permalink"></a></h1><p>This guide covers the three primary workflows of TensorQEC v0.3:</p><ol><li><strong>QEC Simulation</strong> – define a code, simulate errors, and decode</li><li><strong>Code Analysis</strong> – define a code and compute its properties</li><li><strong>STIM Interop</strong> – parse STIM circuit files, analyze, and decode</li></ol><h2 id="1.-QEC-Simulation"><a class="docs-heading-anchor" href="#1.-QEC-Simulation">1. QEC Simulation</a><a id="1.-QEC-Simulation-1"></a><a class="docs-heading-anchor-permalink" href="#1.-QEC-Simulation" title="Permalink"></a></h2><p>The simulation workflow lets you evaluate decoder performance under a noise model. The typical steps are: construct a code, define an error model, build a decoding problem, compile a decoder, then run Monte Carlo trials.</p><h3 id="Full-Example"><a class="docs-heading-anchor" href="#Full-Example">Full Example</a><a id="Full-Example-1"></a><a class="docs-heading-anchor-permalink" href="#Full-Example" title="Permalink"></a></h3><pre><code class="language-julia hljs">using TensorQEC
+using Random
+
+# 1. Construct a quantum error-correcting code
+code = SteaneCode()          # [[7,1,3]] Steane code
+# Other options: SurfaceCode(3,3), ToricCode(3,3), ShorCode(), Code513(), etc.
+
+# 2. Create an i.i.d. depolarizing error model (px, py, pz, n)
+n = code_n(code)             # number of physical qubits
+em = iid_error(0.05, 0.05, 0.05, n)
+
+# 3. Build a DecodingProblem (wraps code + error model)
+problem = DecodingProblem(code, em)
+
+# 4. Choose a decoder and compile it for this problem
+decoder = BPDecoder()        # Belief Propagation + OSD
+compiled = compile(decoder, problem)
+# Other decoders: IPDecoder(), MatchingDecoder(), TNMAP(), TNMMAP(), TableDecoder()
+
+# 5. Build auxiliary structures for error checking
+tanner = CSSTannerGraph(code)
+lx, lz = logical_operator(tanner)
+
+# 6. Monte Carlo simulation loop
+num_trials = 1000
+logical_errors = 0
+
+for _ in 1:num_trials
+    # Generate a random error
+    error = random_error_pattern(em)
+
+    # Extract the syndrome
+    syndrome = syndrome_extraction(error, tanner)
+
+    # Decode
+    result = decode(compiled, syndrome)
+
+    # Check for logical error
+    if result.success_tag
+        if check_logical_error(error, result.error_pattern, lx, lz)
+            logical_errors += 1
+        end
+    else
+        logical_errors += 1  # decoding failure counts as logical error
+    end
+end
+
+logical_error_rate = logical_errors / num_trials
+println(&quot;Logical error rate: $logical_error_rate&quot;)</code></pre><h3 id="Key-Functions"><a class="docs-heading-anchor" href="#Key-Functions">Key Functions</a><a id="Key-Functions-1"></a><a class="docs-heading-anchor-permalink" href="#Key-Functions" title="Permalink"></a></h3><table><tr><th style="text-align: right">Function</th><th style="text-align: right">Purpose</th></tr><tr><td style="text-align: right"><code>iid_error(px, py, pz, n)</code></td><td style="text-align: right">Create an i.i.d. depolarizing error model</td></tr><tr><td style="text-align: right"><code>DecodingProblem(code, em)</code></td><td style="text-align: right">Bundle code and error model into a decoding problem</td></tr><tr><td style="text-align: right"><code>compile(decoder, problem)</code></td><td style="text-align: right">Pre-compile a decoder (amortizes setup cost)</td></tr><tr><td style="text-align: right"><code>random_error_pattern(em)</code></td><td style="text-align: right">Sample a random error from the error model</td></tr><tr><td style="text-align: right"><code>syndrome_extraction(error, tanner)</code></td><td style="text-align: right">Compute the syndrome for a given error</td></tr><tr><td style="text-align: right"><code>decode(compiled, syndrome)</code></td><td style="text-align: right">Decode a syndrome; returns a <code>DecodingResult</code></td></tr><tr><td style="text-align: right"><code>check_logical_error(e1, e2, lx, lz)</code></td><td style="text-align: right">Check if the difference of two errors is a logical operator</td></tr></table><h3 id="Available-Decoders"><a class="docs-heading-anchor" href="#Available-Decoders">Available Decoders</a><a id="Available-Decoders-1"></a><a class="docs-heading-anchor-permalink" href="#Available-Decoders" title="Permalink"></a></h3><table><tr><th style="text-align: right">Decoder</th><th style="text-align: right">Type</th><th style="text-align: right">Notes</th></tr><tr><td style="text-align: right"><code>BPDecoder()</code></td><td style="text-align: right">Classical</td><td style="text-align: right">Belief Propagation with OSD fallback</td></tr><tr><td style="text-align: right"><code>MatchingDecoder(solver)</code></td><td style="text-align: right">Classical</td><td style="text-align: right">Minimum-weight perfect matching (solvers: <code>TensorQEC.IPMatchingSolver()</code>, <code>TensorQEC.GreedyMatchingSolver()</code>)</td></tr><tr><td style="text-align: right"><code>IPDecoder()</code></td><td style="text-align: right">General</td><td style="text-align: right">Integer programming (exact, slower)</td></tr><tr><td style="text-align: right"><code>TNMAP()</code></td><td style="text-align: right">General</td><td style="text-align: right">Tensor network MAP decoder</td></tr><tr><td style="text-align: right"><code>TNMMAP()</code></td><td style="text-align: right">General</td><td style="text-align: right">Tensor network marginal MAP decoder</td></tr><tr><td style="text-align: right"><code>TableDecoder(d)</code></td><td style="text-align: right">General</td><td style="text-align: right">Lookup table (d = code distance, small codes only)</td></tr></table><p>Classical decoders handle CSS codes by decomposing into independent X/Z decoding. General decoders handle arbitrary error correlations.</p><h2 id="2.-Code-Analysis"><a class="docs-heading-anchor" href="#2.-Code-Analysis">2. Code Analysis</a><a id="2.-Code-Analysis-1"></a><a class="docs-heading-anchor-permalink" href="#2.-Code-Analysis" title="Permalink"></a></h2><p>Use this workflow to inspect the structure and parameters of a quantum code.</p><h3 id="Full-Example-2"><a class="docs-heading-anchor" href="#Full-Example-2">Full Example</a><a class="docs-heading-anchor-permalink" href="#Full-Example-2" title="Permalink"></a></h3><pre><code class="language-julia hljs">using TensorQEC
+
+# 1. Construct a code
+code = SurfaceCode(3, 3)     # 3x3 rotated surface code
+
+# 2. Get the stabilizer generators
+stabs = stabilizers(code)
+println(&quot;Number of stabilizers: &quot;, length(stabs))
+println(&quot;First stabilizer: &quot;, stabs[1])
+
+# 3. Compute code parameters [n, k, d]
+n = code_n(code)    # physical qubits
+s = code_s(code)    # number of stabilizers
+k = code_k(code)    # logical qubits (n - s for these codes)
+println(&quot;[[n, k]] = [[$n, $k]]&quot;)
+
+# 4. Build a CSS Tanner graph
+tanner = CSSTannerGraph(code)
+
+# 5. Compute the code distance (uses integer programming)
+d = code_distance(tanner)
+println(&quot;Code distance: $d&quot;)
+
+# 6. Find logical operators
+lx, lz = logical_operator(tanner)
+println(&quot;Number of logical X operators: &quot;, size(lx, 1))
+println(&quot;Number of logical Z operators: &quot;, size(lz, 1))</code></pre><h3 id="Available-Codes"><a class="docs-heading-anchor" href="#Available-Codes">Available Codes</a><a id="Available-Codes-1"></a><a class="docs-heading-anchor-permalink" href="#Available-Codes" title="Permalink"></a></h3><table><tr><th style="text-align: right">Code</th><th style="text-align: right">Constructor</th><th style="text-align: right">Parameters</th></tr><tr><td style="text-align: right">Steane code</td><td style="text-align: right"><code>SteaneCode()</code></td><td style="text-align: right">[[7,1,3]]</td></tr><tr><td style="text-align: right">Surface code</td><td style="text-align: right"><code>SurfaceCode(m, n)</code></td><td style="text-align: right">Rotated, m-by-n</td></tr><tr><td style="text-align: right">Toric code</td><td style="text-align: right"><code>ToricCode(m, n)</code></td><td style="text-align: right">m-by-n on torus</td></tr><tr><td style="text-align: right">Shor code</td><td style="text-align: right"><code>ShorCode()</code></td><td style="text-align: right">[[9,1,3]]</td></tr><tr><td style="text-align: right">5-qubit code</td><td style="text-align: right"><code>Code513()</code></td><td style="text-align: right">[[5,1,3]]</td></tr><tr><td style="text-align: right">[[4,2,2]] code</td><td style="text-align: right"><code>Code422()</code></td><td style="text-align: right">[[4,2,2]]</td></tr><tr><td style="text-align: right">[[8,3,2]] code</td><td style="text-align: right"><code>Code832()</code></td><td style="text-align: right">[[8,3,2]]</td></tr><tr><td style="text-align: right">[[15,7,3]] code</td><td style="text-align: right"><code>Code1573()</code></td><td style="text-align: right">[[15,7,3]]</td></tr><tr><td style="text-align: right">Bivariate bicycle</td><td style="text-align: right"><code>BivariateBicycleCode(m, n, vc, hd)</code></td><td style="text-align: right">General LDPC</td></tr><tr><td style="text-align: right">Color 4.8.8</td><td style="text-align: right"><code>Color488(d)</code></td><td style="text-align: right">Distance d</td></tr><tr><td style="text-align: right">Color 6.6.6</td><td style="text-align: right"><code>Color666(d)</code></td><td style="text-align: right">Distance d</td></tr></table><h3 id="Key-Functions-2"><a class="docs-heading-anchor" href="#Key-Functions-2">Key Functions</a><a class="docs-heading-anchor-permalink" href="#Key-Functions-2" title="Permalink"></a></h3><table><tr><th style="text-align: right">Function</th><th style="text-align: right">Purpose</th></tr><tr><td style="text-align: right"><code>stabilizers(code)</code></td><td style="text-align: right">Get stabilizer generators as <code>PauliString</code> vectors</td></tr><tr><td style="text-align: right"><code>code_n(code)</code></td><td style="text-align: right">Number of physical qubits</td></tr><tr><td style="text-align: right"><code>code_s(code)</code></td><td style="text-align: right">Number of stabilizer generators</td></tr><tr><td style="text-align: right"><code>code_k(code)</code></td><td style="text-align: right">Number of logical qubits</td></tr><tr><td style="text-align: right"><code>CSSTannerGraph(code)</code></td><td style="text-align: right">Build CSS Tanner graph from a code</td></tr><tr><td style="text-align: right"><code>code_distance(tanner)</code></td><td style="text-align: right">Compute minimum distance via integer programming</td></tr><tr><td style="text-align: right"><code>logical_operator(tanner)</code></td><td style="text-align: right">Compute logical X and Z operator matrices</td></tr></table><h2 id="3.-STIM-Interop"><a class="docs-heading-anchor" href="#3.-STIM-Interop">3. STIM Interop</a><a id="3.-STIM-Interop-1"></a><a class="docs-heading-anchor-permalink" href="#3.-STIM-Interop" title="Permalink"></a></h2><p>TensorQEC can parse <a href="https://github.com/quantumlib/Stim">STIM</a> circuit files and extract detector error models, enabling integration with STIM-based workflows.</p><h3 id="Parsing-a-STIM-File"><a class="docs-heading-anchor" href="#Parsing-a-STIM-File">Parsing a STIM File</a><a id="Parsing-a-STIM-File-1"></a><a class="docs-heading-anchor-permalink" href="#Parsing-a-STIM-File" title="Permalink"></a></h3><pre><code class="language-julia hljs">using TensorQEC
+
+# Parse a STIM circuit file into a Yao circuit
+qc = parse_stim_file(&quot;path/to/circuit.stim&quot;, 7)
+# The second argument is the number of qubits in the circuit</code></pre><p>The returned <code>ChainBlock</code> is a Yao circuit containing gates, measurements, detectors, and noise channels from the STIM file.</p><h3 id="Extracting-a-Detector-Error-Model"><a class="docs-heading-anchor" href="#Extracting-a-Detector-Error-Model">Extracting a Detector Error Model</a><a id="Extracting-a-Detector-Error-Model-1"></a><a class="docs-heading-anchor-permalink" href="#Extracting-a-Detector-Error-Model" title="Permalink"></a></h3><p>Once you have a parsed circuit, you can extract a detector error model (DEM) that describes how each error channel affects the detectors.</p><pre><code class="language-julia hljs">using TensorQEC
+
+# Parse a noisy circuit
+qc = parse_stim_file(&quot;noisy_repetition.stim&quot;, 7)
+
+# Extract the detector error model
+dem = detector_error_model(qc)
+
+# The DEM contains:
+# - dem.error_rates: probability of each error mechanism
+# - dem.flipped_detectors: which detectors each error flips
+# - dem.detector_list: list of detector indices
+# - dem.logical_list: list of logical observable indices</code></pre><h3 id="Decoding-from-a-DEM"><a class="docs-heading-anchor" href="#Decoding-from-a-DEM">Decoding from a DEM</a><a id="Decoding-from-a-DEM-1"></a><a class="docs-heading-anchor-permalink" href="#Decoding-from-a-DEM" title="Permalink"></a></h3><p>You can convert a detector error model into a Tanner graph and use TensorQEC&#39;s decoders.</p><pre><code class="language-julia hljs">using TensorQEC
+
+# Parse and extract DEM
+qc = parse_stim_file(&quot;noisy_repetition.stim&quot;, 7)
+dem = detector_error_model(qc)
+
+# Convert DEM to a Tanner graph for decoding
+tanner = TensorQEC.dem2tanner(dem)
+
+# Create an error model from the DEM error rates
+pvec = IndependentFlipError(dem.error_rates)
+
+# Compile and decode using the Tanner graph and error model
+compiled = compile(BPDecoder(), tanner, pvec)
+
+# Generate a random error pattern from the DEM
+error = random_error_pattern(dem)
+
+# Extract syndrome (only detector bits, not logical bits)
+syndrome = SimpleSyndrome(tanner.H * error)
+
+# Decode
+result = decode(compiled, syndrome)</code></pre><h3 id="Inserting-Noise-into-a-Circuit"><a class="docs-heading-anchor" href="#Inserting-Noise-into-a-Circuit">Inserting Noise into a Circuit</a><a id="Inserting-Noise-into-a-Circuit-1"></a><a class="docs-heading-anchor-permalink" href="#Inserting-Noise-into-a-Circuit" title="Permalink"></a></h3><p>You can also add noise channels to a parsed STIM circuit programmatically.</p><pre><code class="language-julia hljs">using TensorQEC
+
+# Parse a clean circuit
+qc = parse_stim_file(&quot;circuit.stim&quot;, 7)
+
+# Insert noise: depolarizing after Cliffords, bit-flip after reset, bit-flip before measure
+noisy_qc = TensorQEC.insert_errors(qc;
+    after_clifford_depolarization=0.001,
+    after_reset_flip_probability=0.001,
+    before_measure_flip_probability=0.001
+)
+
+# Now extract DEM from the noisy circuit
+dem = detector_error_model(noisy_qc)</code></pre><h3 id="Key-Functions-3"><a class="docs-heading-anchor" href="#Key-Functions-3">Key Functions</a><a class="docs-heading-anchor-permalink" href="#Key-Functions-3" title="Permalink"></a></h3><table><tr><th style="text-align: right">Function</th><th style="text-align: right">Purpose</th></tr><tr><td style="text-align: right"><code>parse_stim_file(path, nqubits)</code></td><td style="text-align: right">Parse a STIM file into a Yao circuit</td></tr><tr><td style="text-align: right"><code>detector_error_model(qc)</code></td><td style="text-align: right">Extract detector error model from a circuit</td></tr><tr><td style="text-align: right"><code>TensorQEC.dem2tanner(dem)</code></td><td style="text-align: right">Convert DEM to a <code>SimpleTannerGraph</code> for decoding</td></tr><tr><td style="text-align: right"><code>random_error_pattern(dem)</code></td><td style="text-align: right">Sample a random error from the DEM</td></tr><tr><td style="text-align: right"><code>TensorQEC.insert_errors(qc; ...)</code></td><td style="text-align: right">Add noise channels to a circuit</td></tr></table></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Home</a><a class="docs-footer-nextpage" href="../clifford/">Pauli Basis and Clifford group »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.16.1 on <span class="colophon-date" title="Saturday 24 January 2026 16:32">Saturday 24 January 2026</span>. Using Julia version 1.12.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
