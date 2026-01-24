@@ -1,11 +1,19 @@
 """
-    IPDecoder <: AbstractGeneralDecoder
+    IPDecoder(; optimizer=SCIP.Optimizer, verbose=false)
 
-An integer programming based decoder.
+Integer Programming decoder that finds the most likely error pattern by solving
+an integer programming problem. Use with [`compile`](@ref) and [`decode`](@ref).
 
-### Keyword Arguments
-- `optimizer = SCIP.Optimizer`: The optimizer to use for solving the integer programming problem
-- `verbose::Bool = false`: Whether to print the verbose output
+# Keyword Arguments
+- `optimizer = SCIP.Optimizer`: The optimizer to use for solving the integer programming problem.
+- `verbose::Bool = false`: Whether to print solver output.
+
+# Example
+```julia
+problem = DecodingProblem(SteaneCode(), iid_error(0.01, 0.01, 0.01, 7))
+compiled = compile(IPDecoder(), problem)
+result = decode(compiled, syndrome)
+```
 """
 Base.@kwdef struct IPDecoder <: AbstractGeneralDecoder 
     optimizer = SCIP.Optimizer   # The optimizer to use for solving the integer programming problem

@@ -1,10 +1,19 @@
 """
-    TNMAP(;optimizer::CodeOptimizer=default_optimizer()) <: AbstractGeneralDecoder
+    TNMAP(; optimizer::CodeOptimizer=TreeSA())
 
-A tensor network based maximum a posteriori (MAP) decoder, which finds the most probable configuration of the error pattern.
+Tensor network Maximum A Posteriori (MAP) decoder. Finds the most probable error
+pattern by contracting a tensor network representation of the decoding problem.
+Use with [`compile`](@ref) and [`decode`](@ref).
 
-### Keyword Arguments
-- `optimizer::CodeOptimizer = TreeSA()`: The optimizer to use for optimizing the tensor network contraction order.
+# Keyword Arguments
+- `optimizer::CodeOptimizer = TreeSA()`: The optimizer for tensor network contraction order.
+
+# Example
+```julia
+problem = DecodingProblem(SteaneCode(), iid_error(0.01, 0.01, 0.01, 7))
+compiled = compile(TNMAP(), problem)
+result = decode(compiled, syndrome)
+```
 """
 Base.@kwdef struct TNMAP <: AbstractGeneralDecoder
     optimizer::CodeOptimizer = TreeSA()  # contraction order optimizer
@@ -66,13 +75,23 @@ struct NoOptimizer <: CodeOptimizer end
 Base.show(io::IO, ::MIME"text/plain", p::NoOptimizer) = show(io, p)
 Base.show(io::IO, p::NoOptimizer) = print(io, "NoOptimizer")
 """
-    TNMMAP(;optimizer::CodeOptimizer=TreeSA(), factorize::Bool=false) <: AbstractGeneralDecoder
+    TNMMAP(; optimizer::CodeOptimizer=TreeSA(), factorize::Bool=true)
 
-A tensor network based marginal maximum a posteriori (MMAP) decoder, which finds the most probable logical sector after marginalizing out the error pattern on qubits.
+Tensor network Marginal Maximum A Posteriori (MMAP) decoder. Finds the most probable
+logical sector by marginalizing out the physical error pattern, then uses integer
+programming to find a representative error in that sector.
+Use with [`compile`](@ref) and [`decode`](@ref).
 
-### Keyword Arguments
-- `optimizer::CodeOptimizer = TreeSA()`: The optimizer to use for optimizing the tensor network contraction order.
-- `factorize::Bool = true`: Whether to factorize the tensors to rank-3 tensors.
+# Keyword Arguments
+- `optimizer::CodeOptimizer = TreeSA()`: The optimizer for tensor network contraction order.
+- `factorize::Bool = true`: Whether to factorize check tensors to rank-3 tensors for efficiency.
+
+# Example
+```julia
+problem = DecodingProblem(SteaneCode(), iid_error(0.01, 0.01, 0.01, 7))
+compiled = compile(TNMMAP(), problem)
+result = decode(compiled, syndrome)
+```
 """
 Base.@kwdef struct TNMMAP <: AbstractGeneralDecoder
     optimizer::CodeOptimizer = TreeSA()  # contraction order optimizer
