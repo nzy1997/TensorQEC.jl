@@ -5,13 +5,23 @@ struct BPResult
 end
 
 """
-    BPDecoder(bp_max_iter::Int = 100, osd::Bool = true)
+    BPDecoder(; bp_max_iter=100, osd=true)
 
-Belief propagation decoder.
+Belief Propagation decoder with Ordered Statistics Decoding (BPOSD).
 
-### Fields:
-- `bp_max_iter::Int`: the maximum number of iterations.
-- `osd::Bool`: whether to use osd.
+When belief propagation fails to converge, the decoder falls back to OSD
+to find a valid error pattern. Use with [`compile`](@ref) and [`decode`](@ref).
+
+# Keyword Arguments
+- `bp_max_iter::Int = 100`: Maximum number of belief propagation iterations.
+- `osd::Bool = true`: Whether to use OSD as a fallback when BP fails to converge.
+
+# Example
+```julia
+problem = DecodingProblem(SteaneCode(), iid_error(0.01, 0.01, 0.01, 7))
+compiled = compile(BPDecoder(), problem)
+result = decode(compiled, syndrome)
+```
 """
 Base.@kwdef struct BPDecoder <: AbstractClassicalDecoder
     bp_max_iter::Int = 100
@@ -80,7 +90,7 @@ function osd(tanner::SimpleTannerGraph,order::Vector{Int},syndrome::Vector{Mod2}
     hinv = 0
     qubit_list = [order[1]]
     for i in 1:length(order)
-        if check_linear_indepent(Transpose([H  tanner.H[:,order[i:i]]]))
+        if check_linear_independent(Transpose([H  tanner.H[:,order[i:i]]]))
             H = [H  tanner.H[:,order[i:i]]]
             push!(qubit_list,order[i])
         end

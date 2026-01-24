@@ -1,4 +1,5 @@
 using Test, TensorQEC, TensorQEC.Yao
+using TensorQEC: measure_circuit_steane
 
 @testset "measure_circuit_fault_tol" begin
     t = ToricCode(3, 3)

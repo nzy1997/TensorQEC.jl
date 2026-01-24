@@ -1,3 +1,22 @@
+"""
+    multi_round_qec(tanner::CSSTannerGraph, decoder::AbstractDecoder, em::AbstractQuantumErrorModel; rounds=10)
+    multi_round_qec(tanner::SimpleTannerGraph, decoder::AbstractDecoder, em::AbstractClassicalErrorModel, tanner_check::SimpleTannerGraph; rounds=10)
+
+Run multiple rounds of quantum error correction and estimate the logical error rate.
+
+Generates random errors according to the error model, extracts syndromes, decodes,
+and checks for logical errors over the specified number of rounds.
+
+# Arguments
+- `tanner`: The Tanner graph of the code.
+- `decoder::AbstractDecoder`: The decoder to use.
+- `em::AbstractErrorModel`: The error model.
+- `rounds::Int = 10`: Number of QEC rounds to simulate.
+
+# Returns
+- For CSS codes: `(x_error_rate, z_error_rate, total_error_rate)` as a tuple.
+- For classical codes: `error_rate` as a scalar.
+"""
 function multi_round_qec(tanner::CSSTannerGraph,decoder::AbstractDecoder,em::AbstractQuantumErrorModel;rounds = 10)
     logical_xerror = 0
     logical_zerror = 0

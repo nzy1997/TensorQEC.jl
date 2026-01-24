@@ -1,0 +1,7 @@
+[deps]
+Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+QECCore = "b50d4dc9-2544-401f-bae9-a24ba40d0c7a"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+TensorQEC = "0500ac79-7fb5-4262-aaea-37bb1845d1ef"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"

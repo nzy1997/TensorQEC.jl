@@ -126,15 +126,24 @@ function code_distance(Hz::Matrix{Int},lz::Matrix{Int}; verbose = false,ipsolver
 end
 
 """
-    code_distance(tanner::CSSTannerGraph)
+    code_distance(tanner::CSSTannerGraph; verbose=false, ipsolver=SCIP.Optimizer)
 
-Calculate the code distance of a CSS code.
+Calculate the code distance of a CSS code using integer programming.
 
-Input:
-- `tanner`: the tanner graph of the CSS code.
+# Arguments
+- `tanner::CSSTannerGraph`: The Tanner graph of the CSS code.
+- `verbose`: If `true`, print solver output.
+- `ipsolver`: The integer programming solver to use.
 
-Output:
-- `d`: the distance of the code.
+# Returns
+- `d::Int`: The minimum distance of the code.
+
+# Example
+```julia
+code = SteaneCode()
+tanner = CSSTannerGraph(code)
+d = code_distance(tanner)  # returns 3
+```
 """
 function code_distance(tanner::CSSTannerGraph; kwargs...)
     lx,lz = logical_operator(tanner)

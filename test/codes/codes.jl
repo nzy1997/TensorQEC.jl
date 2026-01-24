@@ -2,6 +2,20 @@ using Test, TensorQEC, TensorQEC.Yao, TensorQEC.LinearAlgebra
 using Random
 using QECCore
 
+@testset "Code type hierarchy" begin
+    @test SurfaceCode(3, 3) isa AbstractCSSCode
+    @test ShorCode() isa AbstractCSSCode
+    @test SteaneCode() isa AbstractCSSCode
+    @test Code832() isa AbstractCSSCode
+    @test Code422() isa AbstractCSSCode
+    @test Code1573() isa AbstractCSSCode
+    @test Code513() isa AbstractQECC
+    @test !(Code513() isa AbstractCSSCode)
+    @test Color488(3) isa AbstractCSSCode
+    @test Color666(3) isa AbstractCSSCode
+    @test ToricCode(3,3) isa AbstractCSSCode
+end
+
 @testset "toric code" begin
 	t = ToricCode(2, 3)
 	result = stabilizers(t)
@@ -202,4 +216,137 @@ end
 	@test tanner.stgz.H == Mod2[1  1  0  0  1  0  1  0;
 	1  1  0  0  0  1  0  1;
 	0  0  1  1  1  0  1  0]
+end
+
+@testset "QECCore interface" begin
+	using QECCore: code_n, code_s, code_k, parity_matrix, parity_matrix_x, parity_matrix_z
+
+	@testset "SurfaceCode(3,3)" begin
+		sc = SurfaceCode(3, 3)
+		@test code_n(sc) == 9
+		@test code_s(sc) == 8
+		@test code_k(sc) == 1
+		pm = parity_matrix(sc)
+		@test size(pm) == (8, 18)
+		pmx = parity_matrix_x(sc)
+		pmz = parity_matrix_z(sc)
+		@test size(pmx, 2) == 9
+		@test size(pmz, 2) == 9
+		@test size(pmx, 1) + size(pmz, 1) == 8
+	end
+
+	@testset "SteaneCode" begin
+		steane = SteaneCode()
+		@test code_n(steane) == 7
+		@test code_s(steane) == 6
+		@test code_k(steane) == 1
+		pm = parity_matrix(steane)
+		@test size(pm) == (6, 14)
+		pmx = parity_matrix_x(steane)
+		pmz = parity_matrix_z(steane)
+		@test size(pmx) == (3, 7)
+		@test size(pmz) == (3, 7)
+	end
+
+	@testset "Code513" begin
+		c = Code513()
+		@test code_n(c) == 5
+		@test code_s(c) == 4
+		@test code_k(c) == 1
+		pm = parity_matrix(c)
+		@test size(pm) == (4, 10)
+		# Code513 stabilizers have both X and Z entries (on different positions per row)
+		@test any(pm[:, 1:5]) && any(pm[:, 6:10])
+	end
+
+	@testset "ToricCode" begin
+		tc = ToricCode(3, 3)
+		@test code_n(tc) == 18
+		@test code_k(tc) == 2
+		pm = parity_matrix(tc)
+		@test size(pm, 2) == 36
+		pmx = parity_matrix_x(tc)
+		pmz = parity_matrix_z(tc)
+		@test size(pmx, 2) == 18
+		@test size(pmz, 2) == 18
+	end
+
+	@testset "ShorCode" begin
+		sc = ShorCode()
+		@test code_n(sc) == 9
+		@test code_s(sc) == 8
+		@test code_k(sc) == 1
+		pm = parity_matrix(sc)
+		@test size(pm) == (8, 18)
+		pmx = parity_matrix_x(sc)
+		pmz = parity_matrix_z(sc)
+		@test size(pmx, 1) == 2  # 2 X stabilizers
+		@test size(pmz, 1) == 6  # 6 Z stabilizers
+	end
+
+	@testset "Code832" begin
+		c = Code832()
+		@test code_n(c) == 8
+		@test code_s(c) == 5
+		@test code_k(c) == 3
+		pm = parity_matrix(c)
+		@test size(pm) == (5, 16)
+		pmx = parity_matrix_x(c)
+		pmz = parity_matrix_z(c)
+		@test size(pmx, 2) == 8
+		@test size(pmz, 2) == 8
+		@test size(pmx, 1) == 1  # 1 X stabilizer (all-X)
+		@test size(pmz, 1) == 4  # 4 Z stabilizers
+	end
+
+	@testset "Code422" begin
+		c = Code422()
+		@test code_n(c) == 4
+		@test code_s(c) == 2
+		@test code_k(c) == 2
+		pmx = parity_matrix_x(c)
+		pmz = parity_matrix_z(c)
+		@test size(pmx) == (1, 4)
+		@test size(pmz) == (1, 4)
+	end
+
+	@testset "Code1573" begin
+		c = Code1573()
+		@test code_n(c) == 15
+		@test code_s(c) == 8
+		@test code_k(c) == 7
+		pmx = parity_matrix_x(c)
+		pmz = parity_matrix_z(c)
+		@test size(pmx) == (4, 15)
+		@test size(pmz) == (4, 15)
+	end
+
+	@testset "Color488" begin
+		c = Color488(3)
+		@test code_n(c) == 7
+		@test code_k(c) == 1
+		pmx = parity_matrix_x(c)
+		pmz = parity_matrix_z(c)
+		@test size(pmx, 1) == size(pmz, 1)
+	end
+
+	@testset "Color666" begin
+		c = Color666(3)
+		@test code_n(c) == 7
+		@test code_k(c) == 1
+		pmx = parity_matrix_x(c)
+		pmz = parity_matrix_z(c)
+		@test size(pmx, 1) == size(pmz, 1)
+		@test size(pmx, 2) == 7
+	end
+
+	@testset "BivariateBicycleCode" begin
+		c = BivariateBicycleCode(7,7, ((1,0),(0,3),(0,4)), ((0,1),(3,0),(4,0)))
+		@test code_n(c) == 98
+		@test code_k(c) == 6
+		pmx = parity_matrix_x(c)
+		pmz = parity_matrix_z(c)
+		@test size(pmx, 2) == 98
+		@test size(pmz, 2) == 98
+	end
 end

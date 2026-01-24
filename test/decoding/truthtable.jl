@@ -3,6 +3,7 @@ using TensorQEC.BitBasis
 using Random
 using TensorQEC.OMEinsum
 using TensorQEC.Yao
+using TensorQEC: make_table, save_table, load_table
 
 @testset "make table" begin
     tanner = CSSTannerGraph(SurfaceCode(3, 3))

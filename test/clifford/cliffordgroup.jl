@@ -1,5 +1,5 @@
 using TensorQEC, Test, TensorQEC.Yao
-using TensorQEC: clifford_group, pauli_group, PermMatrixCSC
+using TensorQEC: clifford_group, pauli_group, PermMatrixCSC, measure_circuit_steane
 
 @testset "perm repr" begin
     m = pauli_repr(H)

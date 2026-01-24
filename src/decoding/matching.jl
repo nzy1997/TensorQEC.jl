@@ -1,11 +1,23 @@
 abstract type MatchingSolver end
 
 """
-    MatchingDecoder{T<:MatchingSolver} <: AbstractDecoder
+    MatchingDecoder(solver::MatchingSolver)
 
-A decoder that uses matching algorithm.
-### Fields:
-- `solver::T`: the solver to solve the matching problem.
+Minimum-weight perfect matching decoder. Supports surface codes and other codes
+where each error triggers at most two syndromes. Use with [`compile`](@ref) and [`decode`](@ref).
+
+Available solvers: `IPMatchingSolver()` (exact via integer programming),
+`GreedyMatchingSolver()` (fast approximate).
+
+# Arguments
+- `solver::MatchingSolver`: The matching solver to use.
+
+# Example
+```julia
+problem = DecodingProblem(SurfaceCode(3,3), iid_error(0.01, 9))
+compiled = compile(MatchingDecoder(TensorQEC.IPMatchingSolver()), problem)
+result = decode(compiled, syndrome)
+```
 """
 struct MatchingDecoder{T<:MatchingSolver} <: AbstractClassicalDecoder 
     solver::T

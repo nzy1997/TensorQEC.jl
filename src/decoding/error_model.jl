@@ -116,6 +116,11 @@ function random_error_pattern(em::IndependentDepolarizingError)
     return CSSErrorPattern(xerror, zerror)
 end
 
+"""
+    SimpleSyndrome(s::Vector{Mod2})
+
+A simple syndrome vector for classical error correction.
+"""
 struct SimpleSyndrome <: AbstractSyndrome
     s::Vector{Mod2}
 end
@@ -135,6 +140,11 @@ function syndrome_extraction(errored_qubits::Vector{Mod2}, tanner::SimpleTannerG
     return syndrome_extraction(errored_qubits, tanner.H)
 end
 
+"""
+    CSSSyndrome(sx::Vector{Mod2}, sz::Vector{Mod2})
+
+A CSS syndrome with separate X and Z syndrome vectors.
+"""
 struct CSSSyndrome <: AbstractSyndrome
     sx::Vector{Mod2}
     sz::Vector{Mod2}

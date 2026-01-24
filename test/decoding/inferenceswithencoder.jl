@@ -1,5 +1,6 @@
 using Test, TensorQEC, TensorQEC.Yao
 using TensorQEC.TensorInference
+using TensorQEC: syndrome_transform, syndrome_inference, measure_syndrome!, correction_pauli_string, transformed_syndrome_dict, inference, clifford_network
 
 @testset "measure_syndrome!" begin
     result=stabilizers(SurfaceCode(3,3))

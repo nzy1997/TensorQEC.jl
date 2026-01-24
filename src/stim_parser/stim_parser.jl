@@ -1,11 +1,18 @@
 """
-    parse_stim_file(file_path::String, qubit_number::Int)
+    parse_stim_file(file_path::String, qubit_number::Int) -> ChainBlock
 
-Parse a Stim file and return a Yao circuit.
+Parse a Stim circuit file and return a Yao circuit block.
+
+Supports common Stim instructions including gates (H, X, Y, Z, S, T, CX, CZ),
+noise channels (DEPOLARIZE1, DEPOLARIZE2, X_ERROR), measurements (M, MR, MX, MY, MZ),
+resets (R, RX), REPEAT blocks, DETECTOR, and OBSERVABLE_INCLUDE annotations.
 
 # Arguments
 - `file_path::String`: The path to the Stim file.
-- `qubit_number::Int`: The number of qubits in the circuit.
+- `qubit_number::Int`: The total number of qubits in the circuit.
+
+# Returns
+- `ChainBlock`: A Yao circuit representing the parsed Stim file.
 """
 function parse_stim_file(file_path::String, qubit_number::Int)
     content = read(file_path, String)

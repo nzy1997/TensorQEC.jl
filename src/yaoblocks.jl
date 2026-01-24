@@ -11,6 +11,7 @@ Yao.print_block(io::IO, m::NumberedMeasure) = print(io, "M[$(m.num)]")
 Yao.content(m::NumberedMeasure) = m.m
 YaoBlocks.Optimise.to_basictypes(m::NumberedMeasure) = m
 Yao.chsubblocks(c::NumberedMeasure, block) = NumberedMeasure(block..., c.num)
+Yao.chsubblocks(c::NumberedMeasure, block::AbstractBlock) = NumberedMeasure(block, c.num)
 
 function YaoPlots.draw!(c::YaoPlots.CircuitGrid, p::NumberedMeasure, address, controls)
     @assert length(controls) == 0

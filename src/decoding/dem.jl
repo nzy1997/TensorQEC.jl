@@ -1,3 +1,14 @@
+"""
+    DetectorErrorModel
+
+A detector error model storing error rates and their associated detector-flip mappings.
+
+### Fields
+- `error_rates`: Probability of each error mechanism.
+- `flipped_detectors`: Which detectors each error flips.
+- `detector_list`: Indices of detector nodes.
+- `logical_list`: Indices of logical observable nodes.
+"""
 struct DetectorErrorModel
     error_rates::Vector{Float64}
     flipped_detectors::Vector{Vector{Int}}
@@ -19,6 +30,27 @@ function Base.show(io::IO, dem::DetectorErrorModel)
 	return nothing
 end
 
+"""
+    detector_error_model(qc::ChainBlock) -> DetectorErrorModel
+
+Extract a detector error model from a quantum circuit by analyzing how each
+error channel propagates through the circuit and which detectors it flips.
+
+The circuit should contain error channels (e.g., `DepolarizingChannel`, `BitFlipError`),
+measurement gates (`NumberedMeasure`), and detector annotations (`DetectorBlock`).
+
+# Arguments
+- `qc::ChainBlock`: A Yao circuit with error channels and detector annotations.
+
+# Returns
+- `DetectorErrorModel`: Contains error rates and detector-flip mappings.
+
+# Example
+```julia
+qc = parse_stim_file("circuit.stim", 9)
+dem = detector_error_model(qc)
+```
+"""
 function detector_error_model(qc::ChainBlock)
     qc = YaoBlocks.Optimise.simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
     cqc = compile_clifford_circuit(qc)

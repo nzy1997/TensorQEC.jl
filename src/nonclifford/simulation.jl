@@ -1,3 +1,8 @@
+"""
+    ComplexConj{BT,D} <: TagBlock{BT,D}
+
+A block wrapper that applies complex conjugation to its content block.
+"""
 struct ComplexConj{BT<:AbstractBlock,D} <: TagBlock{BT,D}
     content::BT
 end
@@ -122,7 +127,12 @@ function ein_circ(qc::ChainBlock, qc_info::QCInfo)
     return ein_circ(qc, qc_info.data_qubits, qc_info.data_qubits ∪ qc_info.ancilla_qubits)
 end
 
-function qc2enisum(qc::ChainBlock, srs::Vector{SymbolRecorder{D}}, qc_info::QCInfo) where D
+"""
+    qc2einsum(qc::ChainBlock, srs::Vector{SymbolRecorder}, qc_info::QCInfo)
+
+Convert a quantum circuit to an einsum tensor network contraction, returning the contraction code, tensors, input indices, and output indices.
+"""
+function qc2einsum(qc::ChainBlock, srs::Vector{SymbolRecorder{D}}, qc_info::QCInfo) where D
     ein_code = yao2einsum(qc;initial_state=Dict(x=>0 for x in qc_info.ancilla_qubits ∪ (qc_info.ancilla_qubits.+qc_info.nq)), optimizer=nothing)
     if iszero(length(qc_info.ancilla_qubits))
         jointcode = ein_code.code
@@ -155,7 +165,7 @@ Generate the tensor network representation of the quantum circuit with the given
 function simulation_tensornetwork(qc::ChainBlock,qc_info::QCInfo)
     qc= YaoBlocks.Optimise.simplify(qc; rules=[to_basictypes, Optimise.eliminate_nested])
     qce,srs = ein_circ(qc,qc_info)
-    return qc2enisum(qce,srs,qc_info) 
+    return qc2einsum(qce,srs,qc_info) 
 end
 """
     fidelity_tensornetwork(qc::ChainBlock,qc_info::QCInfo)

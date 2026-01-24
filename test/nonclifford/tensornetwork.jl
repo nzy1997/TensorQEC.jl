@@ -1,6 +1,7 @@
 using Test, TensorQEC
 using TensorQEC.Yao, TensorQEC.TensorInference
 using TensorQEC.TensorInference.OMEinsum
+using TensorQEC: clifford_network
 
 @testset "matrix2factor" begin
 	g = cnot(2, 1, 2)

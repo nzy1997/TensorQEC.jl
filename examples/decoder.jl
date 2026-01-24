@@ -1,13 +1,14 @@
 # # Decoder Interface
 # ## Decoding Problems
-# We have 3 types of decoding problems. [`ClassicalDecodingProblem`](@ref) is for the case that the error model is independent flip error. [`IndependentDepolarizingDecodingProblem`](@ref) is the decoding problem for the case that the error model is independent depolarizing error. [`GeneralDecodingProblem`](@ref) is the decoding problem for the case that error model on different qubits are correlated. We use a tensor network to represent the error probability distribution. Here is an example of how to construct a decoding problem.
+# We have 3 types of decoding problems. `ClassicalDecodingProblem` is for the case that the error model is independent flip error. `IndependentDepolarizingDecodingProblem` is the decoding problem for the case that the error model is independent depolarizing error. `GeneralDecodingProblem` is the decoding problem for the case that error model on different qubits are correlated. We use a tensor network to represent the error probability distribution. Here is an example of how to construct a decoding problem.
 using TensorQEC
-tanner = CSSTannerGraph(SurfaceCode(3,3))
-problem = IndependentDepolarizingDecodingProblem(tanner,iid_error(0.05,0.05,0.05,9))
+code = SurfaceCode(3,3)
+em = iid_error(0.05, 0.05, 0.05, code_n(code))
+problem = DecodingProblem(code, em)
 
 # ## Decoding Process
 # ### Decoders
-# There are 2 types of decoders. `AbstractClassicalDecoder` and `AbstractGeneralDecoder` solve [`ClassicalDecodingProblem`](@ref) and [`GeneralDecodingProblem`](@ref), respectively. For [`IndependentDepolarizingDecodingProblem`](@ref), we can transfer it to [`GeneralDecodingProblem`](@ref) and use `AbstractGeneralDecoder` to solve it. Also, for an [`IndependentDepolarizingDecodingProblem`](@ref) of a CSS code, we can transfer it to two [`ClassicalDecodingProblem`](@ref) and use `AbstractClassicalDecoder` to solve them.
+# There are 2 types of decoders. `AbstractClassicalDecoder` and `AbstractGeneralDecoder`. Classical decoders handle CSS codes by decomposing into independent X/Z decoding. General decoders handle arbitrary error correlations.
 # Here is a list of supported decoders.
 
 # | Decoder | API  | Classification|
@@ -22,14 +23,15 @@ problem = IndependentDepolarizingDecodingProblem(tanner,iid_error(0.05,0.05,0.05
 decoder = IPDecoder()
 
 # ### Compilation
-# Usually, we use decoders to run monte carlo simulations to estimate the code capacity. We use the same decoder to solve the decoding problem of the same QEC code and error model for different error and syndrome configurations. Ones the error model and the QEC code are fixed, we can compile the decoder to avoid the overhead of decoding. For example, in Lookup Table decoder, we can make the truth table once and use it for all the decoding problems. And in tensor network decoders, we can make the tensor network once and connect it to different syndrome configurations when decoding. This is also the reason why there is no syndrome information in the decoding problem or in the decoder. 
+# Usually, we use decoders to run monte carlo simulations to estimate the code capacity. We use the same decoder to solve the decoding problem of the same QEC code and error model for different error and syndrome configurations. Once the error model and the QEC code are fixed, we can compile the decoder to avoid the overhead of decoding. For example, in Lookup Table decoder, we can make the truth table once and use it for all the decoding problems. And in tensor network decoders, we can make the tensor network once and connect it to different syndrome configurations when decoding. This is also the reason why there is no syndrome information in the decoding problem or in the decoder.
 compiled_decoder = compile(decoder, problem);
 
 # ### Decoding
 # Now we randomly generate an error configuration.
 using Random
 Random.seed!(123)
-error_pattern = random_error_pattern(problem.pvec)
+tanner = CSSTannerGraph(code)
+error_pattern = random_error_pattern(em)
 
 # The corresponding syndrome is
 syndrome = syndrome_extraction(error_pattern, tanner)
@@ -40,7 +42,7 @@ res = decode(compiled_decoder, syndrome)
 # We can check the result by comparing the syndrome of the decoding result.
 syndrome == syndrome_extraction(res.error_pattern, tanner)
 
-# Also, to check wether there is a logical error, we can first generate the logical operators with [`logical_operator`](@ref).
+# Also, to check whether there is a logical error, we can first generate the logical operators with [`logical_operator`](@ref).
 logicalx_operators,logicalz_operators = logical_operator(tanner)
 
 # Then we can check the syndrome of the logical operators with [`check_logical_error`](@ref).

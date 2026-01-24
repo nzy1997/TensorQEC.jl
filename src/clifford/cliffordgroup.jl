@@ -179,6 +179,11 @@ struct CompiledCliffordCircuit{M1, M2}
     depolarization_gates::Vector{CliffordGate{M1}}
 end
 
+"""
+    compile_clifford_circuit(qc::ChainBlock) -> CompiledCliffordCircuit
+
+Compile a quantum circuit into an optimized Clifford circuit representation for fast simulation.
+"""
 function compile_clifford_circuit(qc::ChainBlock)
     sequence = Tuple{Symbol, Int, Int}[]
     single_qubit_gates = typeof(CliffordGate(X))[]
@@ -338,7 +343,7 @@ Perform Clifford simulation with a Pauli string `paulistring` as the input.
 - `qc`: The quantum circuit represented as a Yao's `ChainBlock`, its elements should be Clifford gates.
 
 ### Returns
-- `result`: A [`CliffordSimulateResult`](@ref) records the output Pauli string, the phase factor, the simplified circuit, and the history of Pauli strings.
+- `result`: A `CliffordSimulateResult` records the output Pauli string, the phase factor, the simplified circuit, and the history of Pauli strings.
 """
 clifford_simulate(ps::PauliString{N}, qc::ChainBlock;with_history=false) where {N} = clifford_simulate(PauliGroupElement(0, ps), qc;with_history)
 function clifford_simulate(pg::PauliGroupElement{N}, qc::ChainBlock; with_history=false) where {N}

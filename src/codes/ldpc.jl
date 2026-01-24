@@ -61,7 +61,7 @@ end
     CSSTannerGraph(stgx::SimpleTannerGraph, stgz::SimpleTannerGraph)
     CSSTannerGraph(nq::Int, stxs::Vector{Vector{Int}}, stzs::Vector{Vector{Int}})
     CSSTannerGraph(sts::Vector{PauliString{N}}) where N
-    CSSTannerGraph(cqc::CSSQuantumCode)
+    CSSTannerGraph(cqc::AbstractCSSCode)
 
 Two tanner graph for a CSS code, one for X stabilizers and one for Z stabilizers.
 
@@ -110,7 +110,7 @@ function CSSTannerGraph(sts::Vector{PauliString{N}}) where N
     return CSSTannerGraph(N, stxs, stzs)
 end
 
-function CSSTannerGraph(cqc::CSSQuantumCode)
+function CSSTannerGraph(cqc::AbstractCSSCode)
     return CSSTannerGraph(stabilizers(cqc))
 end
 

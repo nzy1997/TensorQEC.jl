@@ -38,6 +38,41 @@ end
 get_problem(tanner::CSSTannerGraph,pvec::IndependentDepolarizingError) = IndependentDepolarizingDecodingProblem(tanner,pvec)
 
 """
+    DecodingProblem(code::AbstractCSSCode, error_model::IndependentDepolarizingError)
+
+Construct a decoding problem from a quantum code and an error model.
+This is the recommended entry point for the decoding pipeline.
+
+# Example
+```julia
+code = SteaneCode()
+em = iid_error(0.01, 0.01, 0.01, code_n(code))
+problem = DecodingProblem(code, em)
+compiled = compile(BPDecoder(), problem)
+
+error = random_error_pattern(em)
+tanner = CSSTannerGraph(code)
+syndrome = syndrome_extraction(error, tanner)
+result = decode(compiled, syndrome)
+```
+"""
+function DecodingProblem(code::AbstractCSSCode, error_model::IndependentDepolarizingError)
+    tanner = CSSTannerGraph(code)
+    return IndependentDepolarizingDecodingProblem(tanner, error_model)
+end
+
+"""
+    DecodingProblem(code::AbstractCSSCode, error_model::IndependentFlipError)
+
+Construct a classical decoding problem from a quantum code and a flip error model.
+Uses the X-stabilizer Tanner graph for decoding.
+"""
+function DecodingProblem(code::AbstractCSSCode, error_model::IndependentFlipError)
+    tanner = CSSTannerGraph(code)
+    return ClassicalDecodingProblem(tanner.stgx, error_model)
+end
+
+"""
     GeneralDecodingProblem(tanner::SimpleTannerGraph, ptn::SimpleTensorNetwork)
 
 A general decoding problem.
@@ -67,9 +102,26 @@ Compile the decoder to specific tanner graph and prior probability distributions
 abstract type CompiledDecoder end
 
 """
+    compile(decoder::AbstractDecoder, problem::AbstractDecodingProblem) -> CompiledDecoder
     compile(decoder::AbstractDecoder, tanner::AbstractTannerGraph)
+    compile(decoder::AbstractDecoder, tanner::AbstractTannerGraph, pvec::AbstractErrorModel)
 
-Compile the decoder to specific tanner graph and prior probability distributions.
+Compile a decoder for a specific decoding problem. Pre-compiling amortizes setup
+cost when decoding many syndromes with the same code and error model.
+
+# Arguments
+- `decoder::AbstractDecoder`: The decoder algorithm (e.g., `BPDecoder()`, `IPDecoder()`, `TNMAP()`, `TNMMAP()`).
+- `problem::AbstractDecodingProblem`: Created via [`DecodingProblem`](@ref).
+
+# Returns
+- `CompiledDecoder`: A compiled decoder ready for use with [`decode`](@ref).
+
+# Example
+```julia
+problem = DecodingProblem(SteaneCode(), iid_error(0.01, 0.01, 0.01, 7))
+compiled = compile(BPDecoder(), problem)
+# Now use `decode(compiled, syndrome)` repeatedly
+```
 """
 function compile(decoder::AbstractDecoder, tanner::AbstractTannerGraph)
     return compile(decoder, tanner, iid_error(0.05,tanner))
@@ -79,19 +131,32 @@ function compile(decoder::AbstractDecoder, tanner::AbstractTannerGraph, pvec::Ab
 end
 
 """
-    decode(decoder::AbstractDecoder, problem::AbstractDecodingProblem, syndrome::AbstractSyndrome)
-    decode(compiled_decoder::CompiledDecoder, syndrome::AbstractSyndrome)
+    decode(compiled::CompiledDecoder, syndrome::AbstractSyndrome) -> DecodingResult
+    decode(decoder::AbstractDecoder, problem::AbstractDecodingProblem, syndrome::AbstractSyndrome) -> DecodingResult
 
-Decode the syndrome using the decoder.
+Decode a syndrome using a pre-compiled decoder (recommended) or by compiling on the fly.
 
-### Input:
-- `decoder::AbstractDecoder`: the decoder.
-- `problem::AbstractDecodingProblem`: the decoding problem.
-- `syndrome::AbstractSyndrome`: the syndrome.
-- `compiled_decoder::CompiledDecoder`: the compiled decoder.
+# Arguments
+- `compiled::CompiledDecoder`: A decoder compiled for a specific problem via [`compile`](@ref).
+- `syndrome::AbstractSyndrome`: The measured syndrome (`SimpleSyndrome` or `CSSSyndrome`).
 
-### Output:
-- `decoding_result::DecodingResult`: the decoding result.
+# Returns
+- `DecodingResult`: Contains `success_tag::Bool` indicating whether decoding succeeded,
+  and `error_pattern` with the estimated error.
+
+# Example
+```julia
+code = SteaneCode()
+em = iid_error(0.01, 0.01, 0.01, code_n(code))
+problem = DecodingProblem(code, em)
+compiled = compile(BPDecoder(), problem)
+
+error = random_error_pattern(em)
+tanner = CSSTannerGraph(code)
+syndrome = syndrome_extraction(error, tanner)
+result = decode(compiled, syndrome)
+result.success_tag  # true if decoding succeeded
+```
 """
 function decode(decoder::AbstractDecoder, tanner::AbstractTannerGraph, syndrome::AbstractSyndrome)
     return decode(decoder, tanner, syndrome, iid_error(0.05,tanner))
