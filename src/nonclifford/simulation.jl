@@ -1,3 +1,8 @@
+"""
+    ComplexConj{BT,D} <: TagBlock{BT,D}
+
+A block wrapper that applies complex conjugation to its content block.
+"""
 struct ComplexConj{BT<:AbstractBlock,D} <: TagBlock{BT,D}
     content::BT
 end
@@ -122,6 +127,11 @@ function ein_circ(qc::ChainBlock, qc_info::QCInfo)
     return ein_circ(qc, qc_info.data_qubits, qc_info.data_qubits ∪ qc_info.ancilla_qubits)
 end
 
+"""
+    qc2einsum(qc::ChainBlock, srs::Vector{SymbolRecorder}, qc_info::QCInfo)
+
+Convert a quantum circuit to an einsum tensor network contraction, returning the contraction code, tensors, input indices, and output indices.
+"""
 function qc2einsum(qc::ChainBlock, srs::Vector{SymbolRecorder{D}}, qc_info::QCInfo) where D
     ein_code = yao2einsum(qc;initial_state=Dict(x=>0 for x in qc_info.ancilla_qubits ∪ (qc_info.ancilla_qubits.+qc_info.nq)), optimizer=nothing)
     if iszero(length(qc_info.ancilla_qubits))

@@ -179,6 +179,11 @@ struct CompiledCliffordCircuit{M1, M2}
     depolarization_gates::Vector{CliffordGate{M1}}
 end
 
+"""
+    compile_clifford_circuit(qc::ChainBlock) -> CompiledCliffordCircuit
+
+Compile a quantum circuit into an optimized Clifford circuit representation for fast simulation.
+"""
 function compile_clifford_circuit(qc::ChainBlock)
     sequence = Tuple{Symbol, Int, Int}[]
     single_qubit_gates = typeof(CliffordGate(X))[]

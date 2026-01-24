@@ -50,6 +50,15 @@ function measurement_circuit!(qc::ChainBlock, st::PauliString{N}, pos::Int) wher
 	return qc
 end
 
+"""
+	measurement_circuit(sts::Vector{PauliString{N}}) where N
+
+Generate a standard syndrome measurement circuit for the given stabilizer generators.
+
+### Returns
+- `qc`: The measurement circuit.
+- `st_pos`: The ancilla qubit indices for measuring corresponding stabilizers.
+"""
 function measurement_circuit(sts::Vector{PauliString{N}}) where N
 	num_qubits = length(sts) + N
 	qc = chain(num_qubits)

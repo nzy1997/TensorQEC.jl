@@ -1,3 +1,12 @@
+"""
+    Tableau{N}
+
+A tableau representation of a stabilizer state for `N` qubits, storing X and Z stabilizer generators.
+
+### Fields
+- `tabx::Vector{PauliGroupElement{N}}`: X stabilizer generators.
+- `tabz::Vector{PauliGroupElement{N}}`: Z stabilizer generators.
+"""
 struct Tableau{N}
     tabx::Vector{PauliGroupElement{N}}
     tabz::Vector{PauliGroupElement{N}}
@@ -18,6 +27,14 @@ function Base.show(io::IO, tab::Tableau{N}) where {N}
 end
 
 
+"""
+    tableau_simulate(tab::Tableau, operation)
+    tableau_simulate(tab::Tableau, qc::ChainBlock)
+    tableau_simulate(qc::ChainBlock)
+    tableau_simulate(ps::PauliString, qc::ChainBlock)
+
+Simulate a Clifford circuit using the tableau representation. Returns the updated [`Tableau`](@ref) or the mapped [`PauliGroupElement`](@ref).
+"""
 function tableau_simulate(tab::Tableau{N}, operation::Pair{NTuple{M,Int}, <:CliffordGate}) where {M, N}
     return Tableau([operation.second(tab.tabx[i], operation.first) for i in 1:N], [operation.second(tab.tabz[i], operation.first) for i in 1:N])
 end

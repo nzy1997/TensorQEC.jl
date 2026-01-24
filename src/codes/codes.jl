@@ -179,6 +179,11 @@ function stabilizers(::Code513)
 	return pauli_string
 end
 
+"""
+	BivariateBicycleCode{N}(m::Int, n::Int, vc, hd)
+
+A bivariate bicycle code on an `m x n` torus with vertical (`vc`) and horizontal (`hd`) connection tuples.
+"""
 struct BivariateBicycleCode{N} <: AbstractCSSCode
     m::Int
     n::Int
@@ -242,10 +247,20 @@ Construct a Toric code with `m` rows and `n` columns.
 ToricCode(m::Int,n::Int) = BivariateBicycleCode(m,n,((1,0),(0,0)), ((0,1),(0,0)))
 
 abstract type TriangularColorCode <: AbstractCSSCode end
+"""
+	Color488(d::Int)
+
+A 4.8.8 triangular color code with distance `d`.
+"""
 struct Color488 <: TriangularColorCode
 	d::Int
 end
 
+"""
+	Color666(d::Int)
+
+A 6.6.6 triangular color code with distance `d`.
+"""
 struct Color666 <: TriangularColorCode
 	d::Int
 end

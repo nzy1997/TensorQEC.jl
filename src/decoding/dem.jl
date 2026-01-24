@@ -1,3 +1,14 @@
+"""
+    DetectorErrorModel
+
+A detector error model storing error rates and their associated detector-flip mappings.
+
+### Fields
+- `error_rates`: Probability of each error mechanism.
+- `flipped_detectors`: Which detectors each error flips.
+- `detector_list`: Indices of detector nodes.
+- `logical_list`: Indices of logical observable nodes.
+"""
 struct DetectorErrorModel
     error_rates::Vector{Float64}
     flipped_detectors::Vector{Vector{Int}}
