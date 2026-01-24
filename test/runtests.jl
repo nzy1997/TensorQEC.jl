@@ -3,7 +3,7 @@ using Test
 using Documenter
 
 @testset "aqua" begin
-    # include("aqua.jl")
+    include("aqua.jl")
 end
 
 @testset "mod2" begin

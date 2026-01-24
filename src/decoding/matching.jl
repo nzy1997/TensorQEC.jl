@@ -14,8 +14,8 @@ Available solvers: `IPMatchingSolver()` (exact via integer programming),
 
 # Example
 ```julia
-problem = DecodingProblem(SurfaceCode(3,3), iid_error(0.01, 7))
-compiled = compile(MatchingDecoder(IPMatchingSolver()), problem)
+problem = DecodingProblem(SurfaceCode(3,3), iid_error(0.01, 9))
+compiled = compile(MatchingDecoder(TensorQEC.IPMatchingSolver()), problem)
 result = decode(compiled, syndrome)
 ```
 """

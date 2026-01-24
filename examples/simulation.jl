@@ -39,6 +39,7 @@
 
 # ## Definition of Stabilizers and Encoding Circuits
 using TensorQEC, TensorQEC.Yao
+using TensorQEC: measure_circuit_steane, correction_dict, correction_circuit
 using TensorQEC.OMEinsum
 st = stabilizers(SteaneCode())
 
@@ -47,14 +48,14 @@ qcen, data_qubits, code = encode_stabilizers(st)
 vizcircuit(qcen)
 
 # ## Syndrome Extraction and Measurement-Free Error Correction
-# First, we generate the steane measurement circuit by [`measure_circuit_steane`](@ref) and `st_pos` records the ancilla qubits that store the measurement results of the stabilizers.
+# First, we generate the steane measurement circuit by `measure_circuit_steane` and `st_pos` records the ancilla qubits that store the measurement results of the stabilizers.
 qcm,st_pos  = measure_circuit_steane(data_qubits[1],st;qcen)
 vizcircuit(qcm)
 
-# Then we generate correction dictionary for the error correction by [`correction_dict`](@ref).
+# Then we generate correction dictionary for the error correction by `correction_dict`.
 table = correction_dict(st, 1;et = "Z")
 
-# Now we use [`correction_circuit`](@ref) to generate the measurement-free correction circuit by encoding the truth table on the quantum circuit directly.
+# Now we use `correction_circuit` to generate the measurement-free correction circuit by encoding the truth table on the quantum circuit directly.
 num_qubits = nqubits(qcm)
 qccr = correction_circuit(table, num_qubits, 3, 25:27, 27)
 vizcircuit(qccr)

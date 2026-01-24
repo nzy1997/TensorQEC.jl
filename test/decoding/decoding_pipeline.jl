@@ -199,6 +199,7 @@ end
         em = iid_error(0.01, 0.01, 0.01, n)
         problem = DecodingProblem(code, em)
         tanner = CSSTannerGraph(code)
+        compiled = compile(TNMAP(), problem)
 
         # Run multiple trials - with low error rate, decoder should mostly succeed
         successes = 0
@@ -206,7 +207,6 @@ end
         for _ in 1:trials
             error = random_error_pattern(em)
             syndrome = syndrome_extraction(error, tanner)
-            compiled = compile(TNMAP(), problem)
             result = decode(compiled, syndrome)
             if result.success_tag
                 successes += 1

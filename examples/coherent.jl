@@ -4,6 +4,7 @@
 # ## Quantum Circuit Construction
 # First, we define the stabilizers for Steane code. 
 using TensorQEC, TensorQEC.Yao
+using TensorQEC: error_quantum_circuit
 using TensorQEC.OMEinsum
 st = stabilizers(SteaneCode()) 
 
@@ -47,7 +48,7 @@ optnet = optimize_code(tn, TreeSA(; ntrials=1, niters=3), OMEinsum.MergeVectors(
 infidelity = 1 - abs(contract(optnet)[1])
 
 # ## Coherent Error Simulation with Tensor Network
-# We add coherent error to the circuit by adding unitary error to every unitary gate by [`error_quantum_circuit`](@ref), which replaces the gates in the original circuit with the errored gates.
+# We add coherent error to the circuit by adding unitary error to every unitary gate by `error_quantum_circuit`, which replaces the gates in the original circuit with the errored gates.
 eqc = error_quantum_circuit(qc, 1e-5)
 vizcircuit(eqc)
 

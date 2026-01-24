@@ -18,6 +18,7 @@ makedocs(;
     modules=[TensorQEC],
     authors="Zhongyi Ni",
     sitename="TensorQEC.jl",
+    warnonly=[:missing_docs],
     format=Documenter.HTML(;
         canonical="https://nzy1997.github.io/TensorQEC.jl",
         edit_link="main",

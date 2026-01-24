@@ -2,7 +2,7 @@
 In this section, we introduce the definition of Pauli strings and basic operations on them. We also introduce the Clifford group and how to simulate a Clifford circuit applied on Pauli strings.
 
 ## Pauli Strings
-A pauli string is a tensor product of Pauli operators acting on different qubits. [`PauliString`](@ref) is a subtype of `CompositeBlock` with a field `ids` storing the Pauli operators. We can define pauli string with [`PauliString`](@ref) or [`@P_str`](@ref) string literal.
+A pauli string is a tensor product of Pauli operators acting on different qubits. [`PauliString`](@ref) is a subtype of `CompositeBlock` with a field `ids` storing the Pauli operators. We can define pauli string with [`PauliString`](@ref) or `@P_str` string literal.
 
 ```@example clifford
 using TensorQEC, TensorQEC.Yao

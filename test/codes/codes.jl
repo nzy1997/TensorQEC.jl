@@ -291,6 +291,12 @@ end
 		@test code_k(c) == 3
 		pm = parity_matrix(c)
 		@test size(pm) == (5, 16)
+		pmx = parity_matrix_x(c)
+		pmz = parity_matrix_z(c)
+		@test size(pmx, 2) == 8
+		@test size(pmz, 2) == 8
+		@test size(pmx, 1) == 1  # 1 X stabilizer (all-X)
+		@test size(pmz, 1) == 4  # 4 Z stabilizers
 	end
 
 	@testset "Code422" begin
@@ -298,6 +304,10 @@ end
 		@test code_n(c) == 4
 		@test code_s(c) == 2
 		@test code_k(c) == 2
+		pmx = parity_matrix_x(c)
+		pmz = parity_matrix_z(c)
+		@test size(pmx) == (1, 4)
+		@test size(pmz) == (1, 4)
 	end
 
 	@testset "Code1573" begin
@@ -305,6 +315,10 @@ end
 		@test code_n(c) == 15
 		@test code_s(c) == 8
 		@test code_k(c) == 7
+		pmx = parity_matrix_x(c)
+		pmz = parity_matrix_z(c)
+		@test size(pmx) == (4, 15)
+		@test size(pmz) == (4, 15)
 	end
 
 	@testset "Color488" begin
@@ -320,5 +334,19 @@ end
 		c = Color666(3)
 		@test code_n(c) == 7
 		@test code_k(c) == 1
+		pmx = parity_matrix_x(c)
+		pmz = parity_matrix_z(c)
+		@test size(pmx, 1) == size(pmz, 1)
+		@test size(pmx, 2) == 7
+	end
+
+	@testset "BivariateBicycleCode" begin
+		c = BivariateBicycleCode(7,7, ((1,0),(0,3),(0,4)), ((0,1),(3,0),(4,0)))
+		@test code_n(c) == 98
+		@test code_k(c) == 6
+		pmx = parity_matrix_x(c)
+		pmz = parity_matrix_z(c)
+		@test size(pmx, 2) == 98
+		@test size(pmz, 2) == 98
 	end
 end

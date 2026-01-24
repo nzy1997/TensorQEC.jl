@@ -80,11 +80,11 @@ println("Logical error rate: $logical_error_rate")
 | Decoder | Type | Notes |
 |---------|------|-------|
 | `BPDecoder()` | Classical | Belief Propagation with OSD fallback |
-| `MatchingDecoder()` | Classical | Minimum-weight perfect matching |
+| `MatchingDecoder(solver)` | Classical | Minimum-weight perfect matching (solvers: `TensorQEC.IPMatchingSolver()`, `TensorQEC.GreedyMatchingSolver()`) |
 | `IPDecoder()` | General | Integer programming (exact, slower) |
 | `TNMAP()` | General | Tensor network MAP decoder |
 | `TNMMAP()` | General | Tensor network marginal MAP decoder |
-| `TableDecoder()` | General | Lookup table (small codes only) |
+| `TableDecoder(d)` | General | Lookup table (d = code distance, small codes only) |
 
 Classical decoders handle CSS codes by decomposing into independent X/Z decoding. General decoders handle arbitrary error correlations.
 
@@ -202,12 +202,11 @@ dem = detector_error_model(qc)
 # Convert DEM to a Tanner graph for decoding
 tanner = TensorQEC.dem2tanner(dem)
 
-# Create a decoding problem from the DEM error rates
+# Create an error model from the DEM error rates
 pvec = IndependentFlipError(dem.error_rates)
-problem = ClassicalDecodingProblem(tanner, pvec)
 
-# Compile and decode
-compiled = compile(BPDecoder(), problem)
+# Compile and decode using the Tanner graph and error model
+compiled = compile(BPDecoder(), tanner, pvec)
 
 # Generate a random error pattern from the DEM
 error = random_error_pattern(dem)

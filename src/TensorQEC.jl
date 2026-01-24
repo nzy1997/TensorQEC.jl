@@ -44,6 +44,7 @@ export Tableau, tableau_simulate
 export SurfaceCode, ToricCode, ShorCode, SteaneCode, Code832, Code422, Code1573, Code513
 export BivariateBicycleCode, Color488, Color666
 export stabilizers, code_distance, logical_operator
+export code_n, code_s, code_k
 
 # === Encoding ===
 export encode_stabilizers, place_qubits

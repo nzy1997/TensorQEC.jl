@@ -1,6 +1,6 @@
 using TensorQEC
 using Test
-using Yao
+using TensorQEC.Yao
 
 @testset "parse_stim_string" begin
     circuit_str = """

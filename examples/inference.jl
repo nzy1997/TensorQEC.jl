@@ -5,12 +5,13 @@
 
 # ## Definition of Stabilizers
 using TensorQEC, TensorQEC.Yao
+using TensorQEC: measure_syndrome!, transformed_syndrome_dict, clifford_network, syndrome_inference, correction_pauli_string, inference
 surface_stabilizers = stabilizers(SurfaceCode(3,3))
 
 # Then we can generate the encoding circuits of the stabilizers by [`encode_stabilizers`](@ref).
 encoder, data_qubits, bimatrix = encode_stabilizers(surface_stabilizers)
 vizcircuit(encoder)
-# where `encoder` is the encoding circuit, `data_qubits` are the qubits that we should put initial qubtis in, and `bimatrix` is a [`CSSBimatrix`](@ref) instance that records information of the encoding circuit. For more details on `Bimatrix`, please check [^Gottesman]. 
+# where `encoder` is the encoding circuit, `data_qubits` are the qubits that we should put initial qubtis in, and `bimatrix` is a `CSSBimatrix` instance that records information of the encoding circuit. For more details on `Bimatrix`, please check [^Gottesman]. 
 
 # The process of obtaining the encoding circuit requires adjusting the generators of the stabilizer group. The new generators are
 TensorQEC.bimatrix2stabilizers(bimatrix)
@@ -28,25 +29,25 @@ apply!(logic_state, encoder)
 apply!(logic_state, put(9, 3 => X))
 
 # ## Measure the Syndrome and Inference the Error Probability
-# We first measure the stabilizers to get the error syndrome by [`measure_syndrome!`](@ref). 1 means the stabilizer is not violated, and -1 means the stabilizer is violated. Though the stabilizers are not the same as the initial stabilizers, we can't directly measure the current stabilizers to get the syndrome. The reason is that there may be some long range term in the current stabilizers, which can' be measrued physically. So we still measure the initial stabilizers to get the syndrome.
+# We first measure the stabilizers to get the error syndrome by `measure_syndrome!`. 1 means the stabilizer is not violated, and -1 means the stabilizer is violated. Though the stabilizers are not the same as the initial stabilizers, we can't directly measure the current stabilizers to get the syndrome. The reason is that there may be some long range term in the current stabilizers, which can't be measured physically. So we still measure the initial stabilizers to get the syndrome.
 measure_outcome = measure_syndrome!(logic_state, surface_stabilizers)
 
-# Then we transform the syndrome in the current stabilizers by [`transformed_syndrome_dict`](@ref). The syndrome is transformed to 0 if the measurement outcome is 1, and 1 if the measurement outcome is -1.
+# Then we transform the syndrome in the current stabilizers by `transformed_syndrome_dict`. The syndrome is transformed to 0 if the measurement outcome is 1, and 1 if the measurement outcome is -1.
 syn_dict = transformed_syndrome_dict(measure_outcome, bimatrix)
 
-# Now we generate the tensor network for syndrome inference by [`clifford_network`](@ref).
+# Now we generate the tensor network for syndrome inference by `clifford_network`.
 tensor_network = clifford_network(encoder)
 
 # Define the prior error probability of each physical qubit. Here we assume the error probability of each qubit is the same. There are probability of 85% that the qubits are correct, and 5% that there is an X error, Y error, or Z error respectively.
 prior = fill([0.85, 0.05, 0.05, 0.05], 9)
 
-# We can use the [`syndrome_inference`](@ref) function to infer the error probability.
+# We can use the `syndrome_inference` function to infer the error probability.
 pinf = syndrome_inference(tensor_network, syn_dict, prior)
 
-# Generate the Pauli string for error correction. [`correction_pauli_string`](@ref) generates the error Pauli string in the coding space. To correct the error, we still need to transform it to the physical space by [`clifford_simulate`](@ref). The corretion pauli string here is $X_6$. Since there is a stabilizer $X_3X_6$, applying $X_3$ or $X_6$ on the coding space are equivalent.
+# Generate the Pauli string for error correction. `correction_pauli_string` generates the error Pauli string in the coding space. To correct the error, we still need to transform it to the physical space by [`clifford_simulate`](@ref). The correction pauli string here is $X_6$. Since there is a stabilizer $X_3X_6$, applying $X_3$ or $X_6$ on the coding space are equivalent.
 ps_ec_phy = clifford_simulate(correction_pauli_string(9, syn_dict, pinf), encoder).pg.ps
 
-# Or we can simply use the [`inference`](@ref) function to infer error pauli string in one function.
+# Or we can simply use the `inference` function to infer error pauli string in one function.
 ps_ec_phy = inference(measure_outcome, bimatrix, encoder, prior)
 
 # ## Error Correction

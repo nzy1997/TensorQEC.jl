@@ -1,6 +1,6 @@
 using TensorQEC
 using TensorQEC: NumberedMeasure
-using Yao
+using TensorQEC.Yao
 using Test
 
 @testset "NumberedMeasure" begin
