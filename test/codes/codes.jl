@@ -2,6 +2,20 @@ using Test, TensorQEC, TensorQEC.Yao, TensorQEC.LinearAlgebra
 using Random
 using QECCore
 
+@testset "Code type hierarchy" begin
+    @test SurfaceCode(3, 3) isa AbstractCSSCode
+    @test ShorCode() isa AbstractCSSCode
+    @test SteaneCode() isa AbstractCSSCode
+    @test Code832() isa AbstractCSSCode
+    @test Code422() isa AbstractCSSCode
+    @test Code1573() isa AbstractCSSCode
+    @test Code513() isa AbstractQECC
+    @test !(Code513() isa AbstractCSSCode)
+    @test Color488(3) isa AbstractCSSCode
+    @test Color666(3) isa AbstractCSSCode
+    @test ToricCode(3,3) isa AbstractCSSCode
+end
+
 @testset "toric code" begin
 	t = ToricCode(2, 3)
 	result = stabilizers(t)
