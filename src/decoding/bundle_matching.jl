@@ -44,6 +44,10 @@ struct CompiledBundleSideMatching <: CompiledDecoder
     phi_0::Matrix{Mod2}
     psi_1::Matrix{Mod2}
     K_0::Matrix{Mod2}
+    matching_graph::MatchingGraph
+    edge2qubit::Matrix{Int}
+    toric_components::Vector{Int}
+    events_buf::Vector{Int}
 end
 
 function _bundle_matching_key(dict::AbstractDict, key::AbstractString, context::AbstractString)
@@ -249,6 +253,21 @@ function _validate_bundle_matching_d1_toric(side_name::AbstractString, d1_toric:
     return nothing
 end
 
+function _bundle_matching_components(d1_toric::AbstractMatrix{Mod2})
+    graph = SimpleGraph(size(d1_toric, 1))
+    for column_index in axes(d1_toric, 2)
+        a, b = findall(entry -> entry.x, view(d1_toric, :, column_index))
+        Graphs.add_edge!(graph, a, b)
+    end
+    labels = zeros(Int, nv(graph))
+    for (component_index, component) in enumerate(connected_components(graph))
+        for vertex in component
+            labels[vertex] = component_index
+        end
+    end
+    return labels
+end
+
 function _load_bundle_matching_side(bundle_dir::AbstractString, side::Symbol)
     manifest = _load_bundle_matching_manifest(bundle_dir)
     side_name = String(side)
@@ -312,6 +331,10 @@ end
 
 function compile(decoder::BundleMatchingDecoder, problem::BundleSideDecodingProblem)
     dims, matrices = _load_bundle_matching_side(problem.bundle_dir, problem.side)
+    matching_graph, edge2qubit = parity_matrix2matching_graph(matrices.d1_toric)
+    toric_components = _bundle_matching_components(matrices.d1_toric)
+    events_buf = Int[]
+    sizehint!(events_buf, dims.t0_dim)
     return CompiledBundleSideMatching(
         problem.bundle_dir,
         problem.side,
@@ -329,7 +352,54 @@ function compile(decoder::BundleMatchingDecoder, problem::BundleSideDecodingProb
         matrices.phi_0,
         matrices.psi_1,
         matrices.K_0,
+        matching_graph,
+        edge2qubit,
+        toric_components,
+        events_buf,
     )
+end
+
+function _has_nonzero_mod2(entries::AbstractArray{Mod2})
+    return any(entry -> entry.x, entries)
+end
+
+function _bundle_matching_events_matchable(events::Vector{Int}, component_labels::Vector{Int})
+    component_parity = falses(maximum(component_labels))
+    @inbounds for event in events
+        component_parity[component_labels[event]] ⊻= true
+    end
+    return !any(component_parity)
+end
+
+function decode(compiled::CompiledBundleSideMatching, syndrome::SimpleSyndrome)
+    length(syndrome.s) == compiled.c0_dim || throw(
+        ArgumentError("expected syndrome length $(compiled.c0_dim), got $(length(syndrome.s))"),
+    )
+
+    if compiled.check_valid_syndrome
+        _has_nonzero_mod2(compiled.epsilon_c * syndrome.s) && throw(
+            ArgumentError("syndrome violates epsilon_c consistency for $(compiled.side)"),
+        )
+    end
+
+    s_t = compiled.phi_0 * syndrome.s
+    events = compiled.events_buf
+    fill_events_mod2!(events, s_t, 1, compiled.t0_dim)
+
+    e_t = fill(Mod2(0), compiled.t1_dim)
+    if _bundle_matching_events_matchable(events, compiled.toric_components)
+        error_vec = SparseBlossom.decode_to_edges(compiled.matching_graph, events)
+        @inbounds for j in 1:2:length(error_vec)
+            qubit = compiled.edge2qubit[error_vec[j], error_vec[j + 1]]
+            qubit != 0 && (e_t[qubit] += Mod2(1))
+        end
+    elseif compiled.check_valid_syndrome
+        throw(ArgumentError("toric syndrome is not matchable for $(compiled.side)"))
+    end
+
+    e_c = compiled.psi_1 * e_t + compiled.K_0 * syndrome.s
+    success = compiled.check_matrix * e_c == syndrome.s
+    return DecodingResult(success, e_c)
 end
 
 function compile(decoder::BundleMatchingDecoder, problem::BundleCSSDecodingProblem)

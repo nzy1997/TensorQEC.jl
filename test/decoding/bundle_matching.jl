@@ -43,6 +43,30 @@ function rewrite_lines(path::AbstractString, lines::Vector{String})
     end
 end
 
+function zero_syndrome(compiled)
+    return SimpleSyndrome(fill(Mod2(0), compiled.c0_dim))
+end
+
+function first_valid_syndrome(compiled)
+    for qubit in 1:compiled.c1_dim
+        syndrome = compiled.check_matrix[:, qubit]
+        any(v -> v.x, syndrome) || continue
+        any(v -> v.x, compiled.epsilon_c * syndrome) && continue
+        return SimpleSyndrome(copy(syndrome))
+    end
+    error("failed to locate a valid nonzero syndrome for $(compiled.side)")
+end
+
+function first_invalid_syndrome(compiled)
+    for check in 1:compiled.c0_dim
+        syndrome = fill(Mod2(0), compiled.c0_dim)
+        syndrome[check] = Mod2(1)
+        any(v -> v.x, compiled.epsilon_c * syndrome) || continue
+        return SimpleSyndrome(syndrome)
+    end
+    error("failed to locate an invalid syndrome for $(compiled.side)")
+end
+
 @testset "bundle matching api" begin
     @test isdefined(TensorQEC, :BundleSideDecodingProblem)
     @test isdefined(TensorQEC, :BundleCSSDecodingProblem)
@@ -128,5 +152,31 @@ end
         rows[3][1] = "1"
         rewrite_lines(d1_toric_path, [join(row, " ") for row in rows])
         @test_throws ArgumentError compile(decoder, BundleSideDecodingProblem(tempdir, :decode_x))
+    end
+end
+
+@testset "bundle matching single-side decode" begin
+    for side in (:decode_x, :decode_z)
+        compiled = compile(BundleMatchingDecoder(), BundleSideDecodingProblem(bundle_dir(), side))
+        compiled_no_check = compile(
+            BundleMatchingDecoder(check_valid_syndrome=false),
+            BundleSideDecodingProblem(bundle_dir(), side),
+        )
+
+        result_zero = decode(compiled, zero_syndrome(compiled))
+        @test result_zero.success_tag === true
+        @test result_zero.error_pattern == fill(Mod2(0), compiled.c1_dim)
+
+        valid_syndrome = first_valid_syndrome(compiled)
+        result_valid = decode(compiled, valid_syndrome)
+        @test result_valid.success_tag === true
+        @test compiled.check_matrix * result_valid.error_pattern == valid_syndrome.s
+
+        invalid_syndrome = first_invalid_syndrome(compiled)
+        @test_throws ArgumentError decode(compiled, invalid_syndrome)
+
+        result_invalid = decode(compiled_no_check, invalid_syndrome)
+        @test result_invalid isa DecodingResult
+        @test length(result_invalid.error_pattern) == compiled.c1_dim
     end
 end
