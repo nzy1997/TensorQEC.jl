@@ -7,6 +7,16 @@ bundle_dir() = normpath(joinpath(@__DIR__, "../../../../example/testing_case_cac
     @test isdefined(TensorQEC, :BundleSideDecodingProblem)
     @test isdefined(TensorQEC, :BundleCSSDecodingProblem)
     @test isdefined(TensorQEC, :BundleMatchingDecoder)
+
+    problem = BundleSideDecodingProblem(bundle_dir(), :decode_z)
+    @test problem.side === :decode_z
+    @test_throws ArgumentError BundleSideDecodingProblem(bundle_dir(), :x)
+
+    css_problem = BundleCSSDecodingProblem(bundle_dir())
+    @test css_problem.bundle_dir == bundle_dir()
+
+    decoder = BundleMatchingDecoder(check_valid_syndrome=false)
+    @test decoder.check_valid_syndrome == false
 end
 
 @testset "bundle matching compile path" begin
