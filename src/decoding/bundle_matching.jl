@@ -1,9 +1,9 @@
-struct BundleSideDecodingProblem <: AbstractBundleDecodingProblem
+struct BundleSideDecodingProblem <: AbstractDecodingProblem
     bundle_dir::String
     decode_task::Symbol
 end
 
-struct BundleCSSDecodingProblem <: AbstractBundleDecodingProblem
+struct BundleCSSDecodingProblem <: AbstractDecodingProblem
     bundle_dir::String
 end
 
