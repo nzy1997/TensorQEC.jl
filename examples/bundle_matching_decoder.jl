@@ -2,6 +2,7 @@ using TensorQEC
 
 function bundle_dir()
     for candidate in (
+        normpath(joinpath(@__DIR__, "../../../example/testing_case_cache/color_code_decode_bundle")),
         normpath(joinpath(@__DIR__, "../../../../example/testing_case_cache/color_code_decode_bundle")),
         normpath(joinpath(@__DIR__, "../../../../../example/testing_case_cache/color_code_decode_bundle")),
     )
