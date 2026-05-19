@@ -107,8 +107,8 @@ end
     @test compiled_z.c1_dim == 150
 
     compiled_css = compile(decoder, BundleCSSDecodingProblem(bundle_dir()))
-    @test compiled_css.ccx.side === :decode_x
-    @test compiled_css.ccz.side === :decode_z
+    @test compiled_css.side_x.side === :decode_x
+    @test compiled_css.side_z.side === :decode_z
 end
 
 @testset "bundle matching compile validation" begin
@@ -153,6 +153,24 @@ end
         rewrite_lines(d1_toric_path, [join(row, " ") for row in rows])
         @test_throws ArgumentError compile(decoder, BundleSideDecodingProblem(tempdir, :decode_x))
     end
+end
+
+@testset "bundle matching css wrapper decode" begin
+    problem = BundleCSSDecodingProblem(bundle_dir())
+    decoder = BundleMatchingDecoder()
+    compiled = compile(decoder, problem)
+
+    sx = fill(Mod2(0), compiled.side_z.c0_dim)
+    sz = fill(Mod2(0), compiled.side_x.c0_dim)
+    sx .= first_valid_syndrome(compiled.side_z).s
+    sz .= first_valid_syndrome(compiled.side_x).s
+
+    res = decode(compiled, CSSSyndrome(sx, sz))
+
+    @test length(res.error_pattern.xerror) == compiled.side_x.c1_dim
+    @test length(res.error_pattern.zerror) == compiled.side_z.c1_dim
+    @test sx == compiled.side_z.check_matrix * res.error_pattern.zerror
+    @test sz == compiled.side_x.check_matrix * res.error_pattern.xerror
 end
 
 @testset "bundle matching single-side decode" begin

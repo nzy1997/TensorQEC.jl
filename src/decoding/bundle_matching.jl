@@ -50,6 +50,11 @@ struct CompiledBundleSideMatching <: CompiledDecoder
     events_buf::Vector{Int}
 end
 
+struct CompiledBundleCSSMatching{CTX,CTZ} <: CompiledDecoder
+    side_x::CTX
+    side_z::CTZ
+end
+
 function _bundle_matching_key(dict::AbstractDict, key::AbstractString, context::AbstractString)
     haskey(dict, key) || throw(ArgumentError("$context is missing required key \"$key\""))
     return dict[key]
@@ -403,8 +408,17 @@ function decode(compiled::CompiledBundleSideMatching, syndrome::SimpleSyndrome)
 end
 
 function compile(decoder::BundleMatchingDecoder, problem::BundleCSSDecodingProblem)
-    return CompiledClassicalDecoder(
+    return CompiledBundleCSSMatching(
         compile(decoder, BundleSideDecodingProblem(problem.bundle_dir, :decode_x)),
         compile(decoder, BundleSideDecodingProblem(problem.bundle_dir, :decode_z)),
+    )
+end
+
+function decode(compiled::CompiledBundleCSSMatching, syndrome::CSSSyndrome)
+    result_x = decode(compiled.side_x, SimpleSyndrome(syndrome.sz))
+    result_z = decode(compiled.side_z, SimpleSyndrome(syndrome.sx))
+    return DecodingResult(
+        result_x.success_tag && result_z.success_tag,
+        CSSErrorPattern(result_x.error_pattern, result_z.error_pattern),
     )
 end
