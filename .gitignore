@@ -13,3 +13,4 @@ Manifest.toml
 /figures/
 /data/
 benchmark/
+.worktrees/
