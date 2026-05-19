@@ -98,6 +98,10 @@ end
     include("decoding/interfaces.jl")
 end
 
+@testset "bundle matching" begin
+    include("decoding/bundle_matching.jl")
+end
+
 @testset "tndecoder" begin
     include("decoding/tndecoder.jl")
 end

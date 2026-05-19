@@ -75,10 +75,10 @@ export IndependentFlipError, IndependentDepolarizingError, random_error_pattern,
 @const_gate CCZ::ComplexF64 = diagm([1, 1, 1, 1, 1, 1, 1, -1])
 
 # decoder
-export BPDecoder, IPDecoder, MatchingDecoder, SimpleMatchingDecoder, IPMatchingSolver, TNMAP, TNMMAP, TableDecoder, TToricDecoder
+export BPDecoder, IPDecoder, MatchingDecoder, SimpleMatchingDecoder, IPMatchingSolver, TNMAP, TNMMAP, TableDecoder, TToricDecoder, BundleMatchingDecoder
 
 # decoding
-export decode, reduce2general, extract_decoding, DecodingResult, compile, IndependentDepolarizingDecodingProblem, ClassicalDecodingProblem, GeneralDecodingProblem
+export decode, reduce2general, extract_decoding, DecodingResult, compile, IndependentDepolarizingDecodingProblem, ClassicalDecodingProblem, GeneralDecodingProblem, BundleSideDecodingProblem, BundleCSSDecodingProblem
 
 # threshold
 export multi_round_qec
@@ -125,6 +125,7 @@ include("decoding/bposd.jl")
 include("decoding/tndecoder.jl")
 include("decoding/ipdecoder.jl")
 include("decoding/matching.jl")
+include("decoding/bundle_matching.jl")
 include("decoding/toric.jl")
 
 

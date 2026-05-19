@@ -50,6 +50,8 @@ struct GeneralDecodingProblem <: AbstractDecodingProblem
     ptn::SimpleTensorNetwork # probability distributions
 end
 
+abstract type AbstractBundleDecodingProblem <: AbstractDecodingProblem end
+
 """
     AbstractDecoder
 
