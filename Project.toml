@@ -27,8 +27,8 @@ YaoPlots = "32cfe2d9-419e-45f2-8191-2267705d8dbc"
 YaoToEinsum = "9b173c7b-dc24-4dc5-a0e1-adab2f7b6ba9"
 
 [sources]
-QECCore = {path = "/Users/nizhongyi/.julia/dev/QuantumClifford/lib/QECCore"}
-SparseBlossom = {path = "/Users/nizhongyi/.julia/dev/PyMatchingWrapper/SparseBlossom.jl"}
+QECCore = {path = "/Users/nzy/jcode/QuantumClifford.jl/lib/QECCore"}
+SparseBlossom = {path = "/Users/nzy/jcode/PyMatchingWrapper/SparseBlossom.jl"}
 
 [compat]
 Aqua = "0.8"
