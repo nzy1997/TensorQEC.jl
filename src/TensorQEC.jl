@@ -82,7 +82,7 @@ export decode, reduce2general, extract_decoding, DecodingResult, compile, Indepe
 export multi_round_qec
 
 # code distance
-export code_distance, logical_operator
+export code_distance, logical_operator, verify_logical_action, LogicalActionVerification
 
 # error_learning
 export TrainningData, error_learning
