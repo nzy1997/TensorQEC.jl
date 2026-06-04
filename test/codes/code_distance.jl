@@ -1,6 +1,6 @@
 using Test
 using TensorQEC
-using TensorQEC: row_echelon_form,null_space,logical_operator, same_qubit_order
+using TensorQEC: row_echelon_form, null_space, logical_operator, same_qubit_order, verify_logical_action
 using Random
 
 @testset "classical_code_distance" begin
@@ -55,6 +55,20 @@ end
     lx,lz = logical_operator(tannerxz)
     @test lx == Mod2[0 0 0 0 0 0 1 1 1]
     @test lz == Mod2[1 0 0 0 1 0 0 0 1]
+end
+
+@testset "verify_logical_action" begin
+    st = stabilizers(SteaneCode())
+    tanner = CSSTannerGraph(st)
+    lx, lz = logical_operator(tanner)
+    op = PauliString(7, findall(i -> i.x, lx[1, :]) => Pauli(1))
+
+    result = verify_logical_action(st, lx, lz, op)
+
+    @test result.preserves_stabilizers
+    @test all(result.commutes_with_stabilizers)
+    @test result.commutes_with_lx == [true]
+    @test result.commutes_with_lz == [false]
 end
 
 @testset "code_distance" begin
