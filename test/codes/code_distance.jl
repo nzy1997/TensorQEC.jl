@@ -82,6 +82,36 @@ end
     @test_throws AssertionError verify_logical_action(st, lx, bad_lz, op)
 end
 
+@testset "verify_logical_action detects broken stabilizers" begin
+    st = stabilizers(SteaneCode())
+    tanner = CSSTannerGraph(st)
+    lx, lz = logical_operator(tanner)
+    op = PauliString(7, 1 => Pauli(1))
+
+    result = verify_logical_action(st, lx, lz, op)
+
+    @test !result.preserves_stabilizers
+    @test any(.!result.commutes_with_stabilizers)
+end
+
+@testset "verify_logical_action supports multiple logical qubits" begin
+    st = stabilizers(ToricCode(3, 3))
+    tanner = CSSTannerGraph(ToricCode(3, 3))
+    lx, lz = logical_operator(tanner)
+
+    op1 = PauliString(size(lx, 2), findall(i -> i.x, lx[1, :]) => Pauli(1))
+    result1 = verify_logical_action(st, lx, lz, op1)
+    @test result1.preserves_stabilizers
+    @test result1.commutes_with_lx == [true, true]
+    @test result1.commutes_with_lz == [false, true]
+
+    op2 = PauliString(size(lx, 2), findall(i -> i.x, lx[2, :]) => Pauli(1))
+    result2 = verify_logical_action(st, lx, lz, op2)
+    @test result2.preserves_stabilizers
+    @test result2.commutes_with_lx == [true, true]
+    @test result2.commutes_with_lz == [true, false]
+end
+
 @testset "code_distance" begin
     tannerxz = CSSTannerGraph(SurfaceCode(3, 3))
     lx,lz = logical_operator(tannerxz)
