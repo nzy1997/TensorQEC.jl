@@ -71,6 +71,17 @@ end
     @test result.commutes_with_lz == [false]
 end
 
+@testset "verify_logical_action validation" begin
+    st = stabilizers(SteaneCode())
+    tanner = CSSTannerGraph(st)
+    lx, lz = logical_operator(tanner)
+    op = PauliString(7, 1 => Pauli(1))
+
+    bad_lz = zeros(Mod2, size(lz, 1), size(lz, 2) - 1)
+
+    @test_throws AssertionError verify_logical_action(st, lx, bad_lz, op)
+end
+
 @testset "code_distance" begin
     tannerxz = CSSTannerGraph(SurfaceCode(3, 3))
     lx,lz = logical_operator(tannerxz)
