@@ -106,10 +106,130 @@ struct LogicalActionVerification
     commutes_with_lz::Vector{Bool}
 end
 
+struct LogicalPauliCoordinates
+    preserves_stabilizers::Bool
+    x_bits::Vector{Bool}
+    z_bits::Vector{Bool}
+end
+
+struct LogicalCliffordAction
+    preserves_code::Bool
+    stabilizer_images::Vector{LogicalPauliCoordinates}
+    x_images::Vector{LogicalPauliCoordinates}
+    z_images::Vector{LogicalPauliCoordinates}
+end
+
 function _logical_row_to_paulistring(row::AbstractVector{Mod2}, pauli::Pauli)
     nq = length(row)
     positions = findall(x -> x.x, row)
     return PauliString(nq, positions => pauli)
+end
+
+function _validate_logical_action_inputs(
+    stabilizers::AbstractVector{PauliString{N}},
+    lx::AbstractMatrix{Mod2},
+    lz::AbstractMatrix{Mod2},
+    nqubits::Int,
+) where N
+    @assert size(lx, 1) == size(lz, 1) "The logical X/Z bases must have the same number of rows"
+    @assert size(lx, 2) == nqubits "The logical X operators must act on the same number of qubits as the input operator"
+    @assert size(lz, 2) == nqubits "The logical Z operators must act on the same number of qubits as the input operator"
+    @assert all(length(st) == nqubits for st in stabilizers) "All stabilizers must act on the same number of qubits as the input operator"
+end
+
+function _logical_generators(lx::AbstractMatrix{Mod2}, lz::AbstractMatrix{Mod2})
+    x_generators = [_logical_row_to_paulistring(lx[i, :], Pauli(1)) for i in axes(lx, 1)]
+    z_generators = [_logical_row_to_paulistring(lz[i, :], Pauli(3)) for i in axes(lz, 1)]
+    return x_generators, z_generators
+end
+
+function logical_pauli_coordinates(
+    stabilizers::AbstractVector{PauliString{N}},
+    lx::AbstractMatrix{Mod2},
+    lz::AbstractMatrix{Mod2},
+    op::PauliString{N},
+) where N
+    _validate_logical_action_inputs(stabilizers, lx, lz, N)
+    x_generators, z_generators = _logical_generators(lx, lz)
+
+    preserves_stabilizers = all(st -> iscommute(op, st), stabilizers)
+    x_bits = [isanticommute(op, zgen) for zgen in z_generators]
+    z_bits = [isanticommute(op, xgen) for xgen in x_generators]
+
+    return LogicalPauliCoordinates(preserves_stabilizers, x_bits, z_bits)
+end
+
+function _is_trivial_logical_coordinates(coords::LogicalPauliCoordinates)
+    return !any(coords.x_bits) && !any(coords.z_bits)
+end
+
+function _logical_coordinates_commute(
+    lhs::LogicalPauliCoordinates,
+    rhs::LogicalPauliCoordinates,
+)
+    anticommutes = false
+    for i in eachindex(lhs.x_bits)
+        anticommutes ⊻= lhs.x_bits[i] && rhs.z_bits[i]
+        anticommutes ⊻= lhs.z_bits[i] && rhs.x_bits[i]
+    end
+    return !anticommutes
+end
+
+function _preserves_logical_symplectic_form(
+    x_images::AbstractVector{LogicalPauliCoordinates},
+    z_images::AbstractVector{LogicalPauliCoordinates},
+)
+    for i in eachindex(x_images)
+        for j in eachindex(x_images)
+            _logical_coordinates_commute(x_images[i], x_images[j]) || return false
+            _logical_coordinates_commute(z_images[i], z_images[j]) || return false
+            commute = _logical_coordinates_commute(x_images[i], z_images[j])
+            if i == j
+                commute && return false
+            else
+                !commute && return false
+            end
+        end
+    end
+    return true
+end
+
+function logical_clifford_action(
+    stabilizers::AbstractVector{PauliString{N}},
+    lx::AbstractMatrix{Mod2},
+    lz::AbstractMatrix{Mod2},
+    act_on_pauli::Function,
+) where N
+    _validate_logical_action_inputs(stabilizers, lx, lz, N)
+    x_generators, z_generators = _logical_generators(lx, lz)
+    stabilizer_group_images = [act_on_pauli(st) for st in stabilizers]
+
+    stabilizer_images = [
+        logical_pauli_coordinates(stabilizers, lx, lz, image.ps)
+        for image in stabilizer_group_images
+    ]
+    x_images = [
+        logical_pauli_coordinates(stabilizers, lx, lz, act_on_pauli(xgen).ps)
+        for xgen in x_generators
+    ]
+    z_images = [
+        logical_pauli_coordinates(stabilizers, lx, lz, act_on_pauli(zgen).ps)
+        for zgen in z_generators
+    ]
+
+    preserves_stabilizer_images = all(zip(stabilizer_group_images, stabilizer_images)) do (image, coords)
+        image.phase == 0 && coords.preserves_stabilizers && _is_trivial_logical_coordinates(coords)
+    end
+    preserves_logical_images = all(coords -> coords.preserves_stabilizers, x_images) &&
+        all(coords -> coords.preserves_stabilizers, z_images)
+    preserves_logical_structure = _preserves_logical_symplectic_form(x_images, z_images)
+
+    return LogicalCliffordAction(
+        preserves_stabilizer_images && preserves_logical_images && preserves_logical_structure,
+        stabilizer_images,
+        x_images,
+        z_images,
+    )
 end
 
 function verify_logical_action(
@@ -118,14 +238,12 @@ function verify_logical_action(
     lz::AbstractMatrix{Mod2},
     op::PauliString{N},
 ) where N
-    @assert size(lx, 1) == size(lz, 1) "The logical X/Z bases must have the same number of rows"
-    @assert size(lx, 2) == N "The logical X operators must act on the same number of qubits as op"
-    @assert size(lz, 2) == N "The logical Z operators must act on the same number of qubits as op"
-    @assert all(length(st) == N for st in stabilizers) "All stabilizers must act on the same number of qubits as op"
+    _validate_logical_action_inputs(stabilizers, lx, lz, N)
+    x_generators, z_generators = _logical_generators(lx, lz)
 
     commutes_with_stabilizers = [iscommute(op, st) for st in stabilizers]
-    commutes_with_lx = [iscommute(op, _logical_row_to_paulistring(lx[i, :], Pauli(1))) for i in axes(lx, 1)]
-    commutes_with_lz = [iscommute(op, _logical_row_to_paulistring(lz[i, :], Pauli(3))) for i in axes(lz, 1)]
+    commutes_with_lx = [iscommute(op, xgen) for xgen in x_generators]
+    commutes_with_lz = [iscommute(op, zgen) for zgen in z_generators]
 
     return LogicalActionVerification(
         all(commutes_with_stabilizers),
