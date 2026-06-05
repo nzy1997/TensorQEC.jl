@@ -99,6 +99,42 @@ function same_qubit_order(lx::Matrix{Mod2},lz::Matrix{Mod2})
     return lx_new, lz
 end
 
+struct LogicalActionVerification
+    preserves_stabilizers::Bool
+    commutes_with_stabilizers::Vector{Bool}
+    commutes_with_lx::Vector{Bool}
+    commutes_with_lz::Vector{Bool}
+end
+
+function _logical_row_to_paulistring(row::AbstractVector{Mod2}, pauli::Pauli)
+    nq = length(row)
+    positions = findall(x -> x.x, row)
+    return PauliString(nq, positions => pauli)
+end
+
+function verify_logical_action(
+    stabilizers::AbstractVector{PauliString{N}},
+    lx::AbstractMatrix{Mod2},
+    lz::AbstractMatrix{Mod2},
+    op::PauliString{N},
+) where N
+    @assert size(lx, 1) == size(lz, 1) "The logical X/Z bases must have the same number of rows"
+    @assert size(lx, 2) == N "The logical X operators must act on the same number of qubits as op"
+    @assert size(lz, 2) == N "The logical Z operators must act on the same number of qubits as op"
+    @assert all(length(st) == N for st in stabilizers) "All stabilizers must act on the same number of qubits as op"
+
+    commutes_with_stabilizers = [iscommute(op, st) for st in stabilizers]
+    commutes_with_lx = [iscommute(op, _logical_row_to_paulistring(lx[i, :], Pauli(1))) for i in axes(lx, 1)]
+    commutes_with_lz = [iscommute(op, _logical_row_to_paulistring(lz[i, :], Pauli(3))) for i in axes(lz, 1)]
+
+    return LogicalActionVerification(
+        all(commutes_with_stabilizers),
+        commutes_with_stabilizers,
+        commutes_with_lx,
+        commutes_with_lz,
+    )
+end
+
 function code_distance(Hz::Matrix{Int},lz::Matrix{Int}; verbose = false,ipsolver = SCIP.Optimizer)
     m,n = size(Hz)
     num_lz = size(lz, 1)
