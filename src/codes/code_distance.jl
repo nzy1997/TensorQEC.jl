@@ -106,10 +106,50 @@ struct LogicalActionVerification
     commutes_with_lz::Vector{Bool}
 end
 
+struct LogicalPauliCoordinates
+    preserves_stabilizers::Bool
+    x_bits::Vector{Bool}
+    z_bits::Vector{Bool}
+end
+
 function _logical_row_to_paulistring(row::AbstractVector{Mod2}, pauli::Pauli)
     nq = length(row)
     positions = findall(x -> x.x, row)
     return PauliString(nq, positions => pauli)
+end
+
+function _validate_logical_action_inputs(
+    stabilizers::AbstractVector{PauliString{N}},
+    lx::AbstractMatrix{Mod2},
+    lz::AbstractMatrix{Mod2},
+    nqubits::Int,
+) where N
+    @assert size(lx, 1) == size(lz, 1) "The logical X/Z bases must have the same number of rows"
+    @assert size(lx, 2) == nqubits "The logical X operators must act on the same number of qubits as the input operator"
+    @assert size(lz, 2) == nqubits "The logical Z operators must act on the same number of qubits as the input operator"
+    @assert all(length(st) == nqubits for st in stabilizers) "All stabilizers must act on the same number of qubits as the input operator"
+end
+
+function _logical_generators(lx::AbstractMatrix{Mod2}, lz::AbstractMatrix{Mod2})
+    x_generators = [_logical_row_to_paulistring(lx[i, :], Pauli(1)) for i in axes(lx, 1)]
+    z_generators = [_logical_row_to_paulistring(lz[i, :], Pauli(3)) for i in axes(lz, 1)]
+    return x_generators, z_generators
+end
+
+function logical_pauli_coordinates(
+    stabilizers::AbstractVector{PauliString{N}},
+    lx::AbstractMatrix{Mod2},
+    lz::AbstractMatrix{Mod2},
+    op::PauliString{N},
+) where N
+    _validate_logical_action_inputs(stabilizers, lx, lz, N)
+    x_generators, z_generators = _logical_generators(lx, lz)
+
+    preserves_stabilizers = all(st -> iscommute(op, st), stabilizers)
+    x_bits = [isanticommute(op, zgen) for zgen in z_generators]
+    z_bits = [isanticommute(op, xgen) for xgen in x_generators]
+
+    return LogicalPauliCoordinates(preserves_stabilizers, x_bits, z_bits)
 end
 
 function verify_logical_action(
@@ -118,14 +158,12 @@ function verify_logical_action(
     lz::AbstractMatrix{Mod2},
     op::PauliString{N},
 ) where N
-    @assert size(lx, 1) == size(lz, 1) "The logical X/Z bases must have the same number of rows"
-    @assert size(lx, 2) == N "The logical X operators must act on the same number of qubits as op"
-    @assert size(lz, 2) == N "The logical Z operators must act on the same number of qubits as op"
-    @assert all(length(st) == N for st in stabilizers) "All stabilizers must act on the same number of qubits as op"
+    _validate_logical_action_inputs(stabilizers, lx, lz, N)
+    x_generators, z_generators = _logical_generators(lx, lz)
 
     commutes_with_stabilizers = [iscommute(op, st) for st in stabilizers]
-    commutes_with_lx = [iscommute(op, _logical_row_to_paulistring(lx[i, :], Pauli(1))) for i in axes(lx, 1)]
-    commutes_with_lz = [iscommute(op, _logical_row_to_paulistring(lz[i, :], Pauli(3))) for i in axes(lz, 1)]
+    commutes_with_lx = [iscommute(op, xgen) for xgen in x_generators]
+    commutes_with_lz = [iscommute(op, zgen) for zgen in z_generators]
 
     return LogicalActionVerification(
         all(commutes_with_stabilizers),

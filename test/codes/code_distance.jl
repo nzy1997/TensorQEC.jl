@@ -1,6 +1,6 @@
 using Test
 using TensorQEC
-using TensorQEC: row_echelon_form, null_space, logical_operator, same_qubit_order, verify_logical_action
+using TensorQEC: row_echelon_form, null_space, logical_operator, same_qubit_order, verify_logical_action, logical_pauli_coordinates
 using Random
 
 @testset "classical_code_distance" begin
@@ -110,6 +110,50 @@ end
     @test result2.preserves_stabilizers
     @test result2.commutes_with_lx == [true, true]
     @test result2.commutes_with_lz == [true, false]
+end
+
+@testset "logical_pauli_coordinates" begin
+    st = stabilizers(SteaneCode())
+    tanner = CSSTannerGraph(st)
+    lx, lz = logical_operator(tanner)
+    opx = PauliString(7, findall(i -> i.x, lx[1, :]) => Pauli(1))
+    opz = PauliString(7, findall(i -> i.x, lz[1, :]) => Pauli(3))
+
+    xcoords = logical_pauli_coordinates(st, lx, lz, opx)
+    @test xcoords.preserves_stabilizers
+    @test xcoords.x_bits == [true]
+    @test xcoords.z_bits == [false]
+
+    zcoords = logical_pauli_coordinates(st, lx, lz, opz)
+    @test zcoords.preserves_stabilizers
+    @test zcoords.x_bits == [false]
+    @test zcoords.z_bits == [true]
+end
+
+@testset "logical_pauli_coordinates supports multiple logical qubits" begin
+    st = stabilizers(ToricCode(3, 3))
+    tanner = CSSTannerGraph(st)
+    lx, lz = logical_operator(tanner)
+    op = PauliString(size(lx, 2), findall(i -> i.x, lx[2, :]) => Pauli(1))
+
+    coords = logical_pauli_coordinates(st, lx, lz, op)
+
+    @test coords.preserves_stabilizers
+    @test coords.x_bits == [false, true]
+    @test coords.z_bits == [false, false]
+end
+
+@testset "logical_pauli_coordinates detects broken stabilizers" begin
+    st = stabilizers(SteaneCode())
+    tanner = CSSTannerGraph(st)
+    lx, lz = logical_operator(tanner)
+    op = PauliString(7, 1 => Pauli(1))
+
+    coords = logical_pauli_coordinates(st, lx, lz, op)
+
+    @test !coords.preserves_stabilizers
+    @test coords.x_bits isa Vector{Bool}
+    @test coords.z_bits isa Vector{Bool}
 end
 
 @testset "code_distance" begin
