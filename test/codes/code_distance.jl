@@ -130,6 +130,48 @@ end
     @test zcoords.z_bits == [true]
 end
 
+@testset "logical_pauli_coordinates is invariant on stabilizer cosets" begin
+    st = stabilizers(SteaneCode())
+    tanner = CSSTannerGraph(st)
+    lx, lz = logical_operator(tanner)
+    op = PauliString(7, findall(i -> i.x, lx[1, :]) => Pauli(1))
+    shifted = (op * st[1]).ps
+
+    coords = logical_pauli_coordinates(st, lx, lz, op)
+    shifted_coords = logical_pauli_coordinates(st, lx, lz, shifted)
+
+    @test coords.preserves_stabilizers
+    @test shifted_coords.preserves_stabilizers
+    @test shifted_coords.x_bits == coords.x_bits
+    @test shifted_coords.z_bits == coords.z_bits
+end
+
+@testset "logical_pauli_coordinates supports mixed logical operators" begin
+    st = stabilizers(SteaneCode())
+    tanner = CSSTannerGraph(st)
+    lx, lz = logical_operator(tanner)
+    opx = PauliString(7, findall(i -> i.x, lx[1, :]) => Pauli(1))
+    opz = PauliString(7, findall(i -> i.x, lz[1, :]) => Pauli(3))
+    opy = (opx * opz).ps
+
+    coords = logical_pauli_coordinates(st, lx, lz, opy)
+
+    @test coords.preserves_stabilizers
+    @test coords.x_bits == [true]
+    @test coords.z_bits == [true]
+end
+
+@testset "logical_pauli_coordinates validation" begin
+    st = stabilizers(SteaneCode())
+    tanner = CSSTannerGraph(st)
+    lx, lz = logical_operator(tanner)
+    op = PauliString(7, 1 => Pauli(1))
+
+    bad_lz = zeros(Mod2, size(lz, 1), size(lz, 2) - 1)
+
+    @test_throws AssertionError logical_pauli_coordinates(st, lx, bad_lz, op)
+end
+
 @testset "logical_pauli_coordinates supports multiple logical qubits" begin
     st = stabilizers(ToricCode(3, 3))
     tanner = CSSTannerGraph(st)
