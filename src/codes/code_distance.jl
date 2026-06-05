@@ -163,6 +163,37 @@ function _is_trivial_logical_coordinates(coords::LogicalPauliCoordinates)
     return !any(coords.x_bits) && !any(coords.z_bits)
 end
 
+function _logical_coordinates_commute(
+    lhs::LogicalPauliCoordinates,
+    rhs::LogicalPauliCoordinates,
+)
+    anticommutes = false
+    for i in eachindex(lhs.x_bits)
+        anticommutes ⊻= lhs.x_bits[i] && rhs.z_bits[i]
+        anticommutes ⊻= lhs.z_bits[i] && rhs.x_bits[i]
+    end
+    return !anticommutes
+end
+
+function _preserves_logical_symplectic_form(
+    x_images::AbstractVector{LogicalPauliCoordinates},
+    z_images::AbstractVector{LogicalPauliCoordinates},
+)
+    for i in eachindex(x_images)
+        for j in eachindex(x_images)
+            _logical_coordinates_commute(x_images[i], x_images[j]) || return false
+            _logical_coordinates_commute(z_images[i], z_images[j]) || return false
+            commute = _logical_coordinates_commute(x_images[i], z_images[j])
+            if i == j
+                commute && return false
+            else
+                !commute && return false
+            end
+        end
+    end
+    return true
+end
+
 function logical_clifford_action(
     stabilizers::AbstractVector{PauliString{N}},
     lx::AbstractMatrix{Mod2},
@@ -171,10 +202,11 @@ function logical_clifford_action(
 ) where N
     _validate_logical_action_inputs(stabilizers, lx, lz, N)
     x_generators, z_generators = _logical_generators(lx, lz)
+    stabilizer_group_images = [act_on_pauli(st) for st in stabilizers]
 
     stabilizer_images = [
-        logical_pauli_coordinates(stabilizers, lx, lz, act_on_pauli(st).ps)
-        for st in stabilizers
+        logical_pauli_coordinates(stabilizers, lx, lz, image.ps)
+        for image in stabilizer_group_images
     ]
     x_images = [
         logical_pauli_coordinates(stabilizers, lx, lz, act_on_pauli(xgen).ps)
@@ -185,15 +217,15 @@ function logical_clifford_action(
         for zgen in z_generators
     ]
 
-    preserves_stabilizer_images = all(
-        coords -> coords.preserves_stabilizers && _is_trivial_logical_coordinates(coords),
-        stabilizer_images,
-    )
+    preserves_stabilizer_images = all(zip(stabilizer_group_images, stabilizer_images)) do (image, coords)
+        image.phase == 0 && coords.preserves_stabilizers && _is_trivial_logical_coordinates(coords)
+    end
     preserves_logical_images = all(coords -> coords.preserves_stabilizers, x_images) &&
         all(coords -> coords.preserves_stabilizers, z_images)
+    preserves_logical_structure = _preserves_logical_symplectic_form(x_images, z_images)
 
     return LogicalCliffordAction(
-        preserves_stabilizer_images && preserves_logical_images,
+        preserves_stabilizer_images && preserves_logical_images && preserves_logical_structure,
         stabilizer_images,
         x_images,
         z_images,

@@ -230,6 +230,36 @@ end
     @test result.stabilizer_images[1].z_bits == [false]
 end
 
+@testset "logical_clifford_action rejects phased stabilizer images" begin
+    st = stabilizers(SteaneCode())
+    tanner = CSSTannerGraph(st)
+    lx, lz = logical_operator(tanner)
+    phased_action(op) = op == st[1] ? PauliGroupElement(2, st[1]) : PauliGroupElement(op)
+
+    result = logical_clifford_action(st, lx, lz, phased_action)
+
+    @test !result.preserves_code
+    @test result.stabilizer_images[1].preserves_stabilizers
+    @test !any(result.stabilizer_images[1].x_bits)
+    @test !any(result.stabilizer_images[1].z_bits)
+end
+
+@testset "logical_clifford_action rejects degenerate logical images" begin
+    st = stabilizers(SteaneCode())
+    tanner = CSSTannerGraph(st)
+    lx, lz = logical_operator(tanner)
+    logical_x = PauliString(7, findall(i -> i.x, lx[1, :]) => Pauli(1))
+    id7 = PauliString(ntuple(_ -> Pauli(0), Val(7)))
+    degenerate_action(op) = op == logical_x ? PauliGroupElement(id7) : PauliGroupElement(op)
+
+    result = logical_clifford_action(st, lx, lz, degenerate_action)
+
+    @test !result.preserves_code
+    @test result.x_images[1].preserves_stabilizers
+    @test !any(result.x_images[1].x_bits)
+    @test !any(result.x_images[1].z_bits)
+end
+
 @testset "logical_clifford_action detects toric transversal cnot" begin
     st = stabilizers(ToricCode(3, 3))
     tanner = CSSTannerGraph(st)
