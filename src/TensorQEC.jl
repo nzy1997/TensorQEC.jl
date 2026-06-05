@@ -84,6 +84,7 @@ export multi_round_qec
 # code distance
 export code_distance, logical_operator, verify_logical_action, LogicalActionVerification
 export logical_pauli_coordinates, LogicalPauliCoordinates
+export logical_clifford_action, LogicalCliffordAction
 
 # error_learning
 export TrainningData, error_learning

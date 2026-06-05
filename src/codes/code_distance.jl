@@ -112,6 +112,13 @@ struct LogicalPauliCoordinates
     z_bits::Vector{Bool}
 end
 
+struct LogicalCliffordAction
+    preserves_code::Bool
+    stabilizer_images::Vector{LogicalPauliCoordinates}
+    x_images::Vector{LogicalPauliCoordinates}
+    z_images::Vector{LogicalPauliCoordinates}
+end
+
 function _logical_row_to_paulistring(row::AbstractVector{Mod2}, pauli::Pauli)
     nq = length(row)
     positions = findall(x -> x.x, row)
@@ -150,6 +157,47 @@ function logical_pauli_coordinates(
     z_bits = [isanticommute(op, xgen) for xgen in x_generators]
 
     return LogicalPauliCoordinates(preserves_stabilizers, x_bits, z_bits)
+end
+
+function _is_trivial_logical_coordinates(coords::LogicalPauliCoordinates)
+    return !any(coords.x_bits) && !any(coords.z_bits)
+end
+
+function logical_clifford_action(
+    stabilizers::AbstractVector{PauliString{N}},
+    lx::AbstractMatrix{Mod2},
+    lz::AbstractMatrix{Mod2},
+    act_on_pauli::Function,
+) where N
+    _validate_logical_action_inputs(stabilizers, lx, lz, N)
+    x_generators, z_generators = _logical_generators(lx, lz)
+
+    stabilizer_images = [
+        logical_pauli_coordinates(stabilizers, lx, lz, act_on_pauli(st).ps)
+        for st in stabilizers
+    ]
+    x_images = [
+        logical_pauli_coordinates(stabilizers, lx, lz, act_on_pauli(xgen).ps)
+        for xgen in x_generators
+    ]
+    z_images = [
+        logical_pauli_coordinates(stabilizers, lx, lz, act_on_pauli(zgen).ps)
+        for zgen in z_generators
+    ]
+
+    preserves_stabilizer_images = all(
+        coords -> coords.preserves_stabilizers && _is_trivial_logical_coordinates(coords),
+        stabilizer_images,
+    )
+    preserves_logical_images = all(coords -> coords.preserves_stabilizers, x_images) &&
+        all(coords -> coords.preserves_stabilizers, z_images)
+
+    return LogicalCliffordAction(
+        preserves_stabilizer_images && preserves_logical_images,
+        stabilizer_images,
+        x_images,
+        z_images,
+    )
 end
 
 function verify_logical_action(
