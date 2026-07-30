@@ -18,6 +18,18 @@ end
     @test count(v->v.x,ez)/100000 ≈ 0.16 atol=0.05
 end
 
+@testset "explicit random number generators" begin
+    flip_model = iid_error(0.3, 32)
+    @test random_error_pattern(Xoshiro(7), flip_model) ==
+          random_error_pattern(Xoshiro(7), flip_model)
+
+    depolarizing_model = iid_error(0.1, 0.1, 0.1, 32)
+    first = random_error_pattern(Xoshiro(11), depolarizing_model)
+    second = random_error_pattern(Xoshiro(11), depolarizing_model)
+    @test first.xerror == second.xerror
+    @test first.zerror == second.zerror
+end
+
 @testset "check_logical_error" begin
     st = stabilizers(SurfaceCode(3, 3))
     tannerxz = CSSTannerGraph(st)
