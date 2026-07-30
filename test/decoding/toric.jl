@@ -59,3 +59,15 @@ end
     @test err isa DimensionMismatch
     @test occursin("row_transformation", sprint(showerror, err))
 end
+
+@testset "paper decoder smoke example" begin
+    root = normpath(joinpath(@__DIR__, "..", ".."))
+    command = `$(Base.julia_cmd()) --startup-file=no --project=$(root) $(joinpath(root, "examples", "paper_decoder_smoke.jl"))`
+    mktemp() do _, io
+        process = run(pipeline(ignorestatus(command), stdout=io, stderr=io))
+        seekstart(io)
+        output = read(io, String)
+        @test success(process)
+        @test endswith(strip(output), "paper decoder smoke: ok")
+    end
+end

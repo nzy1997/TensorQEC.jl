@@ -36,6 +36,7 @@ makedocs(;
                 "Decoder Interface" => "generated/decoder.md",
                 "Mixed-Integer Programming Decoder" => "generated/ipdecoder.md",
                 "Tensor Network Decoder" => "tndecoder.md",
+                "Paper Decoder Snapshot" => "paper_decoder.md",
             ],
             "Performance Tips" => "performancetips.md",
         ],

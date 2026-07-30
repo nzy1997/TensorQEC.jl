@@ -33,6 +33,20 @@ To update, just type `up` in the package mode.
 ## Benchmark
 Repository [DecoderBenchmarks.jl](https://github.com/nzy1997/DecoderBenchmarks.jl) is set up to compare the performance of different decoders in different packages.
 
+## Paper decoder snapshot
+
+The `paper/topological-css-decoder` branch preserves the historical
+unitary-decouple decoder used by the topological CSS code decoupling article.
+It is an archival reproduction interface, not the current recommended
+TensorQEC decoder API. Run its deterministic smoke check with:
+
+```bash
+julia --project examples/paper_decoder_smoke.jl
+```
+
+See the [paper decoder documentation](docs/src/paper_decoder.md) for the
+matching and timing conventions.
+
 ## Contribute
 
 Suggestions and Comments in the [_Issues_](https://github.com/nzy1997/TensorQEC.jl/issues) are welcome.
