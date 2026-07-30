@@ -1,24 +1,61 @@
 using Test
 using TensorQEC
 using DelimitedFiles
-using Random
 
-@testset "TToricDecoder" begin
-    d= 3
-    Random.seed!(123)
-    c = FileCode(joinpath(@__DIR__,"../codes","test_codes","color_code_$(d).txt"), "color_code_$(d)")
-    sts = stabilizers(c; remove_linear_dependency=false)
-    tanner = CSSTannerGraph(sts)
-    row_transformation = Mod2.(readdlm(joinpath(@__DIR__,"../codes","test_codes","color_code_3_row_transformation.txt"), Bool))
-    column_transformation = Mod2.(readdlm(joinpath(@__DIR__,"../codes","test_codes","color_code_3_column_transformation.txt"), Bool))
+function paper_decoder_fixture()
+    d = 3
+    fixture_root = joinpath(@__DIR__, "..", "codes", "test_codes")
+    code = FileCode(joinpath(fixture_root, "color_code_3.txt"), "color_code_3")
+    tanner = CSSTannerGraph(stabilizers(code; remove_linear_dependency=false))
+    row = Mod2.(readdlm(joinpath(fixture_root, "color_code_3_row_transformation.txt"), Bool))
+    column = Mod2.(readdlm(joinpath(fixture_root, "color_code_3_column_transformation.txt"), Bool))
+    compiled = compile(TToricDecoder(row, column, 1, 2, d^2), tanner)
+    lx, lz = logical_operator(tanner)
+    return (; tanner, row, column, compiled, lx, lz)
+end
 
-    ct = compile(TToricDecoder(row_transformation,column_transformation,1,2,9), tanner)
-
-    for _ in 1:100
-    em = iid_error(0.05, 0.05, 0.05,tanner.stgx.nq)
-    ep = random_error_pattern(em)
-    syn = syndrome_extraction(ep,tanner)
-    deres = decode(ct, syn)
-    @test syn == syndrome_extraction(deres.error_pattern, tanner)
+@testset "TToricDecoder reports invalid column dimensions" begin
+    fixture = paper_decoder_fixture()
+    invalid_decoder = TToricDecoder(fixture.row, zeros(Mod2, 1, 1), 1, 2, 9)
+    err = try
+        compile(invalid_decoder, fixture.tanner)
+        nothing
+    catch caught
+        caught
     end
+    @test err isa DimensionMismatch
+    @test occursin("column_transformation", sprint(showerror, err))
+end
+
+@testset "TToricDecoder corrects deterministic single-qubit errors" begin
+    fixture = paper_decoder_fixture()
+    n = fixture.tanner.stgx.nq
+    for qubit in 1:min(n, 8), pauli in (:x, :z)
+        xerror = fill(Mod2(0), n)
+        zerror = fill(Mod2(0), n)
+        pauli === :x ? (xerror[qubit] = Mod2(1)) : (zerror[qubit] = Mod2(1))
+        error_pattern = CSSErrorPattern(xerror, zerror)
+        syndrome = syndrome_extraction(error_pattern, fixture.tanner)
+        result = decode(fixture.compiled, syndrome)
+        @test syndrome_extraction(result.error_pattern, fixture.tanner) == syndrome
+        @test !check_logical_error(
+            result.error_pattern,
+            error_pattern,
+            fixture.lx,
+            fixture.lz,
+        )
+    end
+end
+
+@testset "TToricDecoder reports invalid transformation dimensions" begin
+    fixture = paper_decoder_fixture()
+    invalid_decoder = TToricDecoder(zeros(Mod2, 1, 1), zeros(Mod2, 1, 1), 1, 2, 9)
+    err = try
+        compile(invalid_decoder, fixture.tanner)
+        nothing
+    catch caught
+        caught
+    end
+    @test err isa DimensionMismatch
+    @test occursin("row_transformation", sprint(showerror, err))
 end

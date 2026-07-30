@@ -98,6 +98,18 @@ function compile(decoder::TToricDecoder, iddp::IndependentDepolarizingDecodingPr
     # @show qubit_num
     # @show size(iddp.tanner.stgx.H)
     H = [iddp.tanner.stgx.H zeros(Mod2,syd_num,qubit_num); zeros(Mod2,syd_num,qubit_num) iddp.tanner.stgz.H];
+    if size(decoder.row_transformation, 2) != size(H, 1)
+        throw(DimensionMismatch(
+            "TToricDecoder row_transformation has size $(size(decoder.row_transformation)); " *
+            "expected its second dimension to equal $(size(H, 1)) for a parity matrix of size $(size(H))",
+        ))
+    end
+    if size(decoder.column_transformation, 1) != size(H, 2)
+        throw(DimensionMismatch(
+            "TToricDecoder column_transformation has size $(size(decoder.column_transformation)); " *
+            "expected its first dimension to equal $(size(H, 2)) for a parity matrix of size $(size(H))",
+        ))
+    end
     H2 = decoder.row_transformation* H*decoder.column_transformation
     matching_graphx, edge2qubitx = parity_matrix2matching_graph(H2[decoder.product_num*decoder.cg_size+1:decoder.product_num*decoder.cg_size+decoder.cg_size,2*decoder.product_num*decoder.cg_size+1:2*decoder.product_num*decoder.cg_size+2*decoder.cg_size])
     matching_graphz, edge2qubitz = parity_matrix2matching_graph(H2[syd_num+decoder.product_num*decoder.cg_size+1:syd_num+decoder.product_num*decoder.cg_size+decoder.cg_size,qubit_num+2*decoder.product_num*decoder.cg_size+1:2*decoder.product_num*decoder.cg_size+2*decoder.cg_size+qubit_num])
