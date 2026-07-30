@@ -83,7 +83,7 @@ end
 
 function min_add_edge!(g, s, d, w,edge_mat,i)
     if iszero(g.weights[s,d]) || g.weights[s,d] > w
-        add_edge!(g,s,d,w)
+        Graphs.add_edge!(g,s,d,w)
         edge_mat[s,d] = i
         edge_mat[d,s] = i
     end
