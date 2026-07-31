@@ -19,7 +19,7 @@ PrettyTables = "08abe8d2-0d0c-5749-adfa-8a2ac140af0d"
 QECCore = "b50d4dc9-2544-401f-bae9-a24ba40d0c7a"
 SCIP = "82193955-e24f-5292-bf16-6f2c5261a85f"
 SimpleWeightedGraphs = "47aef6b3-ad0c-573a-a1e2-d07658019622"
-SparseBlossom = "8f5e7c8a-1234-5678-9abc-def012345678"
+SparseBlossom = "6f230a4e-3bc1-44f9-946c-fb00ab37aeee"
 TensorInference = "c2297e78-99bd-40ad-871d-f50e56b81012"
 Yao = "5872b779-8223-5990-8dd0-5abbb0748c8c"
 YaoBlocks = "418bc28f-b43b-5e0b-a6e7-61bbc1a2c1df"
@@ -27,8 +27,7 @@ YaoPlots = "32cfe2d9-419e-45f2-8191-2267705d8dbc"
 YaoToEinsum = "9b173c7b-dc24-4dc5-a0e1-adab2f7b6ba9"
 
 [sources]
-QECCore = {path = "/Users/nizhongyi/.julia/dev/QuantumClifford/lib/QECCore"}
-SparseBlossom = {path = "/Users/nizhongyi/.julia/dev/PyMatchingWrapper/SparseBlossom.jl"}
+SparseBlossom = {url = "https://github.com/nzy1997/PyMatchingWrapper.git", rev = "9306524aada307e9310a6a981834d983ce987503"}
 
 [compat]
 Aqua = "0.8"
@@ -49,6 +48,7 @@ QECCore = "0.1"
 Random = "1"
 SCIP = "0.12.3"
 SimpleWeightedGraphs = "1.5.0"
+SparseBlossom = "0.1"
 TensorInference = "0.6"
 Test = "1"
 Yao = "0.9.2"

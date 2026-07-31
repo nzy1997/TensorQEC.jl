@@ -5,11 +5,20 @@ unitary-decouple decoder used for the topological CSS code decoupling article.
 The branch is archival: it exists to reproduce the article's decoder workflow
 and is not the current recommended TensorQEC decoder API.
 
-Run the deterministic color-code fixture smoke check from the repository root:
+Build the pinned SparseBlossom source dependency, then run the deterministic
+color-code fixture smoke check from the repository root:
 
 ```bash
+julia --project -e 'using Pkg; Pkg.instantiate(; allow_autoprecomp=false); Pkg.build("SparseBlossom")'
 julia --project examples/paper_decoder_smoke.jl
 ```
+
+The branch resolves SparseBlossom from the public
+[`nzy1997/PyMatchingWrapper`](https://github.com/nzy1997/PyMatchingWrapper)
+repository at immutable commit
+`9306524aada307e9310a6a981834d983ce987503`. The wrapper is built locally from
+source by the setup command above; no developer-local path or prebuilt decoder
+library is required.
 
 The decoder maps the transformed parity checks to toric-code matching
 subproblems. Calls to SparseBlossom add edges without weights, so the MWPM

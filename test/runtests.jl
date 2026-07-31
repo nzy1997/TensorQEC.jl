@@ -86,6 +86,10 @@ end
     include("decoding/matching.jl")
 end
 
+@testset "toric decoder" begin
+    include("decoding/toric.jl")
+end
+
 @testset "ipdecoder" begin
     include("decoding/ipdecoder.jl")
 end

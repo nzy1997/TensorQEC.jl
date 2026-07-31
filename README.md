@@ -38,9 +38,11 @@ Repository [DecoderBenchmarks.jl](https://github.com/nzy1997/DecoderBenchmarks.j
 The `paper/topological-css-decoder` branch preserves the historical
 unitary-decouple decoder used by the topological CSS code decoupling article.
 It is an archival reproduction interface, not the current recommended
-TensorQEC decoder API. Run its deterministic smoke check with:
+TensorQEC decoder API. Build the pinned SparseBlossom source dependency and
+run the deterministic smoke check with:
 
 ```bash
+julia --project -e 'using Pkg; Pkg.instantiate(; allow_autoprecomp=false); Pkg.build("SparseBlossom")'
 julia --project examples/paper_decoder_smoke.jl
 ```
 
