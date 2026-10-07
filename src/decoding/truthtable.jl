@@ -179,7 +179,7 @@ end
 get_probability(de::DistributionError, cep::Tuple) = get_probability(de.dis, cep)
 function get_probability(pm::IndependentDepolarizingError, cep::Tuple{INT, INT}) where {INT}
 	p = 1.0
-	qubit_num = length(cep[1])
+	qubit_num = length(pm.px)
 	for i in 1:qubit_num
 		if iszero(readbit(cep[1], i)) 
 			# no x error
